@@ -171,7 +171,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  const brand = <a href="/" className="brand" aria-label="El camino de la hormiga, inicio"><img src="/icon.svg" alt="" /><span>CEDES <b>DON BOSCO</b><small>EL CAMINO DE LA HORMIGA · EXPOTEC</small></span></a>;
+  const brand = <a href="/" className="brand school-brand" aria-label="CEDES Don Bosco, inicio"><img src="/brand/cedes-don-bosco-white.png" alt="CEDES Don Bosco" width="2048" height="661" /></a>;
   if (!data) return <main className="local-loading"><img src="/icon.svg" alt="" /><h1>El camino de la hormiga</h1><p role="status">{loadError || 'Preparando tu próximo descubrimiento…'}</p>{loadError && <button onClick={() => window.location.reload()}>Volver a cargar</button>}</main>;
   if (!user || !progress) return <div className="local-login login-entry">
     <header className="local-header">{brand}<span className="local-pill">DEMO LOCAL</span></header>

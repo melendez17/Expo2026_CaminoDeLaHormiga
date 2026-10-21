@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v12` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v13` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -170,3 +170,5 @@ La clasificación de proyectos destaca hasta tres proyectos con votos y muestra 
 Todos los mapas admiten zoom entre 100% y 400%, botones de acercar/alejar/restablecer, pellizco y desplazamiento por arrastre. Con foco en el mapa, +/− cambian zoom, las flechas desplazan y 0 restablece. Ctrl + rueda también permite ampliar sin capturar el desplazamiento normal de la página. Cambiar entre 2D y 3D restablece la cámara; las zonas y su selección comparten el mismo viewBox. En Retos móvil la imagen ocupa todo el ancho, sin marco blanco, y conserva el tercio superior con controles superpuestos. Las insignias se ocultan temporalmente y el botón de responder tiene fondo transparente con borde e icono verde oscuro.
 
 En el administrador la tabla muestra tokens en vez de iniciales. El encabezado usa la versión blanca original de CEDES Don Bosco extraída del HTML proporcionado; el archivo también se prepara en caché para uso offline.
+
+El mismo logo aparece en login, bienvenida y encabezados del participante: blanco sobre el login oscuro y oscuro sobre las pantallas claras, conservando las proporciones originales.

@@ -1,0 +1,20 @@
+/* Misma marca institucional en login, bienvenida y recorrido. */
+.local-login .local-header .school-brand,
+.journey-app .local-header .school-brand { display: flex; flex: none; width: 172px; }
+.local-login .local-header .school-brand img,
+.journey-app .local-header .school-brand img { display: block; width: 100%; height: auto; max-height: 48px; object-fit: contain; object-position: left center; border-radius: 0; filter: brightness(0); }
+.local-login.login-entry .local-header .school-brand img { filter: none; }
+@media(min-width:800px) and (max-width:1100px) {
+  .journey-app .local-header .school-brand { width: 145px; }
+  .journey-app .local-header .school-brand img { max-height: 34px; }
+}
+@media(max-width:799px) {
+  .local-login .local-header .school-brand,
+  .journey-app .local-header .school-brand { width: 145px; }
+  .local-login .local-header .school-brand img,
+  .journey-app .local-header .school-brand img { max-height: 42px; }
+}
+@media(max-width:360px) {
+  .local-login .local-header .school-brand,
+  .journey-app .local-header .school-brand { width: 125px; }
+}
