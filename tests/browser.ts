@@ -14,6 +14,8 @@ async function main() {
     page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/')) apiCalls.push(request.url()); });
     const nav = (name: string) => page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('button', { name, exact: true });
     await page.goto(base);
+    await page.evaluate(() => document.fonts.ready);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
     await page.getByLabel('Token de acceso').fill('ZZZZ'); await page.getByRole('button', { name: 'Ingresar →' }).click();
     await page.getByRole('alert').filter({ hasText: 'No encontramos ese token' }).waitFor();
     await page.getByLabel('Token de acceso').fill('k8p2'); await page.getByRole('button', { name: 'Ingresar →' }).click();
@@ -27,6 +29,8 @@ async function main() {
     await page.getByRole('button', { name: 'Ubicación: Pequeñas ideas, grandes descubrimientos', exact: true }).click();
     assert.equal(await page.locator('.map-toolbar strong').innerText(), 'Centro infantil Pasitos Pequeños');
     assert.equal(await page.locator('.selected-zone').count(), 1);
+    assert.equal(await page.locator('.challenge-card').first().locator('.place-tag').count(), 1);
+    assert.equal(await page.locator('.challenge-card').first().locator('button.primary-location svg').count(), 1);
     await page.getByRole('button', { name: '2D', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.campus-map image')?.getAttribute('href') === '/campus/map-2d.jpg');
     console.log('PASS JSON login, invalid token, personalized welcome, explicit start, mobile map ratio and highlight');
@@ -98,7 +102,13 @@ async function main() {
 
     await nav('Agenda').click(); await page.getByRole('button', { name: 'Pastoral', exact: true }).click();
     await page.getByRole('heading', { name: 'Un momento para agradecer' }).waitFor();
-    await page.getByRole('button', { name: '⌖ Iglesia', exact: true }).click();
+    await page.getByRole('button', { name: 'Tabla', exact: true }).click();
+    await page.getByRole('table').waitFor();
+    assert.match(await page.getByRole('table').innerText(), /Programa del Sábado/);
+    assert.equal(await page.getByRole('columnheader', { name: 'Hora', exact: true }).count(), 1);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+    await page.getByRole('button', { name: 'Tarjetas', exact: true }).click();
+    await page.getByRole('button', { name: 'Ubicación: Un momento para agradecer', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.map-toolbar strong')?.textContent === 'Iglesia');
     await nav('Mapa completo').click(); await page.getByRole('combobox', { name: 'Ir a un edificio' }).selectOption('19');
     assert.equal(await page.locator('.map-toolbar strong').innerText(), 'Mecánica de Precisión');

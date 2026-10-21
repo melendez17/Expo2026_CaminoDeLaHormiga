@@ -17,7 +17,7 @@ export const localDataSchema = z.object({
   users: z.array(z.object({ id: z.string(), name: z.string().min(2), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']) })).min(1),
   projects: z.array(z.object({ id: z.string(), name: z.string(), buildingId: z.string(), specialty: z.string(), description: z.string() })),
   challenges: z.array(challengeSchema),
-  agenda: z.array(z.object({ id: z.string(), title: z.string(), category: z.enum(['general', 'pastoral', 'radio']), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), buildingId: z.string(), description: z.string() })),
+  agenda: z.array(z.object({ id: z.string(), title: z.string(), category: z.enum(['general', 'pastoral', 'radio']), day: z.string().min(1).default('Sábado'), dayNumber: z.number().int().min(1).max(31).optional(), endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), buildingId: z.string(), description: z.string() })),
   settings: z.object({ dataVersion: z.string(), title: z.string(), baseReward: z.number().int().positive(), extraEvery: z.number().int().positive(), surveyBonus: z.number().int().nonnegative(), extraBatchSize: z.number().int().positive(), radioUrl: z.url().nullable(), agendaNote: z.string() })
 }).superRefine((data, ctx) => {
   if (data.challenges.filter(c => c.isBase).length !== 5) ctx.addIssue({ code: 'custom', message: 'Deben existir cinco retos base' });

@@ -1,6 +1,6 @@
 /* Demo JSON: solo recursos públicos; el progreso vive en localStorage.
    No hay sincronización de API ni peticiones a Supabase. */
-const CACHE = 'camino-shell-json-v2';
+const CACHE = 'camino-shell-json-v3';
 const DATA = ['users', 'projects', 'challenges', 'agenda', 'settings'].map(name => `/data/${name}.json`);
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -12,6 +12,14 @@ self.addEventListener('install', event => {
     await cache.put('/', response);
     const chunks = [...new Set([...html.matchAll(/(?:src|href)="([^"\s]*\/_next\/static\/[^"\s]+)"/g)].map(match => match[1].replaceAll('&amp;', '&')))];
     await cache.addAll(chunks);
+    // La tipografía local debe conservarse también en la primera carga offline.
+    for (const stylesheet of chunks.filter(url => url.split('?')[0].endsWith('.css'))) {
+      const cssResponse = await cache.match(stylesheet);
+      if (!cssResponse) continue;
+      const css = await cssResponse.text();
+      const assets = [...css.matchAll(/url\(["']?([^"')\s]+)["']?\)/g)].map(match => new URL(match[1], new URL(stylesheet, self.location.origin)));
+      await cache.addAll([...new Set(assets.filter(url => url.origin === self.location.origin && url.pathname.startsWith('/_next/static/')).map(url => url.href))]);
+    }
     await self.skipWaiting();
   })());
 });

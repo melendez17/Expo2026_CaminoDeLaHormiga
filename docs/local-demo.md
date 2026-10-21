@@ -98,14 +98,20 @@ La generación elige hasta `extraBatchSize` retos no asignados, aleatoriamente, 
 
 ## Agenda y radio
 
-La agenda usa `time` en formato de 24 horas y categorías `general`, `pastoral` y `radio`. Son horarios de ejemplo, sin fecha real de evento. Cada actividad permite volver al mapa compacto con su zona resaltada.
+La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal dentro de la tabla en móviles). Usa `day` para el día, como `Sábado`, `time` para el inicio y `endTime` opcional para el cierre, en formato de 24 horas, y categorías `general`, `pastoral` y `radio`. Son horarios de ejemplo, sin fecha real de evento. Cada actividad permite volver al mapa compacto con su zona resaltada.
 
 `settings.radioUrl` empieza en `null` para no inventar una transmisión. Al poner una URL de audio compatible aparece un reproductor en la pestaña CEDES Radio. La transmisión requiere su conexión a internet; el resto de la demo no depende de ella.
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v2` prepara mapas, JSON, HTML y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v3` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
 `npm test` incluye las reglas locales y conserva las pruebas SQL de la etapa anterior. `npm run test:browser` usa los JSON reales, sin API de fixture, y verifica que el recorrido no realiza llamadas a `/api`.
+
+## Diseño y referencias visuales
+
+La interfaz se adaptó a las capturas oficiales compartidas en el chat: títulos negros gruesos en mayúsculas, fondos claros con geometría y líneas, acentos verdes y rojo en programación de radio. Se usa Archivo Variable alojada localmente como aproximación tipográfica; no se ha identificado ni descargado la fuente exacta del sitio oficial, cuyo acceso sigue bloqueado en este entorno. No se han inventado logos ni fotografías oficiales.
+
+Ubicación usa un pin SVG y el color primario; los lugares son etiquetas dentro de las tarjetas. La agenda presenta tarjetas y tabla por día, con número de día destacado (`dayNumber`, opcional, entre 1 y 31), numeración de actividades y horarios amplios. El «14 / Sábado» de la demo reproduce la estructura visual de la captura; los horarios y el contenido siguen siendo ejemplos, no programación oficial confirmada.

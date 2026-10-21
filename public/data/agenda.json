@@ -5,7 +5,10 @@
     "category": "general",
     "time": "09:00",
     "buildingId": "7",
-    "description": "Encuentro de apertura en el patio."
+    "description": "Encuentro de apertura en el patio.",
+    "day": "Sábado",
+    "endTime": "09:30",
+    "dayNumber": 14
   },
   {
     "id": "proyectos",
@@ -13,7 +16,10 @@
     "category": "general",
     "time": "10:00",
     "buildingId": "5",
-    "description": "Un recorrido por ideas que transforman."
+    "description": "Un recorrido por ideas que transforman.",
+    "day": "Sábado",
+    "endTime": "11:00",
+    "dayNumber": 14
   },
   {
     "id": "pastoral",
@@ -21,7 +27,10 @@
     "category": "pastoral",
     "time": "11:00",
     "buildingId": "1",
-    "description": "Encuentro de la comunidad educativa."
+    "description": "Encuentro de la comunidad educativa.",
+    "day": "Sábado",
+    "endTime": "11:30",
+    "dayNumber": 14
   },
   {
     "id": "radio",
@@ -29,7 +38,10 @@
     "category": "radio",
     "time": "11:30",
     "buildingId": "9",
-    "description": "Conversaciones con estudiantes y creadores. Ubicación de ejemplo."
+    "description": "Conversaciones con estudiantes y creadores. Ubicación de ejemplo.",
+    "day": "Sábado",
+    "endTime": "12:00",
+    "dayNumber": 14
   },
   {
     "id": "cierre",
@@ -37,6 +49,9 @@
     "category": "general",
     "time": "15:00",
     "buildingId": "7",
-    "description": "Compartimos descubrimientos y experiencias."
+    "description": "Compartimos descubrimientos y experiencias.",
+    "day": "Sábado",
+    "endTime": "15:30",
+    "dayNumber": 14
   }
 ]
