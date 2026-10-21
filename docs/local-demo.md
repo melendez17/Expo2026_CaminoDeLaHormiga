@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v5` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v6` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -138,3 +138,7 @@ El respaldo del catálogo incluye datos iniciales y ediciones, **no** los avance
 El login oscuro se conserva. El recorrido interior usa fondo blanco, tipografía en estilo de oración y una jerarquía compartida de tarjetas: tipo/estado, título, descripción, lugar y acciones. Los estados completados y la selección de respuestas usan SVG; los controles mantienen sus etiquetas y semántica accesible.
 
 En móviles el mapa ocupa aproximadamente el tercio superior del área de retos y la navegación principal queda abajo. En escritorio el mapa aparece como panel lateral junto a la lista. Resumen, votación, agenda, formularios y administración comparten colores, bordes, espaciado y botones. Se comprobó el ajuste desde 320 píxeles de ancho y el flujo funcional se mantiene local con JSON.
+
+### Catálogos compactos
+
+La votación muestra solo nombre, área y botón de voto; la confirmación se expande al seleccionar un proyecto. Los retos usan filas compactas con iconos por área o tipo de visita. En móvil, el mapa conserva el tercio superior y los controles de ubicación y respuesta tienen nombres accesibles. La descripción completa sigue disponible al abrir el reto.
