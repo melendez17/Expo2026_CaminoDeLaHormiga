@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v6` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v7` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -141,4 +141,8 @@ En móviles el mapa ocupa aproximadamente el tercio superior del área de retos 
 
 ### Catálogos compactos
 
-La votación muestra solo nombre, área y botón de voto; la confirmación se expande al seleccionar un proyecto. Los retos usan filas compactas con iconos por área o tipo de visita. En móvil, el mapa conserva el tercio superior y los controles de ubicación y respuesta tienen nombres accesibles. La descripción completa sigue disponible al abrir el reto.
+La votación muestra solo nombre, área y botón de voto; la confirmación se expande al seleccionar un proyecto. Los retos usan filas compactas con el mismo icono de cuaderno: stands amarillo, especialidades morado, escuela azul, tercer ciclo verde y Pasitos rosado. La etiqueta también identifica el área. En móvil, el mapa conserva el tercio superior y los controles de ubicación y respuesta tienen nombres accesibles. La descripción completa sigue disponible al abrir el reto.
+
+### Tema gráfico del administrador
+
+El tema `src/app/admin-theme.css` combina bosque, esmeralda y menta con degradados en el fondo, encabezado y métricas destacadas. Solo se aplica a `.admin-local`; conserva la navegación, secciones, datos y operaciones del panel.

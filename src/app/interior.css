@@ -572,3 +572,11 @@
 .local-app.section-votes .vote-balance small { margin-top: 3px; font-size: 10px; }
 .local-app.section-votes .project-search~.muted { margin: 11px 0; font-size: 11px; }
 .local-app.section-votes .project-grid { margin-top: 12px; }
+
+/* Un mismo cuaderno; el área se distingue por color y etiqueta. */
+.local-app .challenge-type-icon.theme-stands { background: #fff4cc; color: #896600; }
+.local-app .challenge-type-icon.theme-specialty { background: #f1ebff; color: #7151b3; }
+.local-app .challenge-type-icon.theme-school { background: #e8f2ff; color: #2e69ad; }
+.local-app .challenge-type-icon.theme-third-cycle,
+.local-app .challenge-type-icon.theme-campus { background: #e6f5eb; color: #247448; }
+.local-app .challenge-type-icon.theme-pasitos { background: #fce7f1; color: #b03f78; }
