@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v8` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v9` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -150,3 +150,7 @@ El tema `src/app/admin-theme.css` combina bosque, esmeralda y menta con degradad
 ### Composición de retos según referencia
 
 En escritorio la pantalla de retos usa título grande, contadores reales del camino base, navegación numerada, mapa lateral y tarjetas con acciones verde lima y verde oscuro. A partir de 800 px el recorrido desplaza la página completa; en teléfono conserva el mapa en el tercio superior y la lista de retos debajo. El mapa es el recurso real e interactivo, no un marcador de posición.
+
+### Resumen de votos y páginas del visitante
+
+El historial agrupa los votos por proyecto y muestra especialidad, total de votos del participante y fecha del último voto en horario de Costa Rica. La votación permite repetir equipo mientras queden votos; incorpora filtro por área y orden alfabético. Resumen, Votar, Agenda y Mapa comparten la línea gráfica de la pantalla de retos. La agenda tiene una única vista en tabla con días, categorías y ubicación, también en móvil. Los días y actividades provienen del JSON; no se añaden horarios ficticios para completar la referencia.

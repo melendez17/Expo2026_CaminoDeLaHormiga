@@ -6,6 +6,7 @@ import { AppIcon, PinIcon, PlaceTag } from './icons';
 import { AppNavigation } from './app-navigation';
 import { ChallengeCard } from './challenge-card';
 import { EventAgenda } from './event-agenda';
+import { VoteHistory } from './vote-history';
 import { PageIntro } from './page-intro';
 import { LocalAdmin } from './local-admin';
 import { CATALOG_KEY, restoreCatalog, validateCatalogChange } from '@/lib/local-admin';
@@ -81,6 +82,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
+  const [projectArea, setProjectArea] = useState('');
   const [filter, setFilter] = useState<'base' | 'extra'>('base');
   const [online, setOnline] = useState(true);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
@@ -158,7 +160,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   }
   function logout() {
     sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);
-    setMessage(''); setError(''); setVoteTarget(null); setSection('route'); setFilter('base'); setSelected(null); setSearch(''); setResetConfirm(false);
+    setMessage(''); setError(''); setVoteTarget(null); setSection('route'); setFilter('base'); setSelected(null); setSearch(''); setProjectArea(''); setResetConfirm(false);
   }
   function exportProgress() {
     if (!data || !user) return;
@@ -196,7 +198,8 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const remainingExtras = data.challenges.filter(c => !c.isBase && !progress.extraIds.includes(c.id)).length;
   const extraPending = extras.some(c => !done.has(c.id));
   const displayed = filter === 'base' ? data.challenges.filter(c => c.isBase) : extras;
-  const projects = data.projects.filter(p => normalize(p.name + ' ' + p.specialty).includes(normalize(search)));
+  const projects = data.projects.filter(p => (!projectArea || p.specialty === projectArea) && normalize(p.name + ' ' + p.specialty).includes(normalize(search))).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const specialties = [...new Set(data.projects.map(p => p.specialty))].sort((a, b) => a.localeCompare(b, 'es'));
   const badges: [string, boolean][] = [
     ['Paso Infantil', data.challenges.some(c => c.badge === 'infant' && done.has(c.id))],
     ['Descubridor', stats.base >= 3], ['Especialista', data.challenges.some(c => c.kind === 'quiz' && done.has(c.id))],
@@ -205,7 +208,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   function locate(id: string) { setSelected(id); setSection('route'); }
   function renderMap() { return <CampusMap selected={selected} onSelect={setSelected} />; }
 
-  return <div className={`local-app section-${section}`}>
+  return <div className={`local-app journey-app section-${section}`}>
     <header className="local-header">{brand}<div className="local-account"><span>{user.name.split(' ')[0]}<small>{online ? 'Demo local' : 'Sin conexión · modo local'}</small></span><button onClick={logout}>Salir</button></div></header>
     <AppNavigation label="Navegación principal" items={[
       { id: 'route', title: 'Retos', icon: 'route' }, { id: 'dashboard', title: 'Mi resumen', icon: 'dashboard' },
@@ -226,8 +229,8 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
         {stats.routeComplete && filter === 'base' && <section className="extras-card"><h2>¡Terminaste el camino base!</h2><p>Tu primer tiquete ya está disponible. Puedes votar o seguir explorando.</p><div className="row"><button className="primary" onClick={() => setFilter('extra')}>Descubrir más retos</button><button onClick={() => changeSection('votes')}>Ir a votar</button></div></section>}
       </div></>}
 
-      {section === 'dashboard' && <section className="local-section"><PageIntro eyebrow="CADA DESCUBRIMIENTO SUMA" title="Mi resumen" description={`Así va tu camino, ${user.name.split(' ')[0]}. Cada idea que descubres te lleva más lejos.`} /><div className="local-stats"><article><span className="metric-icon"><AppIcon name="ticket"/></span><strong data-testid="ticket-count">{stats.tickets}</strong><span>Tiquetes para la rifa</span></article><article><span className="metric-icon"><AppIcon name="votes"/></span><strong data-testid="available-votes">{stats.votesAvailable}</strong><span>Votos disponibles</span></article><article><span className="metric-icon"><AppIcon name="check"/></span><strong>{progress.completed.length}</strong><span>Retos completados</span></article><article><span className="metric-icon"><AppIcon name="answers"/></span><strong>{progress.votes.length}</strong><span>Votos entregados</span></article></div><p className="reward-rule">5 retos base = {data.settings.baseReward} tiquete · Cada {data.settings.extraEvery} extras = otro. Votar conserva tus tiquetes para la rifa.</p><h2>Tus insignias</h2><div className="badges">{badges.map(([name, unlocked]) => <div key={name} className={`badge ${unlocked ? 'unlocked' : ''}`}><span className="badge-symbol" aria-hidden="true"><AppIcon name={unlocked ? 'award' : 'lock'} width="25" height="25"/></span><strong>{name}</strong><small>{unlocked ? 'Desbloqueada' : 'Por descubrir'}</small></div>)}</div>
-        <h2>Tus votos</h2>{progress.votes.length ? <ul className="vote-history">{progress.votes.map((v, i) => <li key={i}><span><AppIcon name="votes" width="17" height="17"/>{data.projects.find(p => p.id === v.projectId)?.name}</span><small>1 voto</small></li>)}</ul> : <p className="empty">Aún no has votado. Completa el camino base para conseguir tu primer voto.</p>}
+      {section === 'dashboard' && <section className="local-section"><PageIntro eyebrow="CADA DESCUBRIMIENTO SUMA" title="Mi" accent="resumen." sequence="02" description={`Así va tu camino, ${user.name.split(' ')[0]}. Cada idea que descubres te lleva más lejos.`} /><div className="local-stats"><article><span className="metric-icon"><AppIcon name="ticket"/></span><strong data-testid="ticket-count">{stats.tickets}</strong><span>Tiquetes para la rifa</span></article><article><span className="metric-icon"><AppIcon name="votes"/></span><strong data-testid="available-votes">{stats.votesAvailable}</strong><span>Votos disponibles</span></article><article><span className="metric-icon"><AppIcon name="check"/></span><strong>{progress.completed.length}</strong><span>Retos completados</span></article><article><span className="metric-icon"><AppIcon name="answers"/></span><strong>{progress.votes.length}</strong><span>Votos entregados</span></article></div><p className="reward-rule">5 retos base = {data.settings.baseReward} tiquete · Cada {data.settings.extraEvery} extras = otro. Votar conserva tus tiquetes para la rifa.</p><h2>Tus insignias</h2><div className="badges">{badges.map(([name, unlocked]) => <div key={name} className={`badge ${unlocked ? 'unlocked' : ''}`}><span className="badge-symbol" aria-hidden="true"><AppIcon name={unlocked ? 'award' : 'lock'} width="25" height="25"/></span><strong>{name}</strong><small>{unlocked ? 'Desbloqueada' : 'Por descubrir'}</small></div>)}</div>
+        <h2>Tus votos</h2>{progress.votes.length ? <VoteHistory data={data} votes={progress.votes}/> : <p className="empty">Aún no has votado. Completa el camino base para conseguir tu primer voto.</p>}
         {stats.routeComplete && !progress.survey && <section className="survey"><h2>{user.kind === 'applicant' ? 'Tu encuesta de admisión' : 'Cuéntanos tu experiencia'}</h2><p>{user.kind === 'applicant' ? 'Completa la encuesta para cerrar tu proceso de admisión de prueba.' : 'Tu opinión también forma parte del camino.'} Recibirás {data.settings.surveyBonus} tiquete de bono.</p><form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); attempt(() => { mutate(p => p.survey ? p : { ...p, survey: { expectations: String(f.get('expectations')).trim(), interest: String(f.get('interest')).trim(), satisfaction: Number(f.get('satisfaction')) } }); setMessage('Gracias por tu opinión. El bono se añadió a tu resumen.'); }); }}><label>¿Qué esperabas descubrir?<textarea name="expectations" minLength={5} maxLength={1000} required /></label><label>¿Qué área te interesa?<input name="interest" minLength={2} maxLength={160} required /></label><label>¿Cómo fue tu experiencia?<select name="satisfaction">{[5, 4, 3, 2, 1].map(v => <option value={v} key={v}>{v} de 5</option>)}</select></label><button className="primary">Enviar encuesta</button></form></section>}
         {progress.survey && <p className="feedback">Encuesta completada · Bono recibido{user.kind === 'applicant' ? ' · Admisión de prueba completada' : ''}.</p>}
         <details className="local-backup"><summary>Guardar, importar o reiniciar mi prueba</summary><p>Los JSON del proyecto definen los datos iniciales. El navegador conserva tu avance; puedes descargarlo como otro JSON.</p><button onClick={() => attempt(exportProgress)}>Exportar mi progreso JSON</button><label>Importar mi progreso JSON<input type="file" accept="application/json,.json" onChange={async e => { const file = e.target.files?.[0]; e.target.value = ''; if (!file) return; try { if (file.size > 1000000) throw Error('El archivo es demasiado grande.'); const imported = parseProgress(data, user.id, JSON.parse(await file.text())); mutate(() => imported); setMessage('Progreso importado para esta persona.'); setError(''); } catch (e) { setError((e as Error).message); } }} /></label>
@@ -235,16 +238,16 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
         </details>
       </section>}
 
-      {section === 'votes' && <section className="local-section"><header className="vote-heading"><h1>Tu proyecto favorito</h1><p>Busca un proyecto por nombre y dale tu voto.</p></header><div className="vote-balance"><b>{stats.votesAvailable}</b><span>votos disponibles<small>{stats.tickets} tiquetes siguen participando en la rifa</small></span></div><label className="project-search has-search-icon">Buscar proyecto por nombre<span className="search-field"><AppIcon name="search"/><input type="search" value={search} onChange={e => { setSearch(e.target.value); setVoteTarget(null); }} placeholder="Por ejemplo: AquaSmart" /></span></label><p className="muted">{projects.length} {projects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'} · Un tiquete permite un voto.</p>
+      {section === 'votes' && <section className="local-section"><PageIntro eyebrow="TU VOTO CUENTA" sequence="03" title="Tu proyecto" accent="favorito." description="Busca un proyecto por nombre y dale tu voto."/><div className="voting-layout"><aside className="voting-aside"><div className="vote-balance"><b>{stats.votesAvailable}</b><span>votos disponibles<small>{stats.tickets} tiquetes siguen participando en la rifa</small></span></div><div className="vote-explainer"><h2>Cómo funciona</h2><p>Un tiquete permite un voto. Puedes volver a votar por el mismo equipo si tienes votos disponibles. Votar conserva tus tiquetes para la rifa.</p></div></aside><div className="voting-catalog"><label className="project-search has-search-icon">Buscar proyecto por nombre<span className="search-field"><AppIcon name="search"/><input type="search" value={search} onChange={e => { setSearch(e.target.value); setVoteTarget(null); }} placeholder="Por ejemplo: AquaSmart" /></span></label><div className="project-area-filter"><span>Filtrar por área</span><div className="filter-tabs" role="group" aria-label="Filtrar proyectos por área"><button aria-pressed={!projectArea} onClick={() => { setProjectArea(''); setVoteTarget(null); }}>Todas · {data.projects.length}</button>{specialties.map(area => <button key={area} aria-pressed={projectArea === area} onClick={() => { setProjectArea(area); setVoteTarget(null); }}>{area}</button>)}</div></div><p className="muted">{projects.length} {projects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'} · Orden A–Z.</p>
         <div className="project-grid">{projects.map(p => <article className="local-project" key={p.id}>
           <div className="project-identity"><h2>{p.name}</h2><span className="project-area">{p.specialty}</span></div>
           {voteTarget === p.id ? <div className="vote-confirm"><p>¿Usar un voto para {p.name}?</p><div className="row"><button className="primary" onClick={() => attempt(() => { mutate(current => voteLocal(data, current, p.id)); setVoteTarget(null); setMessage(`¡Voto para ${p.name}! Tu tiquete sigue en la rifa.`); })}>Confirmar voto</button><button onClick={() => setVoteTarget(null)}>Cancelar</button></div></div> : <button className="primary project-vote-button" disabled={stats.votesAvailable <= 0} onClick={() => setVoteTarget(p.id)}>Dar 1 voto</button>}
         </article>)}</div>
-        {!projects.length && <p className="empty">No encontramos proyectos con ese nombre. Prueba con otra palabra.</p>}{!stats.votesAvailable && <p className="reward-rule">Completa {stats.routeComplete ? 'dos retos extra' : 'los cinco retos base'} para obtener otro voto.</p>}
+        {!projects.length && <p className="empty">No encontramos proyectos con ese nombre. Prueba con otra palabra.</p>}{!stats.votesAvailable && <p className="reward-rule">Completa {stats.routeComplete ? 'dos retos extra' : 'los cinco retos base'} para obtener otro voto.</p>}</div></div>
       </section>}
 
       {section === 'agenda' && <EventAgenda data={data} onLocate={locate} />}
-      {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus completo" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." />{renderMap()}<button className="primary" onClick={() => changeSection('route')}>Volver a mis retos</button></section>}
+      {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." />{renderMap()}<button className="primary" onClick={() => changeSection('route')}>Volver a mis retos</button></section>}
     </main>
     {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
       const wasComplete = stats.routeComplete;

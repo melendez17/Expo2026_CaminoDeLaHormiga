@@ -1,6 +1,6 @@
 /* Pantalla de retos: composición de la referencia oficial compartida. */
 .navigation-number, .route-hero, .route-card-number { display: none; }
-.local-app.section-route {
+.local-app.journey-app {
   --route-lime: #59be45;
   --route-dark: #071b12;
   background: radial-gradient(ellipse at 90% 0%, #dcefdc 0%, transparent 42%), #f8fcfa;
@@ -23,28 +23,28 @@
 .section-route .compact-challenge .place-tag { border: 1px solid #dce5df; background: white; border-radius: 20px; color: #3f5a49; }
 .section-route .compact-challenge .challenge-category { color: #076449; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 650; }
 @media(min-width:800px) {
-  .local-app.section-route { position: relative; height: 100dvh; overflow-y: auto; overflow-x: hidden; isolation: isolate; }
-  .section-route:before {
+  .local-app.journey-app { position: relative; height: 100dvh; overflow-y: auto; overflow-x: hidden; isolation: isolate; }
+  .journey-app:before {
     content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image: linear-gradient(#275e3710 1px, transparent 1px), linear-gradient(90deg, #275e3710 1px, transparent 1px);
     background-size: 44px 44px;
   }
-  .section-route:after { content: 'EXPOTEC'; position: fixed; bottom: -65px; left: -10px; z-index: -1; color: #087b4b0a; font-size: clamp(150px,24vw,330px); line-height: 1; font-weight: 900; letter-spacing: -.04em; pointer-events: none; }
-  .section-route .local-header { min-height: 68px; height: 68px; padding: 12px 2.6vw; border: 0; background: transparent; }
-  .section-route .local-header .brand { font-size: 11px; gap: 8px; }
-  .section-route .local-header .brand img { width: 30px; height: 30px; border-radius: 9px; }
-  .section-route .local-header .brand small { font-size: 6px; letter-spacing: .09em; }
-  .section-route .local-account { text-align: right; }
-  .section-route .local-header .local-account { font-size: 11px; gap: 10px; }
-  .section-route .local-header .local-account small { font-size: 7px; color: #226d43; text-transform: uppercase; letter-spacing: .05em; }
-  .section-route .local-header button { min-height: 32px; padding: 8px 17px; color: #102a15; background: #59be45; border: 0; border-radius: 30px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 5px 14px #329b3426; }
-  .section-route .participant-navigation { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 5px; min-height: 0; border: 1px solid #e3ede5; border-radius: 16px; background: #ffffffde; box-shadow: 0 9px 25px #177d4c10; }
-  .section-route .participant-navigation .navigation-items { gap: 3px; }
-  .section-route .participant-navigation button { min-height: 32px; padding: 8px 11px; gap: 6px; font-size: 9px; border-radius: 11px; }
-  .section-route .participant-navigation .navigation-label { font-size: 9px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
-  .section-route .participant-navigation .navigation-icon { display: none; }
-  .section-route .participant-navigation .navigation-number { display: inline; color: #0c8951; font-size: 9px; }
-  .section-route .participant-navigation button[aria-current=page] { background: #e0f2d8; border-color: #b9e2af; color: #143920; }
+  .journey-app:after { content: 'EXPOTEC'; position: fixed; bottom: -65px; left: -10px; z-index: -1; color: #087b4b0a; font-size: clamp(150px,24vw,330px); line-height: 1; font-weight: 900; letter-spacing: -.04em; pointer-events: none; }
+  .journey-app .local-header { min-height: 68px; height: 68px; padding: 12px 2.6vw; border: 0; background: transparent; }
+  .journey-app .local-header .brand { font-size: 11px; gap: 8px; }
+  .journey-app .local-header .brand img { width: 30px; height: 30px; border-radius: 9px; }
+  .journey-app .local-header .brand small { font-size: 6px; letter-spacing: .09em; }
+  .journey-app .local-account { text-align: right; }
+  .journey-app .local-header .local-account { font-size: 11px; gap: 10px; }
+  .journey-app .local-header .local-account small { font-size: 7px; color: #226d43; text-transform: uppercase; letter-spacing: .05em; }
+  .journey-app .local-header button { min-height: 32px; padding: 8px 17px; color: #102a15; background: #59be45; border: 0; border-radius: 30px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 5px 14px #329b3426; }
+  .journey-app .participant-navigation { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 5px; min-height: 0; border: 1px solid #e3ede5; border-radius: 16px; background: #ffffffde; box-shadow: 0 9px 25px #177d4c10; }
+  .journey-app .participant-navigation .navigation-items { gap: 3px; }
+  .journey-app .participant-navigation button { min-height: 32px; padding: 8px 11px; gap: 6px; font-size: 9px; border-radius: 11px; }
+  .journey-app .participant-navigation .navigation-label { font-size: 9px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
+  .journey-app .participant-navigation .navigation-icon { display: none; }
+  .journey-app .participant-navigation .navigation-number { display: inline; color: #0c8951; font-size: 9px; }
+  .journey-app .participant-navigation button[aria-current=page] { background: #e0f2d8; border-color: #b9e2af; color: #143920; }
   .section-route .route-hero {
     display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
     flex: none; width: 100%; max-width: 1380px; margin: 0 auto; padding: 35px 2.6vw 35px;
@@ -97,10 +97,10 @@
   .section-route .local-feedback { flex: none; }
 }
 @media(min-width:800px) and (max-width:1100px) {
-  .section-route .participant-navigation button { padding: 7px 8px; }
-  .section-route .participant-navigation .navigation-label { font-size: 8px; }
-  .section-route .local-header .brand { font-size: 10px; }
-  .section-route .local-header .brand small { font-size: 5px; }
+  .journey-app .participant-navigation button { padding: 7px 8px; }
+  .journey-app .participant-navigation .navigation-label { font-size: 8px; }
+  .journey-app .local-header .brand { font-size: 10px; }
+  .journey-app .local-header .brand small { font-size: 5px; }
   .section-route .route-hero { padding-top: 30px; }
   .section-route .route-workspace { gap: 20px; }
   .section-route .compact-challenge,
@@ -117,15 +117,15 @@
   .section-route .compact-challenge .card-actions>.challenge-answer-button { border-radius: 13px; }
 }
 @media(min-width:800px) and (max-width:1100px) {
-  .section-route .local-header { height: 48px; min-height: 48px; padding-top: 8px; padding-bottom: 8px; }
-  .section-route .local-header .brand img { width: 25px; height: 25px; }
-  .section-route .local-header button { min-height: 28px; font-size: 8px; padding: 7px 15px; }
-  .section-route .local-header .local-account { font-size: 9px; }
-  .section-route .local-header .local-account small { font-size: 6px; }
-  .section-route .participant-navigation { top: 8px; left: 53.5%; padding: 4px; border-radius: 14px; }
-  .section-route .participant-navigation button { min-height: 24px; padding: 6px 7px; gap: 5px; border-radius: 9px; }
-  .section-route .participant-navigation .navigation-label { font-size: 7px; }
-  .section-route .participant-navigation .navigation-number { font-size: 7px; }
+  .journey-app .local-header { height: 48px; min-height: 48px; padding-top: 8px; padding-bottom: 8px; }
+  .journey-app .local-header .brand img { width: 25px; height: 25px; }
+  .journey-app .local-header button { min-height: 28px; font-size: 8px; padding: 7px 15px; }
+  .journey-app .local-header .local-account { font-size: 9px; }
+  .journey-app .local-header .local-account small { font-size: 6px; }
+  .journey-app .participant-navigation { top: 8px; left: 53.5%; padding: 4px; border-radius: 14px; }
+  .journey-app .participant-navigation button { min-height: 24px; padding: 6px 7px; gap: 5px; border-radius: 9px; }
+  .journey-app .participant-navigation .navigation-label { font-size: 7px; }
+  .journey-app .participant-navigation .navigation-number { font-size: 7px; }
   .section-route .route-hero { padding-top: 26px; padding-bottom: 28px; }
   .section-route .route-edition { font-size: 7px; gap: 7px; margin-bottom: 12px; }
   .section-route .route-edition>span { width: 28px; }

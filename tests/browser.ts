@@ -90,6 +90,19 @@ async function main() {
     await page.getByLabel('¿Qué área te interesa?').fill('TICs');
     await page.getByRole('button', { name: 'Enviar encuesta', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('[data-testid=ticket-count]')?.textContent === '3');
+    await nav('Votar').click();
+    await page.getByLabel('Buscar proyecto por nombre').fill('AquaSmart');
+    await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirmar voto', exact: true }).click();
+    await nav('Mi resumen').click();
+    const aquaVotes = page.locator('.vote-history li').filter({ hasText: 'AquaSmart' });
+    assert.equal(await aquaVotes.count(), 1);
+    assert.match(await aquaVotes.innerText(), /TICs/);
+    assert.match(await aquaVotes.innerText(), /2 votos/);
+    assert.match(await aquaVotes.innerText(), /Último voto/);
+    await page.reload(); await nav('Mi resumen').click();
+    assert.match(await page.locator('.vote-history').innerText(), /2 votos/);
+    console.log('PASS repeated votes grouped by project with specialty, count, latest date and persistence');
     await page.getByText('Guardar, importar o reiniciar mi prueba', { exact: true }).click();
     const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: 'Exportar mi progreso JSON', exact: true }).click();
     const download = await downloadPromise; const filePath = await download.path(); assert.ok(filePath);
@@ -102,12 +115,11 @@ async function main() {
 
     await nav('Agenda').click(); await page.getByRole('button', { name: 'Pastoral', exact: true }).click();
     await page.getByRole('heading', { name: 'Un momento para agradecer' }).waitFor();
-    await page.getByRole('button', { name: 'Tabla', exact: true }).click();
     await page.getByRole('table').waitFor();
     assert.match(await page.getByRole('table').innerText(), /Programa del Sábado/);
     assert.equal(await page.getByRole('columnheader', { name: 'Hora', exact: true }).count(), 1);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
-    await page.getByRole('button', { name: 'Tarjetas', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Tarjetas', exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Ubicación: Un momento para agradecer', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.map-toolbar strong')?.textContent === 'Iglesia');
     await nav('Mapa completo').click(); await page.getByRole('combobox', { name: 'Ir a un edificio' }).selectOption('19');
