@@ -235,3 +235,13 @@
 @media(max-width:799px) {
   .admin-local .admin-metrics .admin-reward-band>article { padding: 0 10px; }
 }
+.admin-local .local-header .admin-school-brand { display: flex; width: 204px; flex: none; }
+.admin-local .local-header .admin-school-brand img { display: block; width: 100%; height: auto; max-height: 65px; object-fit: contain; border-radius: 0; }
+.participant-token { display: inline-grid; place-items: center; min-width: 50px; height: 34px; padding: 0 8px; border: 1px solid #bfd9c6; background: #e3f1e6; color: #155b36; border-radius: 9px; font-size: 12px; font-weight: 750; letter-spacing: .04em; font-variant-numeric: tabular-nums; flex: none; }
+@media(max-width:799px) {
+  .admin-local .local-header .admin-school-brand { width: 145px; }
+  .admin-local .local-header .admin-school-brand img { max-height: 47px; }
+}
+@media(max-width:360px) {
+  .admin-local .local-header .admin-school-brand { width: 120px; }
+}

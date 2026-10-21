@@ -31,7 +31,25 @@ async function main() {
     assert.equal(await page.locator('.selected-zone').count(), 1);
     assert.equal(await page.locator('.challenge-card').first().locator('.place-tag').count(), 1);
     assert.equal(await page.locator('.challenge-card').first().locator('button.primary-location svg').count(), 1);
+    const mapBox = await page.locator('.campus-map').boundingBox();
+    assert.ok(mapBox && Math.abs(mapBox.width - 390) < 2, 'Mobile route map fills the page width');
+    await page.getByRole('button', { name: 'Acercar mapa', exact: true }).click();
+    assert.ok(Number((await page.locator('.campus-map').getAttribute('viewBox'))!.split(' ')[2]) < 1600);
+    const selectedBeforePan = await page.locator('.map-toolbar strong').textContent();
+    await page.mouse.move(mapBox!.x + mapBox!.width / 2, mapBox!.y + mapBox!.height / 2);
+    await page.mouse.down(); await page.mouse.move(mapBox!.x + mapBox!.width / 2 - 45, mapBox!.y + mapBox!.height / 2, { steps: 5 }); await page.mouse.up();
+    assert.equal(await page.locator('.map-toolbar strong').textContent(), selectedBeforePan, 'Dragging does not select a different building');
+    await page.getByRole('button', { name: 'Restablecer zoom del mapa', exact: true }).click();
+    assert.equal(await page.locator('.campus-map').getAttribute('viewBox'), '0 0 1600 1050');
+    await page.locator('.campus-map').focus(); await page.keyboard.press('+');
+    assert.ok(Number((await page.locator('.campus-map').getAttribute('viewBox'))!.split(' ')[2]) < 1600);
+    await page.keyboard.press('0');
+    await page.locator('.campus-map').dispatchEvent('wheel', { deltaY: -80, ctrlKey: true, clientX: mapBox!.x + mapBox!.width / 2, clientY: mapBox!.y + mapBox!.height / 2, bubbles: true, cancelable: true });
+    await page.waitForFunction(() => Number(document.querySelector('.campus-map')!.getAttribute('viewBox')!.split(' ')[2]) < 1600);
+    await page.getByRole('button', { name: 'Restablecer zoom del mapa', exact: true }).click();
+    await page.getByRole('button', { name: 'Acercar mapa', exact: true }).click();
     await page.getByRole('button', { name: '2D', exact: true }).click();
+    assert.equal(await page.locator('.campus-map').getAttribute('viewBox'), '0 0 1500 1064');
     await page.waitForFunction(() => document.querySelector('.campus-map image')?.getAttribute('href') === '/campus/map-2d.jpg');
     console.log('PASS JSON login, invalid token, personalized welcome, explicit start, mobile map ratio and highlight');
 
@@ -59,6 +77,7 @@ async function main() {
     for (const c of challenges.filter(c => c.isBase)) await complete(c, c.kind === 'quiz');
     assert.equal(await page.locator('.challenge-card.done').count(), 5);
     await nav('Mi resumen').click();
+    assert.equal(await page.getByRole('heading', { name: 'Tus insignias', exact: true }).count(), 0);
     assert.equal(await page.getByTestId('ticket-count').innerText(), '1');
     assert.equal(await page.getByTestId('available-votes').innerText(), '1');
     await nav('Votar').click();
@@ -153,6 +172,7 @@ async function main() {
 
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    assert.equal(await page.evaluate(async () => !!(await caches.match('/brand/cedes-don-bosco-white.png'))), true);
     await context.setOffline(true); await page.reload();
     await nav('Mi resumen').click(); assert.equal(await page.getByTestId('ticket-count').innerText(), '3');
     await page.getByRole('button', { name: 'Salir', exact: true }).click();
@@ -173,6 +193,9 @@ async function main() {
     await page.getByRole('heading', { name: 'Resumen.', exact: true }).waitFor();
     const adminNav = (name: string) => page.getByRole('navigation', { name: 'Administración local' }).getByRole('button', { name, exact: true });
     assert.match(await page.locator('.admin-metrics').innerText(), /Participantes/i);
+    const anaRow = page.locator('.participant-summary-table tbody tr').filter({ hasText: 'Ana Rodríguez' });
+    assert.equal(await anaRow.locator('.participant-token').innerText(), 'K8P2');
+    assert.equal(await page.locator('.admin-school-brand img').getAttribute('src'), '/brand/cedes-don-bosco-white.png');
     await page.getByRole('button', { name: 'Ver respuestas: Ana Rodríguez', exact: true }).click();
     await page.getByRole('heading', { name: 'Respuestas por participante', exact: true }).waitFor();
     const quizCard = page.locator('.participant-answer-card').filter({ has: page.getByRole('heading', { name: challenges.find(c => c.id === 'tics')!.title, exact: true }) });

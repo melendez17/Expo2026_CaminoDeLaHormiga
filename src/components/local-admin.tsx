@@ -99,7 +99,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   const field = (label: string, name: string, defaultValue = '', required = true) => <label>{label}<input name={name} defaultValue={defaultValue} required={required} maxLength={160} /></label>;
   const location = (value = '7') => <label>Edificio<select name="buildingId" defaultValue={value}>{Object.entries(names).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>;
 
-  return <div className={`local-app admin-local ${tab === 'overview' ? 'admin-overview-active' : ''}`}><header className="local-header"><a className="brand" href="/"><img src="/icon.svg" alt="" /><span>CEDES <b>DON BOSCO</b><small>EXPOTEC · PANEL LOCAL</small></span></a><div className="local-account"><span>{actor.name}<small>Administrador de prueba</small></span><button onClick={onLogout}>Salir</button></div></header>
+  return <div className={`local-app admin-local ${tab === 'overview' ? 'admin-overview-active' : ''}`}><header className="local-header"><a className="brand admin-school-brand" href="/" aria-label="CEDES Don Bosco, inicio"><img src="/brand/cedes-don-bosco-white.png" alt="CEDES Don Bosco" width="2048" height="661" /></a><div className="local-account"><span>{actor.name}<small>Administrador de prueba</small></span><button onClick={onLogout}>Salir</button></div></header>
     <AppNavigation label="Administración local" admin items={[
       { id: 'overview', title: 'Resumen', icon: 'dashboard' }, { id: 'users', title: 'Usuarios', icon: 'users' },
       { id: 'challenges', title: 'Retos', icon: 'route' }, { id: 'projects', title: 'Proyectos', icon: 'projects' },

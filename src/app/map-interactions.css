@@ -1,0 +1,25 @@
+/* La cámara cambia el viewBox; imagen, polígonos y selección se mueven juntos. */
+.map-viewport { position: relative; width: 100%; min-width: 0; min-height: 0; flex: none; }
+.local-app .map-panel .map-viewport .campus-map { display: block; width: 100%; height: 100%; max-height: none; aspect-ratio: auto; touch-action: none; user-select: none; }
+.map-viewport.is-zoomed .campus-map { cursor: grab; }
+.map-viewport.is-zoomed .campus-map:active { cursor: grabbing; }
+.map-zoom-controls { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 3px; padding: 3px; border: 1px solid #d9e6dc; border-radius: 10px; background: #fafffbed; }
+.local-app .map-zoom-controls button { display: grid; place-items: center; min-width: 32px; min-height: 32px; padding: 3px 7px; border: 0; background: transparent; color: #174e32; font-size: 21px; border-radius: 7px; line-height: 1; }
+.local-app .map-zoom-controls button:hover:not(:disabled) { background: #e0f1df; }
+.local-app .map-zoom-controls button:disabled { color: #7d9283; opacity: 1; }
+.local-app .map-zoom-controls .map-zoom-reset { font-size: 10px; min-width: 44px; font-variant-numeric: tabular-nums; }
+@media(max-width:799px) {
+  .local-app.section-route .compact-map { padding: 0; border: 0; background: transparent; }
+  .local-app.section-route .compact-map .map-panel { position: relative; top: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .local-app.section-route .compact-map .map-viewport { flex: 1; width: 100%; height: 100%; aspect-ratio: auto!important; }
+  .local-app.section-route .compact-map .map-viewport .campus-map { border: 0; border-radius: 0; background: transparent; }
+  .local-app.section-route .compact-map .map-toolbar { position: absolute; z-index: 2; inset: 10px 12px auto; margin: 0; pointer-events: none; align-items: flex-start; gap: 10px; }
+  .local-app.section-route .compact-map .map-toolbar>div:first-child { max-width: 65%; border-radius: 12px; background: #fafffbed; padding: 7px 10px; }
+  .local-app.section-route .compact-map .map-toolbar .eyebrow { display: none; }
+  .local-app.section-route .compact-map .map-toolbar strong { font-size: 10px; color: #23553b; }
+  .local-app.section-route .compact-map .segmented { pointer-events: auto; background: #fafffbed; padding: 3px; border-radius: 25px; flex: none; }
+  .local-app.section-route .compact-map .segmented button { border-radius: 25px; min-height: 28px; }
+  .local-app.section-route .compact-map .map-select { display: none!important; }
+  .local-app .map-zoom-controls { left: 8px; bottom: 8px; padding: 2px; }
+  .local-app .map-zoom-controls button { min-width: 32px; min-height: 32px; }
+}

@@ -1,11 +1,11 @@
 /* Demo JSON: solo recursos públicos; el progreso vive en localStorage.
    No hay sincronización de API ni peticiones a Supabase. */
-const CACHE = 'camino-shell-json-v11';
+const CACHE = 'camino-shell-json-v12';
 const DATA = ['users', 'projects', 'challenges', 'agenda', 'settings'].map(name => `/data/${name}.json`);
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(['/icon.svg', '/manifest.webmanifest', '/campus/map-2d.jpg', '/campus/map-3d.jpg', ...DATA]);
+    await cache.addAll(['/icon.svg', '/brand/cedes-don-bosco-white.png', '/manifest.webmanifest', '/campus/map-2d.jpg', '/campus/map-3d.jpg', ...DATA]);
     const response = await fetch('/', { cache: 'reload' });
     if (!response.ok) throw Error('No se pudo preparar la pantalla inicial');
     const html = await response.clone().text();
@@ -29,7 +29,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || event.request.method !== 'GET') return;
-  const allowed = url.pathname === '/' || url.pathname === '/icon.svg' || url.pathname === '/manifest.webmanifest' || url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/campus/') || DATA.includes(url.pathname);
+  const allowed = url.pathname === '/' || url.pathname === '/icon.svg' || url.pathname === '/manifest.webmanifest' || url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/campus/') || url.pathname.startsWith('/brand/') || DATA.includes(url.pathname);
   if (!allowed || event.request.headers.has('RSC') || event.request.headers.has('Next-Router-State-Tree')) return;
   event.respondWith(fetch(event.request).then(response => {
     if (response.ok && response.type === 'basic') {

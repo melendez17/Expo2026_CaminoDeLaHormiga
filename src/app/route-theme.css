@@ -14,11 +14,11 @@
 }
 .section-route .compact-challenge .card-actions>.primary-location:hover { background: #48a935; border-color: #48a935; }
 .section-route .compact-challenge .card-actions>.challenge-answer-button {
-  background: var(--route-dark); color: white; border-color: var(--route-dark); border-radius: 30px;
+  background: transparent; color: #174e32; border-color: #174e32; border-radius: 30px;
 }
-.section-route .compact-challenge .challenge-answer-button>svg { background: #64c64d; border-radius: 50%; padding: 3px; width: 24px; height: 24px; color: #10251a; }
-.section-route .compact-challenge .card-actions>.challenge-answer-button:hover:not(:disabled) { background: #163b26; color: white; border-color: #163b26; }
-.section-route .compact-challenge .card-actions>.challenge-answer-button:disabled { background: #e8f1e9; color: #48654e; border-color: #d3e1d5; }
+.section-route .compact-challenge .challenge-answer-button>svg { background: transparent; border-radius: 0; padding: 0; width: 24px; height: 24px; color: #174e32; }
+.section-route .compact-challenge .card-actions>.challenge-answer-button:hover:not(:disabled) { background: transparent; color: #0b3821; border-color: #0b3821; }
+.section-route .compact-challenge .card-actions>.challenge-answer-button:disabled { background: transparent; color: #637b6b; border-color: #b5c8bc; }
 .section-route .compact-challenge h2 { font-weight: 850; letter-spacing: -.025em; text-transform: uppercase; color: #06180f; }
 .section-route .compact-challenge .place-tag { border: 1px solid #dce5df; background: white; border-radius: 20px; color: #3f5a49; }
 .section-route .compact-challenge .challenge-category { color: #076449; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 650; }

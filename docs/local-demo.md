@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v11` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v12` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -164,3 +164,9 @@ El mapa completo usa un panel lateral con búsqueda de todos los lugares, conteo
 El resumen destaca los participantes que completaron los cinco retos base, la distribución de estados y los totales de tiquetes/votos. La tabla incluye búsqueda, filtros por estado, orden por nombre/avance/tiquetes y páginas de 10, 25 o 50 personas. Los progresos inválidos se señalan y no suman premios ni votos.
 
 La clasificación de proyectos destaca hasta tres proyectos con votos y muestra los demás en páginas de diez, con búsqueda por nombre o especialidad. Cuenta todos los votos válidos, incluidos los repetidos a un mismo equipo. Los empates comparten posición; los proyectos con cero votos no reciben posición. Las pruebas usan un catálogo aislado de 125 proyectos y 25 participantes, sin añadirlos a los JSON de la demo.
+
+### Zoom y ajustes móviles
+
+Todos los mapas admiten zoom entre 100% y 400%, botones de acercar/alejar/restablecer, pellizco y desplazamiento por arrastre. Con foco en el mapa, +/− cambian zoom, las flechas desplazan y 0 restablece. Ctrl + rueda también permite ampliar sin capturar el desplazamiento normal de la página. Cambiar entre 2D y 3D restablece la cámara; las zonas y su selección comparten el mismo viewBox. En Retos móvil la imagen ocupa todo el ancho, sin marco blanco, y conserva el tercio superior con controles superpuestos. Las insignias se ocultan temporalmente y el botón de responder tiene fondo transparente con borde e icono verde oscuro.
+
+En el administrador la tabla muestra tokens en vez de iniciales. El encabezado usa la versión blanca original de CEDES Don Bosco extraída del HTML proporcionado; el archivo también se prepara en caché para uso offline.
