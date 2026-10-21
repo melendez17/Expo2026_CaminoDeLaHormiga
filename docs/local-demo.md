@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v7` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v8` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -146,3 +146,7 @@ La votación muestra solo nombre, área y botón de voto; la confirmación se ex
 ### Tema gráfico del administrador
 
 El tema `src/app/admin-theme.css` combina bosque, esmeralda y menta con degradados en el fondo, encabezado y métricas destacadas. Solo se aplica a `.admin-local`; conserva la navegación, secciones, datos y operaciones del panel.
+
+### Composición de retos según referencia
+
+En escritorio la pantalla de retos usa título grande, contadores reales del camino base, navegación numerada, mapa lateral y tarjetas con acciones verde lima y verde oscuro. A partir de 800 px el recorrido desplaza la página completa; en teléfono conserva el mapa en el tercio superior y la lista de retos debajo. El mapa es el recurso real e interactivo, no un marcador de posición.

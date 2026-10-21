@@ -212,6 +212,10 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       { id: 'votes', title: 'Votar', icon: 'votes' }, { id: 'agenda', title: 'Agenda', icon: 'agenda' }, { id: 'map', title: 'Mapa completo', icon: 'map' }
     ] as const} active={section} onChange={changeSection}/>
     {(message || error) && <div className={error ? 'local-feedback is-error' : 'local-feedback'} role={error ? 'alert' : 'status'}>{error || message}<button onClick={() => { setError(''); setMessage(''); }} aria-label="Cerrar mensaje"><AppIcon name="close" width="16" height="16"/></button></div>}
+    {section === 'route' && <section className="route-hero" aria-label="Tu recorrido en ExpoTEC">
+      <div><p className="route-edition">01 <span/> FERIA TECNOLÓGICA · EXPOTEC 2026</p><h1>TUS<br/><em>RETOS.</em></h1><p className="route-hero-description">{stats.routeComplete ? '¡Lo lograste! Sigue explorando para ganar más tiquetes.' : 'Completa cinco retos y gana tu primer tiquete.'}</p></div>
+      <div className="route-hero-counts"><div><span>COMPLETADOS</span><strong>{String(stats.base).padStart(2, '0')}</strong></div><div><span>META</span><strong>05</strong></div></div>
+    </section>}
     <main className={section === 'route' ? 'route-workspace' : 'local-content'}>
       {section === 'route' && <><div className="compact-map">{renderMap()}<div className="desktop-map-guide"><span className="map-guide-icon"><PinIcon/></span><div><h2>Tu siguiente parada, a un clic.</h2><p>Usa el botón Ubicación de cualquier reto para ver dónde realizarlo.</p><button onClick={() => changeSection('map')}>Abrir mapa completo<AppIcon name="arrow" width="16" height="16"/></button></div></div></div><div className="route-scroll" ref={scrollRef}>
         <section className="route-overview"><div className="route-heading"><div><h1>Tu camino, {user.name.split(' ')[0]}.</h1></div><button className="route-wallet" onClick={() => changeSection('dashboard')} aria-label="Ver mis tiquetes"><AppIcon name="ticket"/><strong>{stats.tickets}</strong><span>{stats.tickets === 1 ? 'tiquete' : 'tiquetes'}</span></button></div>

@@ -19,7 +19,7 @@ export function ChallengeCard({ challenge, index, completed, specialty, place, o
 }) {
   const group = category(challenge, place, specialty);
   return <article className={`challenge-card compact-challenge ${completed ? 'done' : ''}`}>
-    <span className={`challenge-type-icon theme-${group.tone}`}><AppIcon name="quiz"/></span>
+    <span className={`challenge-type-icon theme-${group.tone}`}><AppIcon name="quiz"/><small className="route-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</small></span>
     <div className="challenge-content">
       <span className="challenge-category">{group.name}<span className="sr-only"> · Reto {index + 1} · {challenge.isBase ? 'Camino base' : 'Extra'}</span></span>
       <h2>{challenge.title}</h2>
