@@ -170,7 +170,7 @@ async function main() {
     await page.getByRole('alert').filter({ hasText: 'solo para administradores' }).waitFor();
     await page.getByLabel('Token de acceso').fill('ADM1');
     await page.getByRole('button', { name: 'Ingresar →' }).click();
-    await page.getByRole('heading', { name: 'Panel de administración', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Resumen.', exact: true }).waitFor();
     const adminNav = (name: string) => page.getByRole('navigation', { name: 'Administración local' }).getByRole('button', { name, exact: true });
     assert.match(await page.locator('.admin-metrics').innerText(), /Participantes/i);
     await page.getByRole('button', { name: 'Ver respuestas: Ana Rodríguez', exact: true }).click();
@@ -246,6 +246,59 @@ async function main() {
     assert.deepEqual(apiCalls, []); assert.deepEqual(errors, []);
     console.log('PASS local admin access, participant denial, duplicate token, CRUD, persistence, catalog import/export, CSV and new-user login');
     await context.close();
+    // Catálogo grande aislado: nunca modifica los JSON ni el navegador anterior.
+    const large = Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))]));
+    for (let i = 1; i <= 120; i++) large.projects.push({ id: `large-${i}`, name: `Proyecto de prueba ${String(i).padStart(3, '0')}`, specialty: 'TICs', buildingId: '17', description: 'Solo para la prueba del catálogo grande.' });
+    for (let i = 1; i <= 21; i++) large.users.push({ id: `extra-user-${i}`, name: `Persona de prueba ${String(i).padStart(2,'0')}`, token: `V${String(i).padStart(3,'0')}`, kind: 'visitor', role: 'participant' });
+    const stressContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const stress = await stressContext.newPage();
+    await stress.goto(base + '/admin');
+    await stress.getByLabel('Token de acceso').waitFor();
+    await stress.evaluate(({ catalog, progress }) => {
+      localStorage.setItem('camino-local-catalog-v1', JSON.stringify(catalog));
+      localStorage.setItem('camino-local:demo-2026-v1:ana', JSON.stringify({ ...progress, votes: [0,1,2].map(() => ({ projectId: 'agua', at: '2026-10-21T12:00:00.000Z' })) }));
+      localStorage.setItem('camino-local:demo-2026-v1:carlos', JSON.stringify({ ...progress, userId: 'carlos', votes: ['energia','energia','casa'].map(projectId => ({ projectId, at: '2026-10-21T12:00:00.000Z' })) }));
+    }, { catalog: large, progress: exported });
+    await stress.reload();
+    await stress.getByLabel('Token de acceso').fill('ADM1');
+    await stress.getByRole('button', { name: 'Ingresar →' }).click();
+    await stress.getByRole('heading', { name: 'Resumen.', exact: true }).waitFor();
+    assert.equal(await stress.locator('.project-podium article').count(), 3);
+    assert.match(await stress.locator('.podium-slot-1').innerText(), /AquaSmart/);
+    assert.match(await stress.locator('.podium-slot-2').innerText(), /Energía en movimiento/);
+    assert.match(await stress.locator('.podium-slot-3').innerText(), /Casa del futuro/);
+    assert.equal(await stress.locator('.compact-ranking>li').count(), 10);
+    const projectPages = stress.getByRole('navigation', { name: 'Páginas de votos por proyecto' });
+    await projectPages.getByRole('button', { name: 'Siguiente →', exact: true }).click();
+    assert.match(await projectPages.innerText(), /11–20/);
+    await stress.getByLabel('Buscar en votos por proyecto').fill('AquaSmart');
+    assert.equal(await stress.locator('.compact-ranking>li').count(), 1);
+    assert.match(await stress.locator('.compact-ranking').innerText(), /3/);
+    await stress.getByLabel('Buscar en votos por proyecto').fill('no existe');
+    assert.equal(await stress.locator('.compact-ranking>li').count(), 0);
+    await stress.getByLabel('Buscar en votos por proyecto').fill('');
+    const peoplePages = stress.getByRole('navigation', { name: 'Páginas de participantes' });
+    assert.equal(await stress.locator('.participant-summary-table tbody tr').count(), 10);
+    await peoplePages.getByRole('button', { name: 'Siguiente →', exact: true }).click();
+    assert.match(await peoplePages.innerText(), /11–20/);
+    await stress.getByLabel('Buscar participante por nombre').fill('Ana');
+    assert.equal(await stress.locator('.participant-summary-table tbody tr').count(), 1);
+    await stress.getByRole('button', { name: 'Ver respuestas: Ana Rodríguez', exact: true }).click();
+    await stress.getByRole('heading', { name: 'Respuestas por participante', exact: true }).waitFor();
+    await stress.getByRole('navigation', { name: 'Administración local' }).getByRole('button', { name: 'Resumen', exact: true }).click();
+    if (process.env.ADMIN_SCREENSHOT_PATH) {
+      await stress.locator('.admin-local').evaluate(el => el.scrollTop = 0);
+      await stress.screenshot({ path: process.env.ADMIN_SCREENSHOT_PATH });
+      await stress.locator('.project-leaderboard').evaluate(el => el.scrollIntoView({ block: 'start' }));
+      await stress.screenshot({ path: process.env.ADMIN_SCREENSHOT_PATH.replace('.png', '-ranking.png') });
+      await stress.setViewportSize({ width: 390, height: 844 });
+      await stress.locator('.admin-local').evaluate(el => el.scrollTop = 0);
+      await stress.screenshot({ path: process.env.ADMIN_SCREENSHOT_PATH.replace('.png', '-mobile.png') });
+    }
+    await stress.setViewportSize({ width: 320, height: 844 });
+    assert.equal(await stress.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await stressContext.close();
+    console.log('PASS admin: 125 projects, real top three, reduced ranking, search, pagination, 25 participants, detail links and mobile');
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

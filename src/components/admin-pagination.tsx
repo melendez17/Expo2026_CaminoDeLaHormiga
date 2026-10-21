@@ -1,0 +1,3 @@
+export function AdminPagination({ page, pageCount, total, size, onChange, label }: { page: number; pageCount: number; total: number; size: number; onChange: (page: number) => void; label: string }) {
+  return <nav className="admin-pagination" aria-label={label}><span>Mostrando <b>{total ? (page - 1) * size + 1 : 0}–{Math.min(page * size, total)}</b> de {total}</span><div><button disabled={page <= 1} onClick={() => onChange(page - 1)}>← Anterior</button><span aria-live="polite">{page} / {pageCount}</span><button disabled={page >= pageCount} onClick={() => onChange(page + 1)}>Siguiente →</button></div></nav>;
+}

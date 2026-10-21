@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v10` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v11` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -158,3 +158,9 @@ El historial agrupa los votos por proyecto y muestra especialidad, total de voto
 ### Explorador del campus
 
 El mapa completo usa un panel lateral con búsqueda de todos los lugares, conteos de retos asignados y detalles de la selección: retos completados y actividades del JSON. Inicialmente lista las paradas del recorrido y permite mostrar los 19 lugares. Seleccionar desde el mapa o la lista actualiza el mismo estado; se mantienen las vistas 2D y 3D. En móvil el panel aparece debajo del mapa.
+
+### Resumen administrativo y clasificación
+
+El resumen destaca los participantes que completaron los cinco retos base, la distribución de estados y los totales de tiquetes/votos. La tabla incluye búsqueda, filtros por estado, orden por nombre/avance/tiquetes y páginas de 10, 25 o 50 personas. Los progresos inválidos se señalan y no suman premios ni votos.
+
+La clasificación de proyectos destaca hasta tres proyectos con votos y muestra los demás en páginas de diez, con búsqueda por nombre o especialidad. Cuenta todos los votos válidos, incluidos los repetidos a un mismo equipo. Los empates comparten posición; los proyectos con cero votos no reciben posición. Las pruebas usan un catálogo aislado de 125 proyectos y 25 participantes, sin añadirlos a los JSON de la demo.
