@@ -7,7 +7,11 @@ export function restoreCatalog(base: LocalData, storage: StorageReader): LocalDa
   if (!raw) return base;
   const value = localDataSchema.safeParse(JSON.parse(raw));
   if (!value.success || value.data.settings.dataVersion !== base.settings.dataVersion) throw Error('El catálogo local no es compatible. Exporta o revisa su respaldo antes de reemplazarlo.');
-  return value.data;
+  // Añade días nuevos del JSON también a catálogos editados antes de esta versión.
+  // Las actividades de días ya presentes en el catálogo local se conservan.
+  const existingDays = new Set(value.data.agenda.map(event => event.day));
+  const newDays = base.agenda.filter(event => !existingDays.has(event.day));
+  return newDays.length ? { ...value.data, agenda: [...value.data.agenda, ...newDays] } : value.data;
 }
 export function adminRows(data: LocalData, storage: StorageReader) {
   return data.users.filter(u => u.role !== 'admin').map(user => {

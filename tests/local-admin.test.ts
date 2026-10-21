@@ -50,3 +50,20 @@ test('corrupción no se cuenta como cero y bloquea sobrescritura incompatible', 
   assert.equal(adminRows(data, reader).find(r => r.user.id === 'ana')?.status, 'Revisar datos');
   assert.throws(() => validateCatalogChange(data, data, 'admin', reader), /Revisa los datos/);
 });
+
+test('catálogos anteriores incorporan los días nuevos sin reemplazar actividades ni usuarios editados', () => {
+  const saved = structuredClone(data);
+  saved.agenda = saved.agenda.filter(event => event.day === 'Sábado');
+  saved.agenda[0].title = 'Apertura editada en este navegador';
+  saved.users[0].name = 'Nombre editado';
+  const restored = restoreCatalog(data, { getItem: () => JSON.stringify(saved) });
+  assert.deepEqual([...new Set(restored.agenda.map(event => event.day))].sort(), ['Domingo','Sábado','Viernes']);
+  assert.equal(restored.agenda.find(event => event.id === saved.agenda[0].id)?.title, 'Apertura editada en este navegador');
+  assert.equal(restored.users[0].name, 'Nombre editado');
+  assert.deepEqual(restoreCatalog(data, { getItem: () => JSON.stringify(restored) }), restored);
+  const customFriday = data.agenda.find(event => event.day === 'Viernes')!;
+  saved.agenda.push({ ...customFriday, title: 'Viernes personalizado' });
+  const custom = restoreCatalog(data, { getItem: () => JSON.stringify(saved) });
+  assert.equal(custom.agenda.filter(event => event.day === 'Viernes').length, 1);
+  assert.equal(custom.agenda.find(event => event.day === 'Viernes')?.title, 'Viernes personalizado');
+});

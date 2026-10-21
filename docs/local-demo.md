@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v13` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v14` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -172,3 +172,7 @@ Todos los mapas admiten zoom entre 100% y 400%, botones de acercar/alejar/restab
 En el administrador la tabla muestra tokens en vez de iniciales. El encabezado usa la versión blanca original de CEDES Don Bosco extraída del HTML proporcionado; el archivo también se prepara en caché para uso offline.
 
 El mismo logo aparece en login, bienvenida y encabezados del participante: blanco sobre el login oscuro y oscuro sobre las pantallas claras, conservando las proporciones originales.
+
+### Agenda de los tres días
+
+La agenda de prueba incluye viernes 13, sábado 14 y domingo 15 de noviembre, ordenados por fecha, con categorías General, Pastoral y CEDES Radio. Las actividades de viernes y domingo son ficticias para la demo; no constituyen programación oficial. La selección inicial sigue siendo sábado. Se emplea verde oscuro en los días, filas y ubicaciones. Los días nuevos del JSON se incorporan también al restaurar catálogos locales antiguos, conservando las actividades de los días que ya estaban presentes y todo el progreso.

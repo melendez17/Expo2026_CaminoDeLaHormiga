@@ -12,8 +12,8 @@ function formatTime(time: string) {
 const categories = [['general', 'General'], ['pastoral', 'Pastoral'], ['radio', 'CEDES Radio']] as const;
 export function EventAgenda({ data, onLocate }: { data: LocalData; onLocate: (id: string) => void }) {
   const [category, setCategory] = useState('general');
-  const days = [...new Set(data.agenda.map(event => event.day))];
-  const [day, setDay] = useState(days[0] ?? 'Sábado');
+  const days = [...new Set(data.agenda.map(event => event.day))].sort((a, b) => (data.agenda.find(event => event.day === a)?.dayNumber ?? 0) - (data.agenda.find(event => event.day === b)?.dayNumber ?? 0));
+  const [day, setDay] = useState(days.includes('Sábado') ? 'Sábado' : days[0] ?? 'Sábado');
   const events = data.agenda.filter(event => event.day === day && event.category === category).sort((a, b) => a.time.localeCompare(b.time));
   const dayNumber = data.agenda.find(event => event.day === day)?.dayNumber;
   return <section className={`local-section agenda-section agenda-category-${category}`}>

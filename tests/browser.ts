@@ -139,6 +139,22 @@ async function main() {
     assert.equal(await page.getByRole('columnheader', { name: 'Hora', exact: true }).count(), 1);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
     assert.equal(await page.getByRole('button', { name: 'Tarjetas', exact: true }).count(), 0);
+    await page.getByRole('button', { name: /viernes/i }).click();
+    await page.getByRole('heading', { name: 'Un momento para encontrarnos', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'General', exact: true }).click();
+    await page.getByRole('heading', { name: 'Abrimos las puertas a la curiosidad', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'CEDES Radio', exact: true }).click();
+    await page.getByRole('heading', { name: 'Las voces que abren ExpoTEC', exact: true }).waitFor();
+    assert.equal(await page.locator('.schedule-day-number').evaluate(el => getComputedStyle(el).color), 'rgb(22, 75, 48)');
+    await page.getByRole('button', { name: /domingo/i }).click();
+    await page.getByRole('heading', { name: 'Historias para llevar a casa', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'General', exact: true }).click();
+    await page.getByRole('heading', { name: 'Pequeños inventores en familia', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Pastoral', exact: true }).click();
+    await page.getByRole('heading', { name: 'Gracias por lo que construimos juntos', exact: true }).waitFor();
+    await page.getByRole('button', { name: /sábado/i }).click();
+    console.log('PASS agenda: Friday, Saturday, Sunday, all categories and green day number');
+
     await page.getByRole('button', { name: 'Ubicación: Un momento para agradecer', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.map-toolbar strong')?.textContent === 'Iglesia');
     await nav('Mapa completo').click(); await page.getByRole('searchbox', { name: 'Ir a un edificio' }).fill('Mecánica de Precisión');
