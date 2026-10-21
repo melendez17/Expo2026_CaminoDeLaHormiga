@@ -84,3 +84,7 @@ Para probar offline, abre primero la aplicación con conexión y espera la insta
 - `tests/local-game.test.ts` y `tests/browser.ts`: pruebas de la experiencia local.
 
 El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`, `src/lib/server.ts` y `supabase/`, pero **no participa en este frontend**. `/admin` abre el acceso administrativo local con `ADM1`, sin Supabase. Las guías de [arquitectura](docs/architecture.md), [base de datos](docs/database.md), [API](docs/api.md) y [operación](docs/operations.md) describen esa futura integración; la guía vigente para esta entrega es [Demo local JSON](docs/local-demo.md).
+
+## Publicar en Vercel
+
+La demo puede publicarse sin variables de entorno usando la rama `implementacion-v0.1`. Consulta [la guía de publicación](docs/vercel.md); `vercel.json` incluye la configuración de Next.js.
