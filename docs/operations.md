@@ -1,5 +1,7 @@
 # Operación, offline y pendientes
 
+> Referencia de la etapa Supabase. La experiencia activa es la [demo local con JSON](local-demo.md), sin conexión al backend.
+
 ## Offline
 
 La PWA guarda las respuestas primero en IndexedDB. Cada fila conserva participante, UUID de solicitud, fecha, respuesta y código hasta su validación. La cola no mezcla cuentas: antes de sincronizar consulta `/api/me` y solo envía elementos de esa sesión. Una sesión vencida detiene la sincronización y requiere reactivar el token. Un token también vencido requiere intervención del puesto de registro; la reemisión todavía no tiene interfaz propia.

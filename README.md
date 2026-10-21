@@ -1,37 +1,56 @@
-# El camino de la hormiga · ExpoTEC 2026
+# El camino de la hormiga · Demo local JSON
 
-Base inicial de una PWA para CEDES Don Bosco: **Next.js 16, React 19, TypeScript y PostgreSQL/Supabase**. Reutiliza las imágenes y los 19 polígonos 2D/3D del HTML adjunto `MapasInteractivosCEDES_V1.1 (3).html`. Los prototipos originales de `Pruebas/` se conservan.
+Frontend de ExpoTEC para CEDES Don Bosco, con **Next.js, React y TypeScript**. Esta versión funciona con archivos JSON y progreso guardado en el navegador: **no necesita Supabase, credenciales ni una API**.
 
-## Ejecutar
+## Probar en VS Code
 
-Requisitos: Node.js 24 LTS y npm. Desde la raíz del repositorio:
+Requisitos: Node.js 24 LTS y npm. Abre la carpeta del proyecto y ejecuta:
 
 ```bash
 npm ci
-cp .env.example .env.local
 npm run dev
 ```
 
-Sin credenciales se puede explorar el mapa y una propuesta de retos, identificada como **vista de ejemplo**. El registro, la activación y los premios requieren una base real; no se simulan sesiones ni se conceden tiquetes en el navegador.
+Abre la dirección que muestra la terminal (puerto 3000 por defecto). No hace falta crear `.env.local`. Para detenerlo, presiona Ctrl+C.
 
-Para conectar Supabase:
+| Token | Persona ficticia | Perfil |
+|---|---|---|
+| `K8P2` | Ana Rodríguez | Postulante |
+| `M4T7` | Carlos Méndez | Visitante |
+| `S6F3` | Sofía Vargas | Postulante |
+| `D9C5` | Diego Castro | Visitante |
 
-1. Crea un proyecto de **desarrollo** y ejecuta, en orden, los SQL de `supabase/migrations/` mediante el editor SQL o tu flujo habitual de migraciones. Estas migraciones crean tablas nuevas; no ejecutarlas sobre datos de producción sin revisión y respaldo.
-2. Opcionalmente ejecuta `supabase/seed.example.sql` en desarrollo. Contiene retos y respuestas ficticios, sin códigos de acceso ni cuentas de personal. No representa la agenda oficial. Sustituye ubicaciones, proyectos, preguntas y respuestas antes del evento.
-3. Configura `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TOKEN_PEPPER` y `APP_ORIGIN` en `.env.local` o en el gestor seguro del alojamiento. Genera un pepper aleatorio de al menos 32 bytes. No lo cambies sin planificar la reemisión de códigos: los hashes existentes dependen de él. **La clave de servicio y el pepper son exclusivos del servidor** y nunca llevan prefijo `NEXT_PUBLIC_`.
-4. Crea la primera cuenta de personal en Supabase Auth y agrega su UUID a `public.staff` con el rol `admin`. El registro público de Supabase Auth debe quedar deshabilitado para este flujo de personal. Para producción configura MFA para administradores y un flujo que lo exija antes de habilitar operaciones sensibles; esta base usa contraseña y validación del rol, sin desafío MFA implementado.
-5. Inicia el servidor, entra en `/admin`, registra un participante y entrega el token de cuatro caracteres. Desde el panel puedes generar códigos de stand; por defecto son de un solo uso.
+## Recorrido
 
-Ejemplo de alta del primer administrador (reemplaza el UUID por el usuario creado en Auth):
+1. **Login:** ingresa un token de `public/data/users.json`.
+2. **Bienvenida:** aparece el nombre de la persona y el botón «Iniciar el camino».
+3. **Retos:** el mapa ocupa aproximadamente un tercio del espacio disponible arriba; los retos se desplazan en los dos tercios inferiores. «Ubicación» resalta el edificio y «Hacer reto» abre el formulario.
+4. **Especialidades:** dos preguntas de selección única, visualmente «marca con X», más código de stand. Las respuestas incorrectas permiten volver a intentar sin otorgar premios.
+5. **Más retos:** tras los cinco base, genera rondas de dos extras sin repetir. Completa la ronda antes de pedir otra. Al agotarse el catálogo, añade más entradas al JSON.
+6. **Mi resumen:** tiquetes, votos disponibles, retos, votos emitidos, insignias y encuesta con bono.
+7. **Votar:** busca por nombre de proyecto o especialidad y confirma a cuál entregar un voto. Puedes repartir votos o apoyar varias veces un proyecto si tienes saldo.
+8. **Agenda y mapa completo:** accesos independientes desde la navegación principal.
 
-```sql
-insert into public.staff(user_id, role, display_name)
-values ('UUID-DE-AUTH', 'admin', 'Administrador ExpoTEC');
-```
+Cinco retos base → **1 tiquete y 1 voto**. Cada dos retos extra → **otro tiquete y voto**. Votar consume el voto, pero conserva el tiquete para la rifa. La encuesta entrega un bono inicial de 1, configurable.
 
-La activación exige exactamente cinco retos base activos. Los retos se asignan al registrar: cinco base, los extras disponibles y un único reto del santo elegido al azar. No cambies las reglas de un reto ni su condición de base cuando ya haya participantes; publica una nueva edición para cambios de reglas.
+Los usuarios, proyectos, horarios, respuestas y ubicaciones de actividades son ejemplos para pruebas; los polígonos y mapas vienen del HTML adjunto. Cada diálogo tiene «Ayuda para probar este reto» con sus respuestas/código de ejemplo. Esos datos son públicos deliberadamente en esta demo; no es autenticación ni validación antifraude de producción.
 
-## Validación
+## Editar los JSON
+
+| Archivo | Contenido |
+|---|---|
+| `public/data/users.json` | Personas, tokens de cuatro caracteres y perfiles |
+| `public/data/projects.json` | Proyectos buscables para votación |
+| `public/data/challenges.json` | Retos base y extras, ubicación, preguntas, respuestas y códigos |
+| `public/data/agenda.json` | Agenda general, pastoral y radio |
+| `public/data/settings.json` | Reglas de tiquetes, tamaño de ronda, bono, versión y transmisión opcional |
+| `src/lib/campus.json` | Nombres y polígonos del mapa original |
+
+Mantén exactamente cinco retos con `isBase: true`, IDs y tokens únicos, y zonas válidas del mapa (1–19). `correctIndex` empieza en cero. Los datos se validan al cargar. Revisa [la guía de la demo](docs/local-demo.md) para añadir contenido.
+
+El navegador no puede modificar automáticamente los archivos del repositorio. Guarda el avance como JSON en **localStorage**, separado por usuario. Desde **Mi resumen → Guardar, importar o reiniciar mi prueba** puedes exportar un archivo JSON, importarlo para la misma persona o reiniciar solo su prueba. Cambiar de usuario conserva los avances. Nada se comparte automáticamente entre dispositivos.
+
+## Pruebas y modo sin conexión
 
 ```bash
 npm run typecheck
@@ -40,24 +59,23 @@ npm run build
 npm start
 ```
 
-Con `npm start` activo en otra terminal, puedes ejecutar `npm run test:browser` después de instalar Chromium con `npx playwright install chromium`. Para usar un Chromium del sistema: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium npm run test:browser`. El ensayo de offline se realiza sobre el build de producción, no sobre el servidor de desarrollo. Parte de la prueba de cola utiliza una API de fixture; la lógica de premios se valida con SQL real por separado.
+Con `npm start` activo en otra terminal:
 
-Las pruebas SQL ejecutan las migraciones reales en PGlite, un motor PostgreSQL local en WebAssembly, con un esquema `auth` de prueba. Cubren idempotencia, premios, consumo de códigos, permisos, votación y sorteo. No sustituyen una prueba contra el proyecto real de Supabase, PostgREST y Auth.
+```bash
+npx playwright install chromium
+npm run test:browser
+```
 
-## Regla acordada
+Con Chromium del sistema: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium npm run test:browser`. `BASE_URL` permite usar otro puerto. La prueba del navegador recorre el flujo completo con los JSON reales, incluyendo login, quiz incorrecto/correcto, tiquetes, votos, extras, encuesta, importación/exportación, cambio de usuario y funcionamiento sin conexión. No simula una API.
 
-- Cinco retos base completos → **un tiquete**.
-- Cada dos retos adicionales → **otro tiquete**, una vez completados los cinco base.
-- Cada tiquete permite un voto; emitirlo **no elimina** la participación en la rifa.
-- La encuesta es obligatoria para completar admisión de postulantes. `route_completed_at` y `admission_completed_at` son independientes. El estado del recorrido sigue siendo «Completado» al continuar jugando.
-- El bono de encuesta se configura en `settings.survey_bonus`; valor inicial propuesto: **1**. La encuesta no puede cobrar el bono dos veces.
-- Los hitos se muestran como insignias. El progreso y los premios solo se confirman con respuestas del servidor.
+Para probar offline, abre primero la aplicación con conexión y espera la instalación del service worker. Después de preparar el build de producción, podrás recargar, entrar con otro usuario JSON y completar retos sin conexión. El servidor de desarrollo puede cambiar los archivos de JavaScript durante la edición; verifica offline sobre `npm run build` + `npm start`.
 
-## Documentación
+## Estructura
 
-- [Arquitectura, capacidad y decisiones](docs/architecture.md)
-- [Tablas, tipos y relaciones](docs/database.md)
-- [Endpoints y ejemplos](docs/api.md)
-- [Offline, seguridad y pendientes de producción](docs/operations.md)
+- `src/components/journey.tsx`: pantallas y navegación local.
+- `src/components/campus-map.tsx`: mapa 2D/3D con polígonos seleccionables.
+- `src/lib/local-game.ts`: validación, premios, generación de extras y votación.
+- `public/data/`: fuente de datos de la demo.
+- `tests/local-game.test.ts` y `tests/browser.ts`: pruebas de la experiencia local.
 
-Esta entrega es una **base funcional de desarrollo**. Pendientes de integración: credenciales Supabase, catálogo y agenda oficiales, proveedor de consulta por cédula, URL de radio, envío programado de push, PDF/XLSX nativos y prueba de carga con 4.000 sesiones. La exportación implementada es CSV compatible con Excel. No se ha desplegado en un servicio público.
+El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`, `src/lib/server.ts` y `supabase/`, pero **no participa en este frontend**. `/admin` solo indica cómo volver a la demo. Las guías de [arquitectura](docs/architecture.md), [base de datos](docs/database.md), [API](docs/api.md) y [operación](docs/operations.md) describen esa futura integración; la guía vigente para esta entrega es [Demo local JSON](docs/local-demo.md).

@@ -1,5 +1,7 @@
 # Esquema relacional
 
+> Referencia de la etapa Supabase. La experiencia activa es la [demo local con JSON](local-demo.md), sin conexión al backend.
+
 Fuente ejecutable: [migración inicial](../supabase/migrations/202610210001_initial.sql) y [funciones administrativas](../supabase/migrations/202610210002_admin.sql). Todos los tiempos son `timestamptz`, los IDs de entidades son UUID salvo zonas del mapa y auditoría. Las claves externas y restricciones se aplican en PostgreSQL, no solo en TypeScript.
 
 ```mermaid

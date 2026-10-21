@@ -1,5 +1,7 @@
 # Arquitectura y decisiones
 
+> Referencia de la etapa Supabase. La experiencia activa es la [demo local con JSON](local-demo.md), sin conexión al backend.
+
 ## Stack acordado
 
 Next.js con App Router y TypeScript sirve la interfaz y la API Node.js. PostgreSQL/Supabase almacena los datos y aplica las transacciones; Supabase Auth autentica exclusivamente al personal. El visitante activa un código corto y recibe una cookie opaca `HttpOnly`, `SameSite=Strict`, con `Secure` en producción. Los datos personales y la clave de servicio nunca se incluyen en el catálogo público.

@@ -1,5 +1,7 @@
 # API inicial
 
+> Referencia de la etapa Supabase. La experiencia activa es la [demo local con JSON](local-demo.md), sin conexión al backend.
+
 Base: `/api`. Respuestas JSON, salvo el informe CSV. Errores: `{ "error": "mensaje" }`. Las mutaciones exigen cabecera `Origin` igual a `APP_ORIGIN`. Los POST reciben JSON de hasta 16 KB. No hay una clave Supabase pública necesaria en el navegador.
 
 ## Acceso

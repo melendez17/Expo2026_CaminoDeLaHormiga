@@ -1,0 +1,42 @@
+[
+  {
+    "id": "bienvenida",
+    "title": "Bienvenida a ExpoTEC",
+    "category": "general",
+    "time": "09:00",
+    "buildingId": "7",
+    "description": "Encuentro de apertura en el patio."
+  },
+  {
+    "id": "proyectos",
+    "title": "Explora el pabellón de especialidades",
+    "category": "general",
+    "time": "10:00",
+    "buildingId": "5",
+    "description": "Un recorrido por ideas que transforman."
+  },
+  {
+    "id": "pastoral",
+    "title": "Un momento para agradecer",
+    "category": "pastoral",
+    "time": "11:00",
+    "buildingId": "1",
+    "description": "Encuentro de la comunidad educativa."
+  },
+  {
+    "id": "radio",
+    "title": "Voces de ExpoTEC",
+    "category": "radio",
+    "time": "11:30",
+    "buildingId": "9",
+    "description": "Conversaciones con estudiantes y creadores. Ubicación de ejemplo."
+  },
+  {
+    "id": "cierre",
+    "title": "Celebramos el camino recorrido",
+    "category": "general",
+    "time": "15:00",
+    "buildingId": "7",
+    "description": "Compartimos descubrimientos y experiencias."
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "dataVersion": "demo-2026-v1",
+  "title": "El camino de la hormiga",
+  "baseReward": 1,
+  "extraEvery": 2,
+  "surveyBonus": 1,
+  "extraBatchSize": 2,
+  "radioUrl": null,
+  "agendaNote": "Programación de ejemplo para probar la navegación; no es la agenda oficial."
+}

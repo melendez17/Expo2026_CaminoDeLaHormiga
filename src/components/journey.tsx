@@ -1,73 +1,226 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
-import type { AgendaEvent, Catalog, Challenge, VisitorState } from '@/lib/contracts';
-import { DEMO_CATALOG } from '@/lib/demo';
-import { clearPending, enqueue, pending, removePending, syncPending, type Pending } from '@/lib/offline';
+
+import { useEffect, useRef, useState } from 'react';
 import { CampusMap } from './campus-map';
-type Tab='route'|'agenda'|'rewards';
-async function request(path:string,data?:unknown){const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data),cache:'no-store'});const result=await r.json();if(!r.ok)throw new Error(result.error??'No se pudo completar la solicitud.');return result;}
-export function Journey(){
- const [catalog,setCatalog]=useState<Catalog>(DEMO_CATALOG),[me,setMe]=useState<VisitorState|null>(null),[selected,setSelected]=useState<string|null>(null),[tab,setTab]=useState<Tab>('route'),[active,setActive]=useState<Challenge|null>(null),[message,setMessage]=useState(''),[online,setOnline]=useState(true),[queue,setQueue]=useState<Pending[]>([]),[busy,setBusy]=useState(false),[token,setToken]=useState(''),[category,setCategory]=useState<AgendaEvent['category']>('general'),[filter,setFilter]=useState('base');
- const refresh=useCallback(async()=>{
-  const items=await pending().catch(()=>[]);setQueue(items);
-  try{const r=await fetch('/api/me',{cache:'no-store'});if(r.ok){const state=await r.json();setMe(state);sessionStorage.setItem('camino-visitor',JSON.stringify(state));}else if(r.status===401){setMe(null);sessionStorage.removeItem('camino-visitor');}}catch{/* La vista conserva el último progreso confirmado, nunca adjudica premios locales. */}
- },[]);
- useEffect(()=>{
-  let alive=true;
-  fetch('/api/catalog').then(r=>{if(!r.ok)throw Error();return r.json();}).then(c=>{if(alive)setCatalog(c.configured?c:DEMO_CATALOG);}).catch(()=>setMessage('No pudimos actualizar el catálogo. Puedes consultar el mapa.'));
-  try{const saved=sessionStorage.getItem('camino-visitor');if(saved)setMe(JSON.parse(saved));}catch{}
-  setOnline(navigator.onLine);void refresh();
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>setMessage('El modo sin conexión no está disponible en este navegador.'));
-  const sync=()=>{setOnline(navigator.onLine);if(navigator.onLine)void syncPending().then(refresh).catch(()=>{});};
-  const onMessage=()=>void refresh();window.addEventListener('online',sync);window.addEventListener('offline',sync);navigator.serviceWorker?.addEventListener('message',onMessage);
-  const timer=window.setInterval(sync,30000);sync();
-  return()=>{alive=false;window.clearInterval(timer);window.removeEventListener('online',sync);window.removeEventListener('offline',sync);navigator.serviceWorker?.removeEventListener('message',onMessage);};
- },[refresh]);
- const completed=new Set(me?.completed??[]),base=catalog.challenges.filter(c=>c.is_base&&completed.has(c.id)).length;
- const available=catalog.challenges.filter(c=>(!me||me.assigned.includes(c.id))&&(filter==='base'?c.is_base:!c.is_base));
- const myQueue=queue.filter(q=>q.participantId===me?.id);
- async function activate(e:React.FormEvent){e.preventDefault();setBusy(true);try{const user=await request('auth/activate',{token});setMe(user);sessionStorage.setItem('camino-visitor',JSON.stringify(user));setToken('');setMessage(`¡Bienvenido, ${user.firstName}! Tu camino comienza aquí.`);await syncPending();await refresh();}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
- async function logout(){setBusy(true);try{await request('auth/logout',{});await clearPending();sessionStorage.removeItem('camino-visitor');setMe(null);setQueue([]);setActive(null);setMessage('Sesión cerrada. Se borraron los borradores locales.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
- async function submitChallenge(e:React.FormEvent<HTMLFormElement>){
-  e.preventDefault();if(!me||!active)return;setBusy(true);
-  const data=new FormData(e.currentTarget),answers:Record<string,unknown>={};
-  if(active.kind==='freeform')for(const key of ['projectName','level','description'])answers[key]=String(data.get(key)??'');
-  if(active.kind==='saint')answers.saint=String(data.get('saint')??'');
-  if(active.kind==='quiz_code'){const quiz:Record<string,number>={};for(const q of catalog.questions.filter(q=>q.challenge_id===active.id))quiz[q.id]=Number(data.get(q.id));answers.quiz=quiz;}
-  const requestId=crypto.randomUUID();
-  const payload={requestId,participantId:me.id,challengeId:active.id,answers,code:active.kind==='code'||active.kind==='quiz_code'?String(data.get('code')).trim().toUpperCase():undefined};
-  try{
-   await enqueue({id:requestId,participantId:me.id,payload,createdAt:Date.now()});setActive(null);setMessage('Respuesta guardada en este dispositivo. Pendiente de validación del servidor.');
-   if(navigator.onLine)await syncPending();await refresh();
-  }catch{setMessage('No se pudo guardar. Conserva esta pantalla e inténtalo de nuevo.');}finally{setBusy(false);}
- }
- async function submitSurvey(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);const data=new FormData(e.currentTarget);try{const user=await request('survey',{expectations:data.get('expectations'),satisfaction:Number(data.get('satisfaction')),interest:data.get('interest')});setMe(user);sessionStorage.setItem('camino-visitor',JSON.stringify(user));setMessage('Encuesta recibida. Tu bono ya está disponible.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
- async function vote(projectId:string){const ticket=me?.tickets.find(t=>!t.spent);if(!ticket)return;setBusy(true);try{setMe(await request('votes',{projectId,ticketId:ticket.id}));setMessage('Voto registrado. Tu tiquete sigue participando en la rifa.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
- const surveyDue=!!me?.routeCompletedAt&&!me.surveySubmitted;
- return <><header className="site-header"><a href="/" className="brand"><span className="brand-mark" aria-hidden="true">✦</span><span>CEDES <b>DON BOSCO</b><small>CIENCIA · TECNOLOGÍA · ENCUENTRO</small></span></a><div className="header-right"><span className="event-tag">EXPOTEC 2026</span><span className={`connection ${online?'':'offline'}`}><i/>{online?'En línea':'Sin conexión'}</span></div></header>
- <main className="app-shell"><section className="welcome"><div><p className="eyebrow">CADA PASO CUENTA</p><h1>El camino de<br/><em>la hormiga.</em></h1><p>Un campus lleno de ideas.<br className="mobile-only"/> Un recorrido que haces tuyo.</p></div><div className="journey-stamp" aria-hidden="true"><img src="/icon.svg" alt=""/><span>EXPLORA · DESCUBRE · CONECTA</span></div></section>
- {!catalog.configured&&<aside className="notice">Vista de ejemplo · Conecta Supabase y carga el catálogo del evento para activar tokens y guardar progreso. Las ubicaciones de retos son propuestas.</aside>}
- <div role="status" aria-live="polite" className={message?'feedback':''}>{message}</div>
- <div className="journey-grid"><CampusMap selected={selected} onSelect={setSelected}/><section className="activity-panel">
- <nav className="tabs" aria-label="Tu experiencia">{([['route','Mi camino'],['agenda','Agenda'],['rewards','Mis tiquetes']] as const).map(([key,label])=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)}>{label}</button>)}</nav>
- {tab==='route'&&<>
- {!me?<form className="activation" onSubmit={activate}><div><span className="eyebrow">¿LISTO PARA EMPEZAR?</span><h2>Activa tu camino</h2><p>Pide tu token en un punto de registro.</p></div><label htmlFor="token">Tu token de 4 caracteres</label><div className="token-row"><input id="token" value={token} onChange={e=>setToken(e.target.value.toUpperCase())} placeholder="K8P2" maxLength={4} pattern="[A-Z0-9]{4}" autoComplete="off" required/><button className="primary" disabled={!catalog.configured||busy||!online}>Comenzar →</button></div></form>:<div className="progress-card"><div className="row"><div><span className="eyebrow">TU RECORRIDO</span><h2>¡Hola, {me.firstName}!</h2></div><button className="text-button" onClick={logout} disabled={busy||myQueue.length>0} title={myQueue.length?'Sincroniza o elimina tus respuestas pendientes antes de salir.':undefined}>Salir</button></div><div className="row"><span>{me.routeCompletedAt?'Camino completado. ¡Sigue explorando!':'Cinco descubrimientos para completar tu camino'}</span><b>{base}/5</b></div><progress max={5} value={base}/><small>5 retos base = 1 tiquete · Cada 2 extras = otro tiquete</small></div>}
- {myQueue.length>0&&<section className="pending"><h3>Respuestas por sincronizar ({myQueue.length})</h3>{myQueue.map(item=><div key={item.id}><p>{catalog.challenges.find(c=>c.id===item.payload.challengeId)?.title}<small>{item.error??'Esperando conexión y validación.'}</small></p><button onClick={async()=>{await removePending(item.id);await refresh();setMessage('Borrador eliminado. Puedes responder el reto nuevamente.');}}>Eliminar borrador</button></div>)}<button onClick={()=>syncPending().then(refresh).catch(()=>setMessage('Sin conexión. Reintentaremos después.'))}>Sincronizar ahora</button></section>}
- {surveyDue&&<section className="survey"><span className="eyebrow">TU OPINIÓN NOS AYUDA</span><h2>{me.kind==='applicant'?'Completa tu proceso de admisión':'¿Cómo viviste el camino?'}</h2><p>{me.kind==='applicant'?'La encuesta es obligatoria para completar admisión. Puedes seguir explorando retos.':'Comparte tu experiencia y recibe un bono.'}</p><form onSubmit={submitSurvey}><label>¿Qué esperabas descubrir?<textarea name="expectations" minLength={5} maxLength={1000} required/></label><label>¿Qué área te interesa?<input name="interest" minLength={2} maxLength={160} required/></label><label>Tu experiencia<select name="satisfaction"><option value="5">5 · Excelente</option><option value="4">4 · Muy buena</option><option value="3">3 · Buena</option><option value="2">2 · Regular</option><option value="1">1 · Puede mejorar</option></select></label><button className="primary" disabled={busy||!online}>Enviar encuesta</button></form></section>}
- <div className="section-heading"><div><span className="eyebrow">UNA NUEVA HISTORIA EN CADA PARADA</span><h2>Descubre tu siguiente reto</h2></div></div><div className="filter-tabs"><button aria-pressed={filter==='base'} onClick={()=>setFilter('base')}>El camino base <span>5</span></button><button aria-pressed={filter==='extra'} onClick={()=>setFilter('extra')}>Sigue explorando</button></div>
- <div className="challenge-list">{available.map((c,index)=>{const done=completed.has(c.id),queued=myQueue.some(q=>q.payload.challengeId===c.id);return <article className={`challenge-card ${done?'done':''}`} key={c.id}><div className="challenge-number" aria-hidden="true">{done?'✓':String(index+1).padStart(2,'0')}</div><div className="challenge-content"><span className="eyebrow">{done?'COMPLETADO':c.is_base?'RETO BASE':'RETO EXTRA'}</span><h3>{c.title}</h3><p>{c.description}</p><div className="card-actions"><button className="location-button" onClick={()=>setSelected(c.building_id)}>⌖ Ubicación</button><button className="text-button" disabled={!me||done||queued||busy} onClick={()=>{setActive(c);setSelected(c.building_id);}}>{done?'Listo':queued?'Pendiente de validar':'Responder →'}</button></div></div></article>;})}{available.length===0&&<p className="empty">Aún no hay retos en esta sección.</p>}</div>
- </>}
- {tab==='agenda'&&<section className="agenda"><span className="eyebrow">ENCUENTRA TU PRÓXIMO MOMENTO</span><h2>Hoy en ExpoTEC</h2><div className="filter-tabs">{(['general','pastoral','radio'] as const).map(c=><button key={c} aria-pressed={category===c} onClick={()=>setCategory(c)}>{c==='general'?'General':c==='pastoral'?'Pastoral':'CEDES Radio'}</button>)}</div>{catalog.events.filter(e=>e.category===category).map(e=><article className="agenda-card" key={e.id}><time>{new Intl.DateTimeFormat('es-CR',{timeZone:'America/Costa_Rica',hour:'2-digit',minute:'2-digit'}).format(new Date(e.starts_at))}</time><div><h3>{e.title}</h3><button className="location-button" onClick={()=>setSelected(e.building_id)}>⌖ Ver ubicación</button></div></article>)}{!catalog.events.some(e=>e.category===category)&&<p className="empty">La programación se publicará aquí cuando esté confirmada.</p>}<p className="muted">Los horarios se muestran en hora de Costa Rica.</p></section>}
- {tab==='rewards'&&<section className="rewards"><span className="eyebrow">TUS DESCUBRIMIENTOS SUMAN</span><h2>Pequeños pasos. Grandes logros.</h2><div className="ticket-summary"><strong>{me?.tickets.length??0}</strong><div>Tiquetes para la rifa<small>{me?.tickets.filter(t=>!t.spent).length??0} votos disponibles</small></div></div><p>Usa cada voto en tu proyecto favorito. Todos tus tiquetes siguen participando en la rifa.</p><div className="badges">{[
- ['Paso Infantil',catalog.challenges.some(c=>c.building_id==='8'&&completed.has(c.id))],['Descubridor',base>=3],['Especialista',catalog.challenges.some(c=>c.kind==='quiz_code'&&completed.has(c.id))],['Momento ExpoTEC',catalog.challenges.some(c=>c.badge_key==='moment'&&completed.has(c.id))],['Hormiga de Oro',!!me?.routeCompletedAt]
- ].map(([name,unlocked])=><div className={unlocked?'badge unlocked':'badge'} key={String(name)}><span aria-hidden="true">✦</span><strong>{name}</strong><small>{unlocked?'Desbloqueada':'Por descubrir'}</small></div>)}</div><h3>Elige tu proyecto favorito</h3>{catalog.projects.map(p=><article className="vote-card" key={p.id}><div><h4>{p.name}</h4><p>{p.description}</p></div><button className="primary" disabled={busy||!online||!me?.tickets.some(t=>!t.spent)} onClick={()=>vote(p.id)}>Dar 1 voto</button></article>)}{!catalog.projects.length&&<p className="empty">Los proyectos participantes aún no están publicados.</p>}</section>}
- </section></div><footer className="site-footer"><span>CEDES Don Bosco · ExpoTEC 2026</span><span>Explorar también es aprender.</span><a href="/admin">Acceso del personal ↗</a></footer></main>
- {catalog.radioUrl&&<aside className="radio-player"><strong>● CEDES Radio</strong><audio controls preload="none" src={catalog.radioUrl}>Tu navegador no admite audio.</audio></aside>}
- {active&&<div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="challenge-title" className="modal"><div className="row"><span className="eyebrow">REGISTRA TU DESCUBRIMIENTO</span><button aria-label="Cerrar reto" onClick={()=>setActive(null)}>✕</button></div><h2 id="challenge-title">{active.title}</h2><p>{active.description}</p><form onSubmit={submitChallenge}>
- {active.kind==='freeform'&&<><label>Nombre del proyecto<input name="projectName" minLength={2} maxLength={160} required autoFocus/></label><label>Nivel<input name="level" maxLength={80} required/></label><label>¿Qué descubriste?<textarea name="description" minLength={10} maxLength={1000} required/></label></>}
- {active.kind==='saint'&&<label>Nombre del santo escrito en el edificio<input name="saint" maxLength={120} required autoFocus/></label>}
- {active.kind==='quiz_code'&&catalog.questions.filter(q=>q.challenge_id===active.id).map(q=><fieldset key={q.id}><legend>{q.prompt}</legend>{q.options.map((option,i)=><label className="radio-option" key={i}><input type="radio" name={q.id} value={i} required/>{option}</label>)}</fieldset>)}
- {(active.kind==='code'||active.kind==='quiz_code')&&<label>Código entregado por el encargado<input name="code" maxLength={4} pattern="[A-Za-z0-9]{4}" required autoComplete="off"/></label>}
- <p className="muted">Sin conexión, guardaremos la respuesta aquí. Los tiquetes se confirman al sincronizar.</p><button className="primary" disabled={busy}>Guardar respuesta</button></form></section></div>}
- </>;
+import campus from '@/lib/campus.json';
+import {
+  completeLocal, findUser, freshProgress, generateExtras, localDataSchema,
+  normalize, parseProgress, storageKey, summary, voteLocal,
+  type Answers, type LocalChallenge, type LocalData, type LocalProgress, type LocalUser
+} from '@/lib/local-game';
+
+type Section = 'route' | 'dashboard' | 'votes' | 'agenda' | 'map';
+const names: Record<string, string> = campus.names;
+const SESSION_KEY = 'camino-local-user';
+
+function readProgress(data: LocalData, userId: string) {
+  const saved = localStorage.getItem(storageKey(data, userId));
+  return saved ? parseProgress(data, userId, JSON.parse(saved)) : freshProgress(data, userId);
+}
+
+function ChallengeDialog({ challenge, onClose, onComplete }: {
+  challenge: LocalChallenge; onClose: () => void; onComplete: (answers: Answers) => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    const dialog = ref.current;
+    const previous = document.activeElement as HTMLElement | null;
+    dialog?.showModal();
+    return () => { dialog?.close(); previous?.focus(); };
+  }, []);
+  return <dialog ref={ref} className="modal local-dialog" onCancel={onClose} aria-labelledby="challenge-title">
+    <div className="row"><span className="eyebrow">{challenge.kind === 'quiz' ? 'ESPECIALIDAD · MARCA CON X' : 'UN NUEVO DESCUBRIMIENTO'}</span><button type="button" onClick={onClose} aria-label="Cerrar reto">✕</button></div>
+    <h2 id="challenge-title">{challenge.title}</h2><p>{challenge.description}</p>
+    <form onSubmit={e => {
+      e.preventDefault();
+      const answers = Object.fromEntries(new FormData(e.currentTarget)) as Answers;
+      try { onComplete(answers); } catch (e) { setError((e as Error).message); }
+    }}>
+      {challenge.kind === 'freeform' && <>
+        <label>Nombre del proyecto<input name="projectName" minLength={2} maxLength={160} required /></label>
+        <label>Nivel<input name="level" maxLength={80} required placeholder="Por ejemplo: quinto grado" /></label>
+        <label>¿Qué descubriste?<textarea name="description" minLength={10} maxLength={1000} required /></label>
+      </>}
+      {challenge.kind === 'quiz' && challenge.questions?.map((q, index) => <fieldset key={q.id}>
+        <legend>{index + 1}. {q.prompt}</legend>
+        {q.options.map((option, i) => <label className="radio-option quiz-option" key={i}>
+          <input type="radio" name={q.id} value={i} required /><span className="answer-cross" aria-hidden="true">×</span><span>{option}</span>
+        </label>)}
+      </fieldset>)}
+      {['quiz', 'code'].includes(challenge.kind) && <label>Código del stand<input name="code" maxLength={4} pattern="[A-Za-z0-9]{4}" required autoComplete="off" placeholder="4 caracteres" /></label>}
+      {challenge.kind === 'saint' && <label>Nombre del santo<input name="saint" required maxLength={120} /></label>}
+      {challenge.kind !== 'freeform' && <details className="demo-help"><summary>Ayuda para probar este reto</summary>
+        <p>Estos datos son ficticios y están en <code>challenges.json</code>.</p>
+        {challenge.questions?.map(q => <p key={q.id}>{q.prompt}<br /><b>{q.options[q.correctIndex]}</b></p>)}
+        {challenge.code && <p>Código de prueba: <b>{challenge.code}</b></p>}
+        {challenge.answer && <p>Respuesta de prueba: <b>{challenge.answer}</b></p>}
+      </details>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="primary" type="submit">Completar reto</button>
+    </form>
+  </dialog>;
+}
+
+export function Journey() {
+  const [data, setData] = useState<LocalData | null>(null);
+  const [user, setUser] = useState<LocalUser | null>(null);
+  const [progress, setProgress] = useState<LocalProgress | null>(null);
+  const [token, setToken] = useState('');
+  const [section, setSection] = useState<Section>('route');
+  const [selected, setSelected] = useState<string | null>(null);
+  const [active, setActive] = useState<LocalChallenge | null>(null);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('general');
+  const [filter, setFilter] = useState<'base' | 'extra'>('base');
+  const [online, setOnline] = useState(true);
+  const [voteTarget, setVoteTarget] = useState<string | null>(null);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'] as const;
+      const values = await Promise.all(keys.map(async key => {
+        const response = await fetch(`/data/${key}.json`, { cache: 'no-cache' });
+        if (!response.ok) throw Error(`No se pudo cargar ${key}.json.`);
+        return response.json();
+      }));
+      const parsed = localDataSchema.parse(Object.fromEntries(keys.map((key, i) => [key, values[i]])));
+      for (const c of parsed.challenges) if (!names[c.buildingId]) throw Error('Un reto tiene una zona del mapa desconocida.');
+      if (!alive) return;
+      setData(parsed);
+      try {
+        const id = sessionStorage.getItem(SESSION_KEY);
+        const savedUser = parsed.users.find(u => u.id === id);
+        if (savedUser) { setProgress(readProgress(parsed, savedUser.id)); setUser(savedUser); }
+      } catch { setError('No pudimos restaurar el progreso. Exporta o revisa los datos guardados antes de reiniciarlos.'); }
+    }
+    void load().catch(() => { if (alive) setLoadError('No se pudieron leer los archivos JSON. Revisa public/data y vuelve a cargar.'); });
+    setOnline(navigator.onLine);
+    const connectivity = () => setOnline(navigator.onLine);
+    window.addEventListener('online', connectivity); window.addEventListener('offline', connectivity);
+    if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => {});
+    return () => { alive = false; window.removeEventListener('online', connectivity); window.removeEventListener('offline', connectivity); };
+  }, []);
+
+  useEffect(() => {
+    if (!data || !user) return;
+    const update = (event: StorageEvent) => {
+      if (event.key === storageKey(data, user.id)) {
+        try { setProgress(readProgress(data, user.id)); setVoteTarget(null); }
+        catch { setError('El progreso de otra pestaña no es válido.'); }
+      }
+    };
+    window.addEventListener('storage', update);
+    return () => window.removeEventListener('storage', update);
+  }, [data, user]);
+
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }); }, [section, filter]);
+
+  function changeSection(next: Section) { setSection(next); setMessage(''); setError(''); setVoteTarget(null); }
+  function mutate(transform: (current: LocalProgress) => LocalProgress) {
+    if (!data || !user) throw Error('Inicia sesión para continuar.');
+    // Leer otra vez evita operar con una versión obsoleta de otra pestaña.
+    const next = parseProgress(data, user.id, transform(readProgress(data, user.id)));
+    try { localStorage.setItem(storageKey(data, user.id), JSON.stringify(next)); }
+    catch { throw Error('El navegador no pudo guardar el progreso. Revisa el espacio o los permisos de almacenamiento.'); }
+    setProgress(next);
+    return next;
+  }
+  function attempt(action: () => void) { setError(''); try { action(); } catch (e) { setError((e as Error).message); } }
+  function login(e: React.FormEvent) {
+    e.preventDefault(); if (!data) return;
+    const person = findUser(data, token);
+    if (!person) { setError('No encontramos ese token. Revisa los cuatro caracteres.'); return; }
+    attempt(() => { const saved = readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
+  }
+  function logout() {
+    sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);
+    setMessage(''); setError(''); setVoteTarget(null); setSection('route'); setFilter('base'); setSelected(null); setSearch(''); setResetConfirm(false);
+  }
+  function exportProgress() {
+    if (!data || !user) return;
+    const saved = readProgress(data, user.id);
+    const url = URL.createObjectURL(new Blob([JSON.stringify(saved, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a'); link.href = url; link.download = `camino-${user.id}.json`; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const brand = <a href="/" className="brand" aria-label="El camino de la hormiga, inicio"><img src="/icon.svg" alt="" /><span>CEDES <b>DON BOSCO</b><small>EL CAMINO DE LA HORMIGA · EXPOTEC</small></span></a>;
+  if (!data) return <main className="local-loading"><img src="/icon.svg" alt="" /><h1>El camino de la hormiga</h1><p role="status">{loadError || 'Preparando tu próximo descubrimiento…'}</p>{loadError && <button onClick={() => window.location.reload()}>Volver a cargar</button>}</main>;
+  if (!user || !progress) return <div className="local-login">
+    <header className="local-header">{brand}<span className="local-pill">DEMO LOCAL</span></header>
+    <main className="login-layout"><section className="login-story"><span className="eyebrow">EXPOTEC 2026 · CEDES DON BOSCO</span><h1>Un pequeño paso.<br /><em>Un mundo por descubrir.</em></h1><p>Explora el campus, conoce proyectos increíbles y completa tu camino, un reto a la vez.</p><div className="login-perks"><span>⌖ Descubre lugares</span><span>✦ Completa retos</span><span>♡ Vota por tus favoritos</span></div><img className="login-ant" src="/icon.svg" alt="" /></section>
+      <section className="login-card"><span className="eyebrow">TU AVENTURA EMPIEZA AQUÍ</span><h2>Ingresa con tu token</h2><p>Usa el código de cuatro caracteres asignado a tu nombre.</p>
+        <form onSubmit={login}><label htmlFor="token">Token de acceso<input id="token" name="token" value={token} onChange={e => setToken(e.target.value.toUpperCase())} maxLength={4} pattern="[A-Z0-9]{4}" required autoComplete="off" placeholder="K8P2" /></label>{error && <p className="form-error" role="alert">{error}</p>}<button className="primary" type="submit">Ingresar →</button></form>
+        <details className="demo-users"><summary>Ver usuarios para probar</summary><ul>{data.users.map(u => <li key={u.id}><span>{u.name}<small>{u.kind === 'applicant' ? 'Postulante' : 'Visitante'}</small></span><button onClick={() => { setToken(u.token); setError(''); }} aria-label={`Usar token de ${u.name}`}>{u.token}</button></li>)}</ul></details>
+        <p className="local-footnote">Demo con personas ficticias. Tu progreso se guarda en este navegador.</p>
+      </section></main>
+  </div>;
+  if (!progress.startedAt) return <div className="local-login"><header className="local-header">{brand}<button onClick={logout}>Cambiar usuario</button></header>
+    <main className="welcome-screen"><img src="/icon.svg" alt="" /><span className="eyebrow">QUÉ BUENO TENERTE AQUÍ</span><h1>Bienvenido, {user.name.split(' ')[0]}.</h1><p>¿Quieres iniciar el camino de la hormiga?</p><p className="muted">Cinco retos, muchas ideas y un campus por descubrir.<br />Después puedes seguir explorando y ganar más tiquetes.</p>{error && <p className="form-error" role="alert">{error}</p>}
+      <button className="primary start-button" onClick={() => attempt(() => { mutate(p => ({ ...p, startedAt: new Date().toISOString() })); setSection('route'); })}>Iniciar el camino →</button>
+    </main></div>;
+
+  const stats = summary(data, progress);
+  const done = new Set(progress.completed.map(c => c.challengeId));
+  const extras = data.challenges.filter(c => !c.isBase && progress.extraIds.includes(c.id));
+  const remainingExtras = data.challenges.filter(c => !c.isBase && !progress.extraIds.includes(c.id)).length;
+  const extraPending = extras.some(c => !done.has(c.id));
+  const displayed = filter === 'base' ? data.challenges.filter(c => c.isBase) : extras;
+  const projects = data.projects.filter(p => normalize(p.name + ' ' + p.specialty).includes(normalize(search)));
+  const badges: [string, boolean][] = [
+    ['Paso Infantil', data.challenges.some(c => c.badge === 'infant' && done.has(c.id))],
+    ['Descubridor', stats.base >= 3], ['Especialista', data.challenges.some(c => c.kind === 'quiz' && done.has(c.id))],
+    ['Momento ExpoTEC', data.challenges.some(c => c.badge === 'moment' && done.has(c.id))], ['Hormiga de Oro', stats.routeComplete]
+  ];
+  function locate(id: string) { setSelected(id); setSection('route'); }
+  function renderMap() { return <CampusMap selected={selected} onSelect={setSelected} />; }
+
+  return <div className={`local-app section-${section}`}>
+    <header className="local-header">{brand}<div className="local-account"><span>{user.name.split(' ')[0]}<small>{online ? 'Demo local' : 'Sin conexión · modo local'}</small></span><button onClick={logout}>Salir</button></div></header>
+    <nav className="local-nav" aria-label="Navegación principal">{([
+      ['route', '⌖', 'Retos'], ['dashboard', '✦', 'Mi resumen'], ['votes', '♡', 'Votar'], ['agenda', '◷', 'Agenda'], ['map', '◇', 'Mapa completo']
+    ] as const).map(([id, icon, label]) => <button key={id} aria-current={section === id ? 'page' : undefined} onClick={() => changeSection(id)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
+    {(message || error) && <div className={error ? 'local-feedback is-error' : 'local-feedback'} role={error ? 'alert' : 'status'}>{error || message}<button onClick={() => { setError(''); setMessage(''); }} aria-label="Cerrar mensaje">✕</button></div>}
+    <main className={section === 'route' ? 'route-workspace' : 'local-content'}>
+      {section === 'route' && <><div className="compact-map">{renderMap()}</div><div className="route-scroll" ref={scrollRef}>
+        <div className="route-heading"><div><span className="eyebrow">PASO A PASO, DESCUBRE MÁS</span><h1>Tu camino, {user.name.split(' ')[0]}.</h1></div><span className="route-count">{stats.base}<small>/ 5 base</small></span></div>
+        <div className="local-route-progress"><progress value={stats.base} max={5} /><span>{stats.routeComplete ? '¡Camino completado! Puedes seguir explorando.' : 'Completa los cinco retos base y gana tu primer tiquete.'}</span></div>
+        <div className="filter-tabs"><button aria-pressed={filter === 'base'} onClick={() => setFilter('base')}>Retos base · {stats.base}/5</button><button aria-pressed={filter === 'extra'} onClick={() => setFilter('extra')}>Retos extra · {stats.extra}</button></div>
+        <div className="challenge-list">{displayed.map((c, index) => <article className={`challenge-card ${done.has(c.id) ? 'done' : ''}`} key={c.id}>
+          <div className="challenge-number" aria-hidden="true">{done.has(c.id) ? '✓' : String(index + 1).padStart(2, '0')}</div><div className="challenge-content"><span className="eyebrow">{done.has(c.id) ? 'COMPLETADO' : c.kind === 'quiz' ? 'ESPECIALIDAD · MARCA CON X' : c.isBase ? 'RETO BASE' : 'RETO EXTRA'}</span><h2>{c.title}</h2><p>{c.description}</p><small className="challenge-place">{names[c.buildingId]}</small><div className="card-actions"><button className="location-button" onClick={() => setSelected(c.buildingId)} aria-label={`Ubicación: ${c.title}`}>⌖ Ubicación</button><button className="text-button" disabled={done.has(c.id)} onClick={() => { setSelected(c.buildingId); setActive(c); }} aria-label={`Responder: ${c.title}`}>{done.has(c.id) ? 'Completado ✓' : 'Hacer reto →'}</button></div></div>
+        </article>)}</div>
+        {filter === 'extra' && <section className="extras-card"><h2>{!stats.routeComplete ? 'Tu aventura apenas comienza' : remainingExtras ? 'Siempre hay algo más por descubrir' : '¡Exploraste todos los retos!'}</h2><p>{!stats.routeComplete ? 'Termina los cinco retos base para desbloquear retos adicionales.' : extraPending ? 'Completa los retos de esta ronda antes de generar la siguiente.' : remainingExtras ? `Cada ${data.settings.extraEvery} retos extra te dan otro tiquete. Quedan ${remainingExtras} retos por descubrir.` : 'Completaste el catálogo de esta demo. Puedes añadir nuevos retos al archivo JSON.'}</p><button className="primary" disabled={!stats.routeComplete || extraPending || !remainingExtras} onClick={() => attempt(() => { mutate(p => generateExtras(data, p)); setMessage('Nuevos destinos añadidos a tu camino.'); })}>Generar más retos</button></section>}
+        {stats.routeComplete && filter === 'base' && <section className="extras-card"><h2>¡Terminaste el camino base!</h2><p>Tu primer tiquete ya está disponible. Puedes votar o seguir explorando.</p><div className="row"><button className="primary" onClick={() => setFilter('extra')}>Descubrir más retos</button><button onClick={() => changeSection('votes')}>Ir a votar</button></div></section>}
+      </div></>}
+
+      {section === 'dashboard' && <section className="local-section"><span className="eyebrow">CADA DESCUBRIMIENTO SUMA</span><h1>Mi resumen</h1><p>Así va tu camino, {user.name.split(' ')[0]}.</p><div className="local-stats"><article><strong data-testid="ticket-count">{stats.tickets}</strong><span>Tiquetes para la rifa</span></article><article><strong data-testid="available-votes">{stats.votesAvailable}</strong><span>Votos disponibles</span></article><article><strong>{progress.completed.length}</strong><span>Retos completados</span></article><article><strong>{progress.votes.length}</strong><span>Votos entregados</span></article></div><p className="reward-rule">5 retos base = {data.settings.baseReward} tiquete · Cada {data.settings.extraEvery} extras = otro. Votar conserva tus tiquetes para la rifa.</p><h2>Tus insignias</h2><div className="badges">{badges.map(([name, unlocked]) => <div key={name} className={`badge ${unlocked ? 'unlocked' : ''}`}><span aria-hidden="true">✦</span><strong>{name}</strong><small>{unlocked ? 'Desbloqueada' : 'Por descubrir'}</small></div>)}</div>
+        <h2>Tus votos</h2>{progress.votes.length ? <ul className="vote-history">{progress.votes.map((v, i) => <li key={i}><span>♡ {data.projects.find(p => p.id === v.projectId)?.name}</span><small>1 voto</small></li>)}</ul> : <p className="empty">Aún no has votado. Completa el camino base para conseguir tu primer voto.</p>}
+        {stats.routeComplete && !progress.survey && <section className="survey"><h2>{user.kind === 'applicant' ? 'Tu encuesta de admisión' : 'Cuéntanos tu experiencia'}</h2><p>{user.kind === 'applicant' ? 'Completa la encuesta para cerrar tu proceso de admisión de prueba.' : 'Tu opinión también forma parte del camino.'} Recibirás {data.settings.surveyBonus} tiquete de bono.</p><form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); attempt(() => { mutate(p => p.survey ? p : { ...p, survey: { expectations: String(f.get('expectations')).trim(), interest: String(f.get('interest')).trim(), satisfaction: Number(f.get('satisfaction')) } }); setMessage('Gracias por tu opinión. El bono se añadió a tu resumen.'); }); }}><label>¿Qué esperabas descubrir?<textarea name="expectations" minLength={5} maxLength={1000} required /></label><label>¿Qué área te interesa?<input name="interest" minLength={2} maxLength={160} required /></label><label>¿Cómo fue tu experiencia?<select name="satisfaction">{[5, 4, 3, 2, 1].map(v => <option value={v} key={v}>{v} de 5</option>)}</select></label><button className="primary">Enviar encuesta</button></form></section>}
+        {progress.survey && <p className="feedback">Encuesta completada · Bono recibido{user.kind === 'applicant' ? ' · Admisión de prueba completada' : ''}.</p>}
+        <details className="local-backup"><summary>Guardar, importar o reiniciar mi prueba</summary><p>Los JSON del proyecto definen los datos iniciales. El navegador conserva tu avance; puedes descargarlo como otro JSON.</p><button onClick={() => attempt(exportProgress)}>Exportar mi progreso JSON</button><label>Importar mi progreso JSON<input type="file" accept="application/json,.json" onChange={async e => { const file = e.target.files?.[0]; e.target.value = ''; if (!file) return; try { if (file.size > 1000000) throw Error('El archivo es demasiado grande.'); const imported = parseProgress(data, user.id, JSON.parse(await file.text())); mutate(() => imported); setMessage('Progreso importado para esta persona.'); setError(''); } catch (e) { setError((e as Error).message); } }} /></label>
+          {resetConfirm ? <div className="reset-confirm"><p>¿Borrar los retos y votos de {user.name}? Esta acción solo afecta a esta persona en este navegador.</p><button onClick={() => attempt(() => { mutate(() => freshProgress(data, user.id)); setResetConfirm(false); setSelected(null); setFilter('base'); setSection('route'); })}>Sí, reiniciar mi prueba</button><button onClick={() => setResetConfirm(false)}>Cancelar</button></div> : <button className="danger-button" onClick={() => setResetConfirm(true)}>Reiniciar mi prueba</button>}
+        </details>
+      </section>}
+
+      {section === 'votes' && <section className="local-section"><span className="eyebrow">APOYA LAS IDEAS QUE TE INSPIRAN</span><h1>Tu proyecto favorito</h1><div className="vote-balance"><b>{stats.votesAvailable}</b><span>votos disponibles<small>{stats.tickets} tiquetes siguen participando en la rifa</small></span></div><label className="project-search">Buscar proyecto por nombre<input type="search" value={search} onChange={e => { setSearch(e.target.value); setVoteTarget(null); }} placeholder="Por ejemplo: AquaSmart" /></label><p className="muted">{projects.length} {projects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'} · Un tiquete permite un voto.</p>
+        {projects.map(p => <article className="local-project" key={p.id}><span className="project-initial" aria-hidden="true">{p.name.slice(0, 1)}</span><div><span className="eyebrow">{p.specialty}</span><h2>{p.name}</h2><p>{p.description}</p><small>{names[p.buildingId]}</small>{voteTarget === p.id ? <div className="vote-confirm"><p>¿Usar un voto para {p.name}?</p><button className="primary" onClick={() => attempt(() => { mutate(current => voteLocal(data, current, p.id)); setVoteTarget(null); setMessage(`¡Voto para ${p.name}! Tu tiquete sigue en la rifa.`); })}>Confirmar voto</button><button onClick={() => setVoteTarget(null)}>Cancelar</button></div> : <button className="primary" disabled={stats.votesAvailable <= 0} onClick={() => setVoteTarget(p.id)}>Dar 1 voto</button>}</div></article>)}
+        {!projects.length && <p className="empty">No encontramos proyectos con ese nombre. Prueba con otra palabra.</p>}{!stats.votesAvailable && <p className="reward-rule">Completa {stats.routeComplete ? 'dos retos extra' : 'los cinco retos base'} para obtener otro voto.</p>}
+      </section>}
+
+      {section === 'agenda' && <section className="local-section"><span className="eyebrow">UN CAMPUS LLENO DE ENCUENTROS</span><h1>Agenda ExpoTEC</h1><p>{data.settings.agendaNote}</p><div className="filter-tabs">{[['general', 'General'], ['pastoral', 'Pastoral'], ['radio', 'CEDES Radio']].map(([id, label]) => <button key={id} aria-pressed={category === id} onClick={() => setCategory(id)}>{label}</button>)}</div>{data.agenda.filter(e => e.category === category).sort((a, b) => a.time.localeCompare(b.time)).map(e => <article className="agenda-card" key={e.id}><time>{e.time}</time><div><h2>{e.title}</h2><p>{e.description}</p><button className="location-button" onClick={() => locate(e.buildingId)}>⌖ {names[e.buildingId]}</button></div></article>)}{!data.agenda.some(e => e.category === category) && <p className="empty">No hay actividades en esta categoría.</p>}<p className="muted">Hora de Costa Rica · Actividades de demostración.</p>{category === 'radio' && (data.settings.radioUrl ? <audio controls src={data.settings.radioUrl} preload="none" /> : <p className="reward-rule">El reproductor estará disponible al añadir una transmisión en settings.json.</p>)}</section>}
+      {section === 'map' && <section className="local-section full-map"><span className="eyebrow">ENCUENTRA TU PRÓXIMO DESTINO</span><h1>El campus completo</h1><p>Toca una zona o elige un edificio. Cambia entre las vistas 3D y 2D.</p>{renderMap()}<button className="primary" onClick={() => changeSection('route')}>Volver a mis retos</button></section>}
+    </main>
+    {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
+      const wasComplete = stats.routeComplete;
+      const next = mutate(current => completeLocal(data, current, active.id, answers));
+      setActive(null); setError(''); setMessage(!wasComplete && summary(data, next).routeComplete ? '¡Completaste el camino base! Ganaste tu primer tiquete y un voto.' : '¡Reto completado! Tu avance quedó guardado.');
+    }} />}
+  </div>;
 }
