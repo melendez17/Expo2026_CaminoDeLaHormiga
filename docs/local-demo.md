@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v3` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v4` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -115,3 +115,19 @@ El navegador necesita permitir almacenamiento local. Si el guardado falla, se mu
 La interfaz se adaptó a las capturas oficiales compartidas en el chat: títulos negros gruesos en mayúsculas, fondos claros con geometría y líneas, acentos verdes y rojo en programación de radio. Se usa Archivo Variable alojada localmente como aproximación tipográfica; no se ha identificado ni descargado la fuente exacta del sitio oficial, cuyo acceso sigue bloqueado en este entorno. No se han inventado logos ni fotografías oficiales.
 
 Ubicación usa un pin SVG y el color primario; los lugares son etiquetas dentro de las tarjetas. La agenda presenta tarjetas y tabla por día, con número de día destacado (`dayNumber`, opcional, entre 1 y 31), numeración de actividades y horarios amplios. El «14 / Sábado» de la demo reproduce la estructura visual de la captura; los horarios y el contenido siguen siendo ejemplos, no programación oficial confirmada.
+
+## Administrador local de prueba
+
+Token **ADM1**, nombre «Administrador ExpoTEC». Se define en `public/data/users.json` con `role: "admin"`. Los usuarios sin `role` se interpretan como `participant`. El token funciona en el login principal o en `/admin`; los tokens de participantes no entran al panel administrativo.
+
+El panel abre directamente, sin iniciar el juego. Incluye:
+
+- Resumen de participantes, sin activar/en proceso/completados, tiquetes, votos y admisión de prueba; los administradores no cuentan como participantes.
+- Estado por persona y votos por proyecto, calculados solo con los progresos válidos guardados en este navegador. Las filas con errores se identifican y no se convierten silenciosamente en ceros.
+- Crear, editar y eliminar usuarios de prueba y proyectos. Los tokens deben ser únicos; no se puede eliminar el acceso del administrador activo.
+- Crear retos extra y editar retos existentes: formulario libre, código, santo o especialidad con dos preguntas y opciones. Los cinco retos base se mantienen; si ya empezó una prueba, se protege su configuración. No se eliminan usuarios con avance ni proyectos/retos referenciados por respuestas o votos.
+- Exportar/importar el catálogo completo como JSON y descargar métricas CSV compatibles con Excel.
+
+El catálogo editado se guarda bajo `camino-local-catalog-v1` en localStorage y se aplica al siguiente ingreso de los participantes. Los JSON del repositorio no se reescriben desde el navegador. Para distribuir los cambios, exporta el catálogo, importa el archivo desde otro administrador o copia cada lista a su archivo en `public/data`.
+
+El respaldo del catálogo incluye datos iniciales y ediciones, **no** los avances de los participantes. Cada persona exporta su avance desde «Mi resumen». El administrador muestra datos del mismo navegador/origen; no hay un panel central de todos los dispositivos. `ADM1` es público deliberadamente y no constituye autenticación segura para producción.

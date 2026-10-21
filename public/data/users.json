@@ -22,5 +22,12 @@
     "name": "Diego Castro",
     "token": "D9C5",
     "kind": "visitor"
+  },
+  {
+    "id": "admin",
+    "name": "Administrador ExpoTEC",
+    "token": "ADM1",
+    "kind": "visitor",
+    "role": "admin"
   }
 ]

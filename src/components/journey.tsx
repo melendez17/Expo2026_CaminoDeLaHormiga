@@ -5,6 +5,8 @@ import { CampusMap } from './campus-map';
 import { PinIcon, PlaceTag } from './icons';
 import { EventAgenda } from './event-agenda';
 import { PageIntro } from './page-intro';
+import { LocalAdmin } from './local-admin';
+import { CATALOG_KEY, restoreCatalog, validateCatalogChange } from '@/lib/local-admin';
 import campus from '@/lib/campus.json';
 import {
   completeLocal, findUser, freshProgress, generateExtras, localDataSchema,
@@ -65,7 +67,7 @@ function ChallengeDialog({ challenge, onClose, onComplete }: {
   </dialog>;
 }
 
-export function Journey() {
+export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const [data, setData] = useState<LocalData | null>(null);
   const [user, setUser] = useState<LocalUser | null>(null);
   const [progress, setProgress] = useState<LocalProgress | null>(null);
@@ -92,14 +94,15 @@ export function Journey() {
         if (!response.ok) throw Error(`No se pudo cargar ${key}.json.`);
         return response.json();
       }));
-      const parsed = localDataSchema.parse(Object.fromEntries(keys.map((key, i) => [key, values[i]])));
+      const base = localDataSchema.parse(Object.fromEntries(keys.map((key, i) => [key, values[i]])));
+      const parsed = restoreCatalog(base, localStorage);
       for (const c of parsed.challenges) if (!names[c.buildingId]) throw Error('Un reto tiene una zona del mapa desconocida.');
       if (!alive) return;
       setData(parsed);
       try {
         const id = sessionStorage.getItem(SESSION_KEY);
         const savedUser = parsed.users.find(u => u.id === id);
-        if (savedUser) { setProgress(readProgress(parsed, savedUser.id)); setUser(savedUser); }
+        if (savedUser && (!adminOnly || savedUser.role === 'admin')) { setProgress(savedUser.role === 'admin' ? freshProgress(parsed, savedUser.id) : readProgress(parsed, savedUser.id)); setUser(savedUser); }
       } catch { setError('No pudimos restaurar el progreso. Exporta o revisa los datos guardados antes de reiniciarlos.'); }
     }
     void load().catch(() => { if (alive) setLoadError('No se pudieron leer los archivos JSON. Revisa public/data y vuelve a cargar.'); });
@@ -108,11 +111,20 @@ export function Journey() {
     window.addEventListener('online', connectivity); window.addEventListener('offline', connectivity);
     if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => {});
     return () => { alive = false; window.removeEventListener('online', connectivity); window.removeEventListener('offline', connectivity); };
-  }, []);
+  }, [adminOnly]);
 
   useEffect(() => {
     if (!data || !user) return;
     const update = (event: StorageEvent) => {
+      if (event.key === CATALOG_KEY) {
+        try {
+          const updated = restoreCatalog(data, localStorage);
+          const activeUser = updated.users.find(u => u.id === user.id);
+          setData(updated); setUser(activeUser ?? null);
+          setProgress(activeUser ? (activeUser.role === 'admin' ? freshProgress(updated, activeUser.id) : readProgress(updated, activeUser.id)) : null);
+        } catch { setError('No pudimos actualizar el catálogo de otra pestaña.'); }
+        return;
+      }
       if (event.key === storageKey(data, user.id)) {
         try { setProgress(readProgress(data, user.id)); setVoteTarget(null); }
         catch { setError('El progreso de otra pestaña no es válido.'); }
@@ -139,7 +151,8 @@ export function Journey() {
     e.preventDefault(); if (!data) return;
     const person = findUser(data, token);
     if (!person) { setError('No encontramos ese token. Revisa los cuatro caracteres.'); return; }
-    attempt(() => { const saved = readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
+    if (adminOnly && person.role !== 'admin') { setError('Este acceso es solo para administradores. Entra como participante desde el inicio.'); return; }
+    attempt(() => { const saved = person.role === 'admin' ? freshProgress(data, person.id) : readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
   }
   function logout() {
     sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);
@@ -158,12 +171,18 @@ export function Journey() {
   if (!user || !progress) return <div className="local-login login-entry">
     <header className="local-header">{brand}<span className="local-pill">DEMO LOCAL</span></header>
     <main className="login-layout"><section className="login-story"><span className="eyebrow">FERIA TECNOLÓGICA · CEDES DON BOSCO</span><h1 className="login-event-wordmark" aria-label="ExpoTEC"><span>EXPO</span><span>TEC</span></h1><h2 className="login-journey-title">El camino de la hormiga.</h2><p>Innovación, tecnología y trabajo en equipo. Descubre el campus y construye tu propio camino, un reto a la vez.</p><div className="login-perks"><span>⌖ Descubre lugares</span><span>✦ Completa retos</span><span>♡ Vota por tus favoritos</span></div><img className="login-ant" src="/icon.svg" alt="" /></section>
-      <section className="login-card"><span className="eyebrow">TU AVENTURA EMPIEZA AQUÍ</span><h2>Ingresa con tu token</h2><p>Usa el código de cuatro caracteres asignado a tu nombre.</p>
+      <section className="login-card"><span className="eyebrow">TU AVENTURA EMPIEZA AQUÍ</span><h2>{adminOnly ? 'Acceso del administrador' : 'Ingresa con tu token'}</h2><p>Usa el código de cuatro caracteres asignado a tu nombre.</p>
         <form onSubmit={login}><label htmlFor="token">Token de acceso<input id="token" name="token" value={token} onChange={e => setToken(e.target.value.toUpperCase())} maxLength={4} pattern="[A-Z0-9]{4}" required autoComplete="off" placeholder="K8P2" /></label>{error && <p className="form-error" role="alert">{error}</p>}<button className="primary" type="submit">Ingresar →</button></form>
-        <details className="demo-users"><summary>Ver usuarios para probar</summary><ul>{data.users.map(u => <li key={u.id}><span>{u.name}<small>{u.kind === 'applicant' ? 'Postulante' : 'Visitante'}</small></span><button onClick={() => { setToken(u.token); setError(''); }} aria-label={`Usar token de ${u.name}`}>{u.token}</button></li>)}</ul></details>
+        <details className="demo-users"><summary>Ver usuarios para probar</summary><ul>{data.users.filter(u => !adminOnly || u.role === 'admin').map(u => <li key={u.id}><span>{u.name}<small>{u.role === 'admin' ? 'Administrador de prueba' : u.kind === 'applicant' ? 'Postulante' : 'Visitante'}</small></span><button onClick={() => { setToken(u.token); setError(''); }} aria-label={`Usar token de ${u.name}`}>{u.token}</button></li>)}</ul></details>
+        {adminOnly && <a className="admin-participant-link" href="/">Ir al acceso de participantes →</a>}
         <p className="local-footnote">Demo con personas ficticias. Tu progreso se guarda en este navegador.</p>
       </section></main>
   </div>;
+  if (user.role === 'admin') return <LocalAdmin data={data} actor={user} onLogout={logout} onSave={input => {
+    const next = validateCatalogChange(data, input, user.id, localStorage);
+    localStorage.setItem(CATALOG_KEY, JSON.stringify(next));
+    setData(next); setUser(next.users.find(u => u.id === user.id)!);
+  }} />;
   if (!progress.startedAt) return <div className="local-login"><header className="local-header">{brand}<button onClick={logout}>Cambiar usuario</button></header>
     <main className="welcome-screen"><img src="/icon.svg" alt="" /><span className="eyebrow">QUÉ BUENO TENERTE AQUÍ</span><h1>Bienvenido, {user.name.split(' ')[0]}.</h1><p>¿Quieres iniciar el camino de la hormiga?</p><p className="muted">Cinco retos, muchas ideas y un campus por descubrir.<br />Después puedes seguir explorando y ganar más tiquetes.</p>{error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary start-button" onClick={() => attempt(() => { mutate(p => ({ ...p, startedAt: new Date().toISOString() })); setSection('route'); })}>Iniciar el camino →</button>

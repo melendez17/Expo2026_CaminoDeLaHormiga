@@ -9,13 +9,15 @@ const challengeSchema = z.object({
   isBase: z.boolean(), projectId: z.string().optional(), code: z.string().optional(),
   answer: z.string().optional(), badge: z.string().optional(), questions: z.array(questionSchema).optional()
 }).superRefine((c, ctx) => {
+  if (c.kind === 'quiz' && !c.projectId) ctx.addIssue({ code: 'custom', message: 'La especialidad debe tener un proyecto' });
+  if (c.questions && new Set(c.questions.map(q => q.id)).size !== c.questions.length) ctx.addIssue({ code: 'custom', message: 'Las preguntas deben tener identificadores diferentes' });
   if (c.kind === 'quiz' && c.questions?.length !== 2) ctx.addIssue({ code: 'custom', message: 'Cada especialidad necesita dos preguntas' });
   if (['quiz', 'code'].includes(c.kind) && !/^[A-Z0-9]{4}$/.test(c.code ?? '')) ctx.addIssue({ code: 'custom', message: 'Falta un código de cuatro caracteres' });
   if (c.kind === 'saint' && !c.answer) ctx.addIssue({ code: 'custom', message: 'Falta la respuesta del santo' });
 });
 export const localDataSchema = z.object({
-  users: z.array(z.object({ id: z.string(), name: z.string().min(2), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']) })).min(1),
-  projects: z.array(z.object({ id: z.string(), name: z.string(), buildingId: z.string(), specialty: z.string(), description: z.string() })),
+  users: z.array(z.object({ id: z.string(), name: z.string().min(2), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']), role: z.enum(['participant', 'admin']).default('participant') })).min(1),
+  projects: z.array(z.object({ id: z.string().min(1), name: z.string().min(2), buildingId: z.string(), specialty: z.string().min(2), description: z.string().min(5) })),
   challenges: z.array(challengeSchema),
   agenda: z.array(z.object({ id: z.string(), title: z.string(), category: z.enum(['general', 'pastoral', 'radio']), day: z.string().min(1).default('Sábado'), dayNumber: z.number().int().min(1).max(31).optional(), endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), buildingId: z.string(), description: z.string() })),
   settings: z.object({ dataVersion: z.string(), title: z.string(), baseReward: z.number().int().positive(), extraEvery: z.number().int().positive(), surveyBonus: z.number().int().nonnegative(), extraBatchSize: z.number().int().positive(), radioUrl: z.url().nullable(), agendaNote: z.string() })

@@ -19,6 +19,11 @@ Abre la dirección que muestra la terminal (puerto 3000 por defecto). No hace fa
 | `M4T7` | Carlos Méndez | Visitante |
 | `S6F3` | Sofía Vargas | Postulante |
 | `D9C5` | Diego Castro | Visitante |
+| `ADM1` | Administrador ExpoTEC | Administrador de prueba |
+
+## Administrador de prueba
+
+Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local con métricas, usuarios, retos, proyectos, exportación/importación del catálogo JSON y descarga de métricas CSV. Sus cambios persisten en este navegador; no modifican los archivos del repositorio ni se comparten automáticamente entre dispositivos. Es un acceso público de demostración.
 
 ## Recorrido
 
@@ -78,4 +83,4 @@ Para probar offline, abre primero la aplicación con conexión y espera la insta
 - `public/data/`: fuente de datos de la demo.
 - `tests/local-game.test.ts` y `tests/browser.ts`: pruebas de la experiencia local.
 
-El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`, `src/lib/server.ts` y `supabase/`, pero **no participa en este frontend**. `/admin` solo indica cómo volver a la demo. Las guías de [arquitectura](docs/architecture.md), [base de datos](docs/database.md), [API](docs/api.md) y [operación](docs/operations.md) describen esa futura integración; la guía vigente para esta entrega es [Demo local JSON](docs/local-demo.md).
+El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`, `src/lib/server.ts` y `supabase/`, pero **no participa en este frontend**. `/admin` abre el acceso administrativo local con `ADM1`, sin Supabase. Las guías de [arquitectura](docs/architecture.md), [base de datos](docs/database.md), [API](docs/api.md) y [operación](docs/operations.md) describen esa futura integración; la guía vigente para esta entrega es [Demo local JSON](docs/local-demo.md).
