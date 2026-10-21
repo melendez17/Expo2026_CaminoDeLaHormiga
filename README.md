@@ -29,7 +29,7 @@ Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local co
 
 1. **Login:** ingresa un token de `public/data/users.json`.
 2. **Bienvenida:** aparece el nombre de la persona y el botón «Iniciar el camino».
-3. **Retos:** el mapa ocupa aproximadamente un tercio del espacio disponible arriba; los retos se desplazan en los dos tercios inferiores. «Ubicación» resalta el edificio y «Hacer reto» abre el formulario.
+3. **Retos:** en móvil el mapa ocupa aproximadamente un tercio del espacio disponible arriba y los retos se desplazan abajo; en escritorio el mapa aparece junto a la lista. «Ubicación» resalta el edificio y «Hacer reto» abre el formulario.
 4. **Especialidades:** dos preguntas de selección única, visualmente «marca con X», más código de stand. Las respuestas incorrectas permiten volver a intentar sin otorgar premios.
 5. **Más retos:** tras los cinco base, genera rondas de dos extras sin repetir. Completa la ronda antes de pedir otra. Al agotarse el catálogo, añade más entradas al JSON.
 6. **Mi resumen:** tiquetes, votos disponibles, retos, votos emitidos, insignias y encuesta con bono.

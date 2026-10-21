@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v4` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v5` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -132,3 +132,9 @@ El panel abre directamente, sin iniciar el juego. Incluye:
 El catálogo editado se guarda bajo `camino-local-catalog-v1` en localStorage y se aplica al siguiente ingreso de los participantes. Los JSON del repositorio no se reescriben desde el navegador. Para distribuir los cambios, exporta el catálogo, importa el archivo desde otro administrador o copia cada lista a su archivo en `public/data`.
 
 El respaldo del catálogo incluye datos iniciales y ediciones, **no** los avances de los participantes. Cada persona exporta su avance desde «Mi resumen». El administrador muestra datos del mismo navegador/origen; no hay un panel central de todos los dispositivos. `ADM1` es público deliberadamente y no constituye autenticación segura para producción.
+
+## Interfaz interior sobre fondo blanco
+
+El login oscuro se conserva. El recorrido interior usa fondo blanco, tipografía en estilo de oración y una jerarquía compartida de tarjetas: tipo/estado, título, descripción, lugar y acciones. Los estados completados y la selección de respuestas usan SVG; los controles mantienen sus etiquetas y semántica accesible.
+
+En móviles el mapa ocupa aproximadamente el tercio superior del área de retos y la navegación principal queda abajo. En escritorio el mapa aparece como panel lateral junto a la lista. Resumen, votación, agenda, formularios y administración comparten colores, bordes, espaciado y botones. Se comprobó el ajuste desde 320 píxeles de ancho y el flujo funcional se mantiene local con JSON.

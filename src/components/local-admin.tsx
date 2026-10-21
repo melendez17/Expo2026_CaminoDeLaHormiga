@@ -4,7 +4,8 @@ import { adminRows, csvField } from '@/lib/local-admin';
 import { normalize, type LocalChallenge, type LocalData, type LocalUser } from '@/lib/local-game';
 import campus from '@/lib/campus.json';
 import { PageIntro } from './page-intro';
-import { PlaceTag } from './icons';
+import { AppIcon, PlaceTag } from './icons';
+import { AppNavigation } from './app-navigation';
 import { ParticipantAnswers } from './participant-answers';
 
 type Resource = 'users' | 'challenges' | 'projects';
@@ -101,7 +102,11 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   const location = (value = '7') => <label>Edificio<select name="buildingId" defaultValue={value}>{Object.entries(names).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>;
 
   return <div className="local-app admin-local"><header className="local-header"><a className="brand" href="/"><img src="/icon.svg" alt="" /><span>CEDES <b>DON BOSCO</b><small>EXPOTEC · PANEL LOCAL</small></span></a><div className="local-account"><span>{actor.name}<small>Administrador de prueba</small></span><button onClick={onLogout}>Salir</button></div></header>
-    <nav className="local-nav" aria-label="Administración local">{([['overview', 'Resumen'], ['users', 'Usuarios'], ['challenges', 'Retos'], ['projects', 'Proyectos'], ['answers', 'Respuestas'], ['backup', 'Respaldo']] as const).map(([id, title]) => <button key={id} aria-current={tab === id ? 'page' : undefined} onClick={() => changeTab(id)}>{title}</button>)}</nav>
+    <AppNavigation label="Administración local" admin items={[
+      { id: 'overview', title: 'Resumen', icon: 'dashboard' }, { id: 'users', title: 'Usuarios', icon: 'users' },
+      { id: 'challenges', title: 'Retos', icon: 'route' }, { id: 'projects', title: 'Proyectos', icon: 'projects' },
+      { id: 'answers', title: 'Respuestas', icon: 'answers' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
+    ] as const} active={tab} onChange={changeTab}/>
     <main className="local-content"><div className="local-section admin-container"><PageIntro eyebrow="CONTROL DEL CAMINO · DEMO JSON" title="Panel de administración" description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />
       <p className="admin-local-note">Modo local de prueba: este token es público. Los cambios y las métricas no se comparten entre dispositivos ni modifican los JSON del repositorio.</p>
       {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="feedback" role="status">{message}</p>}
@@ -109,7 +114,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
         <div className="admin-section-top"><h2>Métricas locales</h2><div><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div></div>
         <div className="local-stats admin-metrics">{[
           ['Participantes', rows.length], ['Sin activar', rows.filter(r => r.status === 'Sin activar').length], ['En proceso', rows.filter(r => r.status === 'En proceso').length], ['Completados', rows.filter(r => r.status === 'Completado').length], ['Tiquetes', totalTickets], ['Votos emitidos', totalVotes], ['Votos disponibles', totalTickets - totalVotes], ['Admisiones completas', valid.filter(r => r.user.kind === 'applicant' && r.progress!.survey && r.stats!.routeComplete).length]
-        ].map(([name, value]) => <article key={name}><strong>{value}</strong><span>{name}</span></article>)}</div>
+        ].map(([name, value]) => <article key={name}><span className="metric-icon"><AppIcon name={name === 'Tiquetes' ? 'ticket' : name === 'Votos emitidos' || name === 'Votos disponibles' ? 'votes' : name === 'Completados' || name === 'Admisiones completas' ? 'check' : 'users'}/></span><strong>{value}</strong><span>{name}</span></article>)}</div>
         {rows.some(r => r.error) && <p className="form-error">Hay progresos que necesitan revisión. Se excluyeron de los totales de premios.</p>}
         <h2>Estado por participante</h2><div className="admin-table-wrap"><table className="admin-data-table"><thead><tr><th>Persona</th><th>Estado</th><th>Retos</th><th>Tiquetes</th><th>Votos disponibles</th><th>Respuestas</th></tr></thead><tbody>{rows.map(r => <tr key={r.user.id}><td>{r.user.name}</td><td><span className="place-tag">{r.status}</span></td><td>{r.progress?.completed.length ?? '—'}</td><td>{r.stats?.tickets ?? '—'}</td><td>{r.stats?.votesAvailable ?? '—'}</td><td><button onClick={() => showAnswers(r.user.id)} aria-label={`Ver respuestas: ${r.user.name}`}>Ver respuestas</button></td></tr>)}</tbody></table></div>
         <h2>Votos por proyecto</h2><div className="admin-vote-results">{data.projects.map(p => <article key={p.id}><span>{p.name}</span><strong>{valid.reduce((n, r) => n + r.progress!.votes.filter(v => v.projectId === p.id).length, 0)} votos</strong></article>)}</div>
