@@ -1,6 +1,6 @@
 /* Demo JSON: solo recursos públicos; el progreso vive en localStorage.
    No hay sincronización de API ni peticiones a Supabase. */
-const CACHE = 'camino-shell-json-v9';
+const CACHE = 'camino-shell-json-v10';
 const DATA = ['users', 'projects', 'challenges', 'agenda', 'settings'].map(name => `/data/${name}.json`);
 self.addEventListener('install', event => {
   event.waitUntil((async () => {

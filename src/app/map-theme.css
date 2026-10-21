@@ -1,0 +1,76 @@
+/* Mapa completo: campus como protagonista y panel de lugares. */
+.campus-explorer { display: grid; grid-template-columns: minmax(0,2.25fr) minmax(220px,1fr); gap: 24px; align-items: start; }
+.journey-app .full-map .explorer-map-panel { position: relative; min-width: 0; margin: 0; padding: 11px; border-radius: 23px; border: 1px solid #e0eae4; background: #ffffffd9; box-shadow: 0 9px 24px #19784509; }
+.journey-app .explorer-map-panel .campus-map { display: block; height: auto; width: 100%; aspect-ratio: 1600 / 1050; border-radius: 16px; border: 1px solid #bcdfc7; background: #edf4ef; }
+.journey-app .explorer-map-panel .map-toolbar { position: absolute; z-index: 1; inset: 24px 24px auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0; pointer-events: none; }
+.journey-app .explorer-map-panel .map-toolbar>div:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 8px 10px; background: #f9fffaed; border: 1px solid #d5e6d9; border-radius: 25px; max-width: 70%; }
+.journey-app .explorer-map-panel .map-toolbar>div:first-child:before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #1f9f5e; flex: none; }
+.journey-app .explorer-map-panel .map-toolbar .eyebrow { font-size: 8px!important; letter-spacing: .06em; color: #24794c; margin: 0; }
+.journey-app .explorer-map-panel .map-toolbar strong { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #245b3b; }
+.journey-app .explorer-map-panel .segmented { pointer-events: auto; border: 1px solid #d5e6d9; border-radius: 30px; padding: 3px; background: #f9fffaed; flex: none; }
+.journey-app .explorer-map-panel .segmented button { min-height: 27px; padding: 5px 10px; border-radius: 25px; font-size: 9px; }
+.journey-app .explorer-map-panel .segmented button[aria-pressed=true] { background: #092317; color: #f2fff6; box-shadow: none; }
+.journey-app .explorer-map-panel .selected-zone { stroke: #54c56d; stroke-width: 5; fill: #b9f0b54d; filter: none; }
+.map-explorer-legend { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px 2px; color: #4d6c59; font-size: 10px; line-height: 1.5; }
+.map-explorer-legend>span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.map-explorer-legend i { width: 8px; height: 8px; border-radius: 50%; background: #349956; }
+.campus-sidebar { min-width: 0; }
+.journey-app .campus-search { display: block; color: #176c48; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 13px; }
+.journey-app .campus-search .search-field { margin-top: 9px; }
+.journey-app .campus-search input { width: 100%; border: 1px solid #4da943; border-radius: 30px; min-height: 44px; margin: 0; padding: 10px 13px 10px 38px; font-size: 12px; background: white; }
+.journey-app .campus-search .search-field>svg { width: 16px; height: 16px; top: 14px; left: 13px; color: #0c814a; }
+.campus-place-list { display: grid; gap: 7px; max-height: 280px; overflow: auto; scrollbar-width: thin; scrollbar-color: #a6c6ae transparent; }
+.journey-app .campus-place-list button { display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px; min-height: 45px; background: #ffffffed; border: 1px solid #e0eae4; border-radius: 13px; color: #102f1c; }
+.journey-app .campus-place-list button:hover { border-color: #93c68a; background: #f1f9ed; }
+.journey-app .campus-place-list button[aria-pressed=true] { border-color: #77ba68; background: #e0f0d9; }
+.campus-place-index { font-size: 9px; color: #097c4d; font-weight: 700; }
+.campus-place-name { font-size: 11px; font-weight: 800; text-transform: uppercase; flex: 1; line-height: 1.35; overflow-wrap: anywhere; }
+.campus-place-list small { font-size: 10px; color: #447057; font-weight: 450; white-space: nowrap; }
+.journey-app .campus-all-places { display: block; margin: 10px auto; padding: 5px 7px; min-height: 30px; background: transparent; border: 0; color: #286a45; text-decoration: underline; text-underline-offset: 4px; font-size: 10px; }
+.journey-app .campus-selection { background: #091f14; color: #edfff2; border-radius: 18px; padding: 22px; box-shadow: 0 8px 22px #15371f24; margin-top: 14px; }
+.campus-selection-label { display: block; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: #8de474; font-weight: 650; margin-bottom: 10px; }
+.journey-app .campus-selection h2 { font-size: 25px; line-height: 1.12; font-weight: 850; color: #f2fff5; text-transform: uppercase; letter-spacing: -.02em; margin: 0 0 22px; overflow-wrap: anywhere; }
+.journey-app .campus-selection h3 { font-size: 11px; color: #b6ddbc; margin: 17px 0 8px; font-weight: 600; letter-spacing: 0; }
+.campus-selection ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.campus-selection li, .journey-app .campus-selection p { color: #edfff2; font-size: 12px; line-height: 1.5; margin: 0; }
+.campus-event-time { display: block; color: #b5d9b9; font-size: 10px; margin-bottom: 3px; }
+.campus-completed { display: flex; align-items: center; gap: 4px; color: #8de474; font-size: 10px; margin-top: 4px; }
+.journey-app .campus-selection>.primary { display: flex; width: 100%; justify-content: center; align-items: center; gap: 9px; background: #5abc46; border-color: #5abc46; color: #0b2914; border-radius: 30px; font-size: 10px; font-weight: 750; text-transform: uppercase; min-height: 37px; padding: 9px 11px; margin-top: 23px; box-shadow: 0 5px 12px #3d9c3320; }
+.journey-app .campus-selection>.primary:hover { background: #72ce5d; border-color: #72ce5d; color: #08200e; }
+@media(min-width:800px) and (max-width:1100px) {
+  .campus-explorer { gap: 18px; }
+  .journey-app .full-map .explorer-map-panel { padding: 8px; border-radius: 20px; }
+  .journey-app .explorer-map-panel .map-toolbar { inset: 18px 18px auto; }
+  .journey-app .explorer-map-panel .map-toolbar>div:first-child { padding: 6px 8px; gap: 4px; }
+  .journey-app .explorer-map-panel .map-toolbar .eyebrow { font-size: 6px!important; }
+  .journey-app .explorer-map-panel .map-toolbar strong { font-size: 7px; }
+  .journey-app .explorer-map-panel .segmented button { min-height: 23px; padding: 4px 8px; font-size: 8px; }
+  .map-explorer-legend { font-size: 8px; padding-top: 8px; }
+  .journey-app .campus-search input { font-size: 10px; min-height: 38px; }
+  .journey-app .campus-search .search-field>svg { top: 11px; }
+  .journey-app .campus-place-list button { min-height: 37px; padding: 9px 10px; gap: 8px; }
+  .campus-place-name { font-size: 9px; }
+  .campus-place-list small { font-size: 8px; }
+  .journey-app .campus-selection { padding: 17px; }
+  .journey-app .campus-selection h2 { font-size: 22px; margin-bottom: 16px; }
+  .campus-selection li, .journey-app .campus-selection p { font-size: 10px; }
+  .journey-app .campus-selection h3 { font-size: 9px; }
+  .campus-event-time { font-size: 9px; }
+}
+@media(max-width:799px) {
+  .campus-explorer { grid-template-columns: minmax(0,1fr); gap: 22px; }
+  .journey-app .full-map .explorer-map-panel { padding: 7px; border-radius: 18px; }
+  .journey-app .explorer-map-panel .map-toolbar { inset: 17px 15px auto; gap: 7px; }
+  .journey-app .explorer-map-panel .map-toolbar>div:first-child { padding: 6px 8px; gap: 4px; max-width: 65%; }
+  .journey-app .explorer-map-panel .map-toolbar .eyebrow { display: none; }
+  .journey-app .explorer-map-panel .map-toolbar strong { font-size: 8px; }
+  .journey-app .explorer-map-panel .segmented button { font-size: 8px; padding: 4px 8px; min-height: 25px; }
+  .map-explorer-legend { font-size: 8px; gap: 8px; padding-top: 9px; }
+  .campus-place-list { max-height: 265px; }
+  .campus-place-name { font-size: 11px; }
+  .journey-app .campus-selection h2 { font-size: 26px; }
+}
+.journey-app .full-map .explorer-map-panel { top: auto; max-width: none; align-self: start; }
+.journey-app .explorer-map-panel .campus-map { max-height: none; }
+.journey-app .full-map .page-intro { margin-bottom: 24px; }
+.journey-app .full-map .page-intro h1 { margin-top: 12px; margin-bottom: 16px; }

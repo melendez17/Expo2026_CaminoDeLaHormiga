@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v9` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v10` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -154,3 +154,7 @@ En escritorio la pantalla de retos usa título grande, contadores reales del cam
 ### Resumen de votos y páginas del visitante
 
 El historial agrupa los votos por proyecto y muestra especialidad, total de votos del participante y fecha del último voto en horario de Costa Rica. La votación permite repetir equipo mientras queden votos; incorpora filtro por área y orden alfabético. Resumen, Votar, Agenda y Mapa comparten la línea gráfica de la pantalla de retos. La agenda tiene una única vista en tabla con días, categorías y ubicación, también en móvil. Los días y actividades provienen del JSON; no se añaden horarios ficticios para completar la referencia.
+
+### Explorador del campus
+
+El mapa completo usa un panel lateral con búsqueda de todos los lugares, conteos de retos asignados y detalles de la selección: retos completados y actividades del JSON. Inicialmente lista las paradas del recorrido y permite mostrar los 19 lugares. Seleccionar desde el mapa o la lista actualiza el mismo estado; se mantienen las vistas 2D y 3D. En móvil el panel aparece debajo del mapa.

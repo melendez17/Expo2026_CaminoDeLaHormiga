@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { FullCampusMap } from './full-campus-map';
 import { CampusMap } from './campus-map';
 import { AppIcon, PinIcon, PlaceTag } from './icons';
 import { AppNavigation } from './app-navigation';
@@ -247,7 +248,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       </section>}
 
       {section === 'agenda' && <EventAgenda data={data} onLocate={locate} />}
-      {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." />{renderMap()}<button className="primary" onClick={() => changeSection('route')}>Volver a mis retos</button></section>}
+      {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." /><FullCampusMap data={data} progress={progress} selected={selected} onSelect={setSelected} onReturn={() => changeSection('route')}/></section>}
     </main>
     {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
       const wasComplete = stats.routeComplete;
