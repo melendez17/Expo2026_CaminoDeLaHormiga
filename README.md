@@ -23,7 +23,7 @@ Abre la dirección que muestra la terminal (puerto 3000 por defecto). No hace fa
 
 ## Administrador de prueba
 
-Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local con métricas, usuarios, retos, proyectos, exportación/importación del catálogo JSON y descarga de métricas CSV. Sus cambios persisten en este navegador; no modifican los archivos del repositorio ni se comparten automáticamente entre dispositivos. Es un acceso público de demostración.
+Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local con métricas, usuarios, retos, proyectos, fichas de preguntas y respuestas por participante, exportación/importación del catálogo JSON y descarga de métricas CSV. Sus cambios persisten en este navegador; no modifican los archivos del repositorio ni se comparten automáticamente entre dispositivos. Es un acceso público de demostración.
 
 ## Recorrido
 

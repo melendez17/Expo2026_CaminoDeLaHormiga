@@ -123,6 +123,7 @@ Token **ADM1**, nombre «Administrador ExpoTEC». Se define en `public/data/user
 El panel abre directamente, sin iniciar el juego. Incluye:
 
 - Resumen de participantes, sin activar/en proceso/completados, tiquetes, votos y admisión de prueba; los administradores no cuentan como participantes.
+- Ficha de respuestas por persona desde «Respuestas» o «Ver respuestas» en Resumen/Usuarios. Muestra cada pregunta, textos libres, opciones elegidas en los quizzes (por su texto, no por índice), códigos, santo, fecha del envío y encuesta. Los retos base y extras asignados sin completar se identifican como pendientes. Se muestran respuestas de completaciones guardadas; los intentos incorrectos no se conservan en esta demo.
 - Estado por persona y votos por proyecto, calculados solo con los progresos válidos guardados en este navegador. Las filas con errores se identifican y no se convierten silenciosamente en ceros.
 - Crear, editar y eliminar usuarios de prueba y proyectos. Los tokens deben ser únicos; no se puede eliminar el acceso del administrador activo.
 - Crear retos extra y editar retos existentes: formulario libre, código, santo o especialidad con dos preguntas y opciones. Los cinco retos base se mantienen; si ya empezó una prueba, se protege su configuración. No se eliminan usuarios con avance ni proyectos/retos referenciados por respuestas o votos.

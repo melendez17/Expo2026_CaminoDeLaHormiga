@@ -5,9 +5,10 @@ import { normalize, type LocalChallenge, type LocalData, type LocalUser } from '
 import campus from '@/lib/campus.json';
 import { PageIntro } from './page-intro';
 import { PlaceTag } from './icons';
+import { ParticipantAnswers } from './participant-answers';
 
 type Resource = 'users' | 'challenges' | 'projects';
-type Tab = 'overview' | Resource | 'backup';
+type Tab = 'overview' | Resource | 'backup' | 'answers';
 type Editor = { resource: Resource; id: string | null };
 const names: Record<string, string> = campus.names;
 function download(name: string, content: string, type: string) {
@@ -21,6 +22,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
 }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [search, setSearch] = useState('');
+  const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [kind, setKind] = useState<LocalChallenge['kind']>('freeform');
   const [remove, setRemove] = useState<{ resource: Resource; id: string; title: string } | null>(null);
@@ -45,6 +47,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
     setError(''); try { action(); } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar el cambio.'); }
   }
   function changeTab(next: Tab) { setTab(next); setEditor(null); setRemove(null); setSearch(''); setError(''); setMessage(''); }
+  function showAnswers(id: string) { changeTab('answers'); setSelectedParticipant(id); }
   function open(resource: Resource, id: string | null) {
     setError(''); setMessage(''); setRemove(null); setEditor({ resource, id });
     if (resource === 'challenges') setKind(data.challenges.find(c => c.id === id)?.kind ?? 'freeform');
@@ -98,7 +101,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   const location = (value = '7') => <label>Edificio<select name="buildingId" defaultValue={value}>{Object.entries(names).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>;
 
   return <div className="local-app admin-local"><header className="local-header"><a className="brand" href="/"><img src="/icon.svg" alt="" /><span>CEDES <b>DON BOSCO</b><small>EXPOTEC · PANEL LOCAL</small></span></a><div className="local-account"><span>{actor.name}<small>Administrador de prueba</small></span><button onClick={onLogout}>Salir</button></div></header>
-    <nav className="local-nav" aria-label="Administración local">{([['overview', 'Resumen'], ['users', 'Usuarios'], ['challenges', 'Retos'], ['projects', 'Proyectos'], ['backup', 'Respaldo']] as const).map(([id, title]) => <button key={id} aria-current={tab === id ? 'page' : undefined} onClick={() => changeTab(id)}>{title}</button>)}</nav>
+    <nav className="local-nav" aria-label="Administración local">{([['overview', 'Resumen'], ['users', 'Usuarios'], ['challenges', 'Retos'], ['projects', 'Proyectos'], ['answers', 'Respuestas'], ['backup', 'Respaldo']] as const).map(([id, title]) => <button key={id} aria-current={tab === id ? 'page' : undefined} onClick={() => changeTab(id)}>{title}</button>)}</nav>
     <main className="local-content"><div className="local-section admin-container"><PageIntro eyebrow="CONTROL DEL CAMINO · DEMO JSON" title="Panel de administración" description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />
       <p className="admin-local-note">Modo local de prueba: este token es público. Los cambios y las métricas no se comparten entre dispositivos ni modifican los JSON del repositorio.</p>
       {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="feedback" role="status">{message}</p>}
@@ -108,7 +111,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
           ['Participantes', rows.length], ['Sin activar', rows.filter(r => r.status === 'Sin activar').length], ['En proceso', rows.filter(r => r.status === 'En proceso').length], ['Completados', rows.filter(r => r.status === 'Completado').length], ['Tiquetes', totalTickets], ['Votos emitidos', totalVotes], ['Votos disponibles', totalTickets - totalVotes], ['Admisiones completas', valid.filter(r => r.user.kind === 'applicant' && r.progress!.survey && r.stats!.routeComplete).length]
         ].map(([name, value]) => <article key={name}><strong>{value}</strong><span>{name}</span></article>)}</div>
         {rows.some(r => r.error) && <p className="form-error">Hay progresos que necesitan revisión. Se excluyeron de los totales de premios.</p>}
-        <h2>Estado por participante</h2><div className="admin-table-wrap"><table className="admin-data-table"><thead><tr><th>Persona</th><th>Estado</th><th>Retos</th><th>Tiquetes</th><th>Votos disponibles</th></tr></thead><tbody>{rows.map(r => <tr key={r.user.id}><td>{r.user.name}</td><td><span className="place-tag">{r.status}</span></td><td>{r.progress?.completed.length ?? '—'}</td><td>{r.stats?.tickets ?? '—'}</td><td>{r.stats?.votesAvailable ?? '—'}</td></tr>)}</tbody></table></div>
+        <h2>Estado por participante</h2><div className="admin-table-wrap"><table className="admin-data-table"><thead><tr><th>Persona</th><th>Estado</th><th>Retos</th><th>Tiquetes</th><th>Votos disponibles</th><th>Respuestas</th></tr></thead><tbody>{rows.map(r => <tr key={r.user.id}><td>{r.user.name}</td><td><span className="place-tag">{r.status}</span></td><td>{r.progress?.completed.length ?? '—'}</td><td>{r.stats?.tickets ?? '—'}</td><td>{r.stats?.votesAvailable ?? '—'}</td><td><button onClick={() => showAnswers(r.user.id)} aria-label={`Ver respuestas: ${r.user.name}`}>Ver respuestas</button></td></tr>)}</tbody></table></div>
         <h2>Votos por proyecto</h2><div className="admin-vote-results">{data.projects.map(p => <article key={p.id}><span>{p.name}</span><strong>{valid.reduce((n, r) => n + r.progress!.votes.filter(v => v.projectId === p.id).length, 0)} votos</strong></article>)}</div>
       </>}
       {(tab === 'users' || tab === 'challenges' || tab === 'projects') && <>
@@ -127,9 +130,10 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
         <label className="project-search">Buscar en el catálogo<input type="search" value={search} onChange={e => setSearch(e.target.value)} /></label>
         <div className="admin-record-list">{data[tab].filter(entry => normalize(JSON.stringify(entry)).includes(normalize(search))).map(entry => {
           const title = 'title' in entry ? entry.title : entry.name;
-          return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions"><button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
+          return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions">{'token' in entry && entry.role !== 'admin' && <button onClick={() => showAnswers(entry.id)} aria-label={`Ver respuestas: ${title}`}>Ver respuestas</button>}<button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
         })}</div>
       </>}
+      {tab === 'answers' && <ParticipantAnswers data={data} rows={rows} selectedId={selectedParticipant} onSelect={setSelectedParticipant} />}
       {tab === 'backup' && <section className="admin-backup"><h2>Catálogo JSON</h2><p>Exporta el catálogo editado para llevarlo a otro navegador o copiar sus listas a los archivos de public/data. El respaldo contiene usuarios y tokens ficticios. Los progresos individuales se exportan desde el resumen de cada participante.</p><button className="primary" onClick={() => attempt(() => download('catalogo-expotec.json', JSON.stringify(data, null, 2), 'application/json'))}>Exportar catálogo JSON</button><label>Importar catálogo JSON<input type="file" accept="application/json,.json" onChange={async e => {
         const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
         try { if (file.size > 2000000) throw Error('El archivo supera el tamaño permitido.'); const value = JSON.parse(await file.text()); onSave(value); setMessage('Catálogo importado y validado.'); setError(''); } catch (e) { setError(e instanceof Error ? e.message : 'Archivo no válido.'); }
