@@ -1,0 +1,37 @@
+[
+  {
+    "id": "agua",
+    "name": "AquaSmart",
+    "buildingId": "17",
+    "specialty": "TICs",
+    "description": "Un sistema de sensores para cuidar el agua."
+  },
+  {
+    "id": "energia",
+    "name": "Energía en movimiento",
+    "buildingId": "15",
+    "specialty": "Electromecánica",
+    "description": "Transformamos el movimiento en energía."
+  },
+  {
+    "id": "casa",
+    "name": "Casa del futuro",
+    "buildingId": "16",
+    "specialty": "Dibujo y Modelado",
+    "description": "Una vivienda diseñada para aprovechar la luz natural."
+  },
+  {
+    "id": "diseno",
+    "name": "Historias que conectan",
+    "buildingId": "18",
+    "specialty": "Diseño Gráfico Multimedia",
+    "description": "Diseño accesible que cuenta las historias del campus."
+  },
+  {
+    "id": "robot",
+    "name": "Precisión en acción",
+    "buildingId": "19",
+    "specialty": "Mecánica de Precisión",
+    "description": "Piezas y mecanismos que trabajan con precisión."
+  }
+]

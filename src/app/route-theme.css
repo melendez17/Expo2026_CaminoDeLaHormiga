@@ -1,0 +1,163 @@
+/* Pantalla de retos: composición de la referencia oficial compartida. */
+.navigation-number, .route-hero, .route-card-number { display: none; }
+.local-app.journey-app {
+  --route-lime: #59be45;
+  --route-dark: #071b12;
+  background: radial-gradient(ellipse at 90% 0%, #dcefdc 0%, transparent 42%), #f8fcfa;
+}
+.section-route .route-workspace,
+.section-route .route-scroll,
+.section-route .compact-map { background: transparent; }
+.section-route .compact-challenge .card-actions>.primary-location {
+  background: var(--route-lime); border-color: var(--route-lime); color: #0a2815;
+  border-radius: 30px; font-weight: 700;
+}
+.section-route .compact-challenge .card-actions>.primary-location:hover { background: #48a935; border-color: #48a935; }
+.section-route .compact-challenge .card-actions>.challenge-answer-button {
+  background: transparent; color: #174e32; border-color: #174e32; border-radius: 30px;
+}
+.section-route .compact-challenge .challenge-answer-button>svg { background: transparent; border-radius: 0; padding: 0; width: 24px; height: 24px; color: #174e32; }
+.section-route .compact-challenge .card-actions>.challenge-answer-button:hover:not(:disabled) { background: transparent; color: #0b3821; border-color: #0b3821; }
+.section-route .compact-challenge .card-actions>.challenge-answer-button:disabled { background: transparent; color: #637b6b; border-color: #b5c8bc; }
+.section-route .compact-challenge h2 { font-weight: 850; letter-spacing: -.025em; text-transform: uppercase; color: #06180f; }
+.section-route .compact-challenge .place-tag { border: 1px solid #dce5df; background: white; border-radius: 20px; color: #3f5a49; }
+.section-route .compact-challenge .challenge-category { color: #076449; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 650; }
+@media(min-width:800px) {
+  .local-app.journey-app { position: relative; height: 100dvh; overflow-y: auto; overflow-x: hidden; isolation: isolate; }
+  .journey-app:before {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: linear-gradient(#275e3710 1px, transparent 1px), linear-gradient(90deg, #275e3710 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .journey-app:after { content: 'EXPOTEC'; position: fixed; bottom: -65px; left: -10px; z-index: -1; color: #087b4b0a; font-size: clamp(150px,24vw,330px); line-height: 1; font-weight: 900; letter-spacing: -.04em; pointer-events: none; }
+  .journey-app .local-header { min-height: 68px; height: 68px; padding: 12px 2.6vw; border: 0; background: transparent; }
+  .journey-app .local-header .brand { font-size: 11px; gap: 8px; }
+  .journey-app .local-header .brand img { width: 30px; height: 30px; border-radius: 9px; }
+  .journey-app .local-header .brand small { font-size: 6px; letter-spacing: .09em; }
+  .journey-app .local-account { text-align: right; }
+  .journey-app .local-header .local-account { font-size: 11px; gap: 10px; }
+  .journey-app .local-header .local-account small { font-size: 7px; color: #226d43; text-transform: uppercase; letter-spacing: .05em; }
+  .journey-app .local-header button { min-height: 32px; padding: 8px 17px; color: #102a15; background: #59be45; border: 0; border-radius: 30px; font-size: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 5px 14px #329b3426; }
+  .journey-app .participant-navigation { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 5px; min-height: 0; border: 1px solid #e3ede5; border-radius: 16px; background: #ffffffde; box-shadow: 0 9px 25px #177d4c10; }
+  .journey-app .participant-navigation .navigation-items { gap: 3px; }
+  .journey-app .participant-navigation button { min-height: 32px; padding: 8px 11px; gap: 6px; font-size: 9px; border-radius: 11px; }
+  .journey-app .participant-navigation .navigation-label { font-size: 9px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
+  .journey-app .participant-navigation .navigation-icon { display: none; }
+  .journey-app .participant-navigation .navigation-number { display: inline; color: #0c8951; font-size: 9px; }
+  .journey-app .participant-navigation button[aria-current=page] { background: #e0f2d8; border-color: #b9e2af; color: #143920; }
+  .section-route .route-hero {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
+    flex: none; width: 100%; max-width: 1380px; margin: 0 auto; padding: 35px 2.6vw 35px;
+  }
+  .route-edition { display: flex; align-items: center; gap: 9px; color: #087a57; font-size: 9px; font-weight: 650; letter-spacing: .14em; margin: 0 0 14px; }
+  .route-edition>span { width: 36px; height: 1px; background: #71b392; }
+  .section-route .route-hero h1 { font-size: clamp(68px,7.8vw,96px); font-weight: 900; line-height: .91; letter-spacing: -.04em; color: #05170d; margin: 0; }
+  .route-hero h1 em { font-style: normal; background: linear-gradient(105deg,#39a33c,#008a52); background-clip: text; -webkit-text-fill-color: transparent; }
+  .route-hero-description { color: #426252; font-size: 13px; margin: 20px 0 0; line-height: 1.6; }
+  .route-hero-counts { display: flex; gap: 35px; padding: 0 0 3px; }
+  .route-hero-counts span { display: block; color: #3f6250; font-size: 8px; font-weight: 650; letter-spacing: .14em; margin: 0 0 4px; }
+  .route-hero-counts strong { color: #031b0e; display: block; font-size: 46px; font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; }
+  .route-hero-counts>div:last-child strong { color: #0aa363; }
+  .section-route .route-workspace { display: grid; grid-template-columns: minmax(0,.83fr) minmax(0,1.17fr); grid-template-rows: auto; gap: 26px; width: 100%; max-width: 1380px; margin: 0 auto; padding: 0 2.6vw 40px; overflow: visible; flex: none; min-height: 0; }
+  .section-route .compact-map { padding: 0; border: 0; display: block; overflow: visible; }
+  .section-route .compact-map .map-panel { height: auto; padding: 16px; border-radius: 18px; background: white; border: 1px solid #e1eae4; box-shadow: 0 8px 24px #16895008; }
+  .section-route .compact-map .map-toolbar { margin-bottom: 13px; }
+  .section-route .compact-map .map-toolbar strong { text-transform: uppercase; font-weight: 850; color: #0a2515; font-size: 15px; }
+  .section-route .compact-map .map-toolbar .eyebrow { font-size: 8px!important; color: #08704f; }
+  .section-route .compact-map .campus-map { flex: none; height: auto; aspect-ratio: 1600 / 1050; border: 1px solid #a6d9b8; border-radius: 14px; background: #eef8f1; }
+  .section-route .segmented { border: 0; border-radius: 30px; background: #ecf5ee; }
+  .section-route .segmented button { border-radius: 30px; }
+  .section-route .segmented button[aria-pressed=true] { background: #0a2115; color: white; }
+  .section-route .compact-map .map-select { display: flex!important; color: #536e5f; font-size: 10px; margin-top: 12px; gap: 8px; }
+  .section-route .compact-map .map-select select { padding: 8px 12px; font-size: 10px; min-height: 35px; border-radius: 25px; }
+  .section-route .desktop-map-guide { display: block; padding: 20px; margin-top: 16px; background: white; border: 1px solid #e1eae4; border-radius: 17px; }
+  .section-route .map-guide-icon { display: none; }
+  .section-route .desktop-map-guide h2 { text-transform: uppercase; font-size: 15px; font-weight: 850; margin: 0 0 9px; }
+  .section-route .desktop-map-guide p { font-size: 11px; margin-bottom: 12px; }
+  .section-route .desktop-map-guide button { text-transform: uppercase; font-size: 9px; letter-spacing: .09em; }
+  .section-route .route-scroll { padding: 0; overflow: visible; min-height: 0; }
+  .section-route .route-overview { display: none; }
+  .section-route .route-scroll>.filter-tabs { background: transparent; border: 0; padding: 0; gap: 8px; margin: 0 0 14px; }
+  .section-route .route-scroll>.filter-tabs button { border: 1px solid #d4e1d8; border-radius: 30px; min-height: 31px; padding: 7px 15px; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+  .section-route .route-scroll>.filter-tabs button[aria-pressed=true] { background: #e1f1dc; border-color: #b4d6aa; box-shadow: none; color: #10361d; }
+  .section-route .route-scroll .challenge-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .section-route .compact-challenge,
+  .section-route .compact-challenge:not(.done),
+  .section-route .compact-challenge.done { grid-template-columns: 34px minmax(0,1fr) 150px; gap: 14px; padding: 20px; border-radius: 20px; min-height: 118px; background: #fff; border-color: #e0eae3; box-shadow: 0 6px 20px #16895005; }
+  .section-route .compact-challenge .challenge-type-icon { position: relative; width: 30px; height: 30px; border-radius: 9px; align-self: center; }
+  .section-route .compact-challenge .challenge-type-icon svg { width: 18px; height: 18px; }
+  .section-route .route-card-number { display: block; position: absolute; top: 35px; left: 0; width: 100%; text-align: center; color: #08724d; font-size: 9px; font-weight: 700; }
+  .section-route .compact-challenge h2 { font-size: 19px; line-height: 1.08; margin: 0 0 9px; }
+  .section-route .compact-challenge .challenge-category { font-size: 9px; margin-bottom: 7px; }
+  .section-route .compact-challenge .place-tag { font-size: 9px; padding: 3px 8px; }
+  .section-route .compact-challenge .card-actions { gap: 7px; }
+  .section-route .compact-challenge .card-actions>button { min-height: 34px; font-size: 10px; padding: 6px 11px; text-transform: uppercase; }
+  .section-route .challenge-answer-button>span { margin-right: auto; }
+  .section-route .compact-challenge .primary-location { box-shadow: 0 4px 12px #4caf3829; }
+  .section-route .local-feedback { flex: none; }
+}
+@media(min-width:800px) and (max-width:1100px) {
+  .journey-app .participant-navigation button { padding: 7px 8px; }
+  .journey-app .participant-navigation .navigation-label { font-size: 8px; }
+  .journey-app .local-header .brand { font-size: 10px; }
+  .journey-app .local-header .brand small { font-size: 5px; }
+  .section-route .route-hero { padding-top: 30px; }
+  .section-route .route-workspace { gap: 20px; }
+  .section-route .compact-challenge,
+  .section-route .compact-challenge:not(.done),
+  .section-route .compact-challenge.done { grid-template-columns: 26px minmax(0,1fr) 132px; padding: 17px; gap: 11px; }
+  .section-route .compact-challenge h2 { font-size: 16px; }
+  .section-route .compact-challenge .challenge-type-icon { width: 26px; height: 28px; }
+}
+@media(max-width:799px) {
+  .section-route .route-heading h1 { text-transform: uppercase; font-weight: 850; font-size: 23px; }
+  .section-route .route-scroll>.filter-tabs { border-radius: 24px; }
+  .section-route .route-scroll>.filter-tabs button { border-radius: 24px; }
+  .section-route .compact-challenge .card-actions>.primary-location,
+  .section-route .compact-challenge .card-actions>.challenge-answer-button { border-radius: 13px; }
+}
+@media(min-width:800px) and (max-width:1100px) {
+  .journey-app .local-header { height: 48px; min-height: 48px; padding-top: 8px; padding-bottom: 8px; }
+  .journey-app .local-header .brand img { width: 25px; height: 25px; }
+  .journey-app .local-header button { min-height: 28px; font-size: 8px; padding: 7px 15px; }
+  .journey-app .local-header .local-account { font-size: 9px; }
+  .journey-app .local-header .local-account small { font-size: 6px; }
+  .journey-app .participant-navigation { top: 8px; left: 53.5%; padding: 4px; border-radius: 14px; }
+  .journey-app .participant-navigation button { min-height: 24px; padding: 6px 7px; gap: 5px; border-radius: 9px; }
+  .journey-app .participant-navigation .navigation-label { font-size: 7px; }
+  .journey-app .participant-navigation .navigation-number { font-size: 7px; }
+  .section-route .route-hero { padding-top: 26px; padding-bottom: 28px; }
+  .section-route .route-edition { font-size: 7px; gap: 7px; margin-bottom: 12px; }
+  .section-route .route-edition>span { width: 28px; }
+  .section-route .route-hero h1 { font-size: 60px; }
+  .section-route .route-hero-description { font-size: 11px; margin-top: 15px; }
+  .section-route .route-hero-counts { gap: 30px; }
+  .section-route .route-hero-counts strong { font-size: 36px; }
+  .section-route .route-hero-counts span { font-size: 6px; }
+  .section-route .compact-map .map-panel { padding: 13px; }
+  .section-route .compact-map .map-toolbar strong { font-size: 13px; }
+  .section-route .compact-map .map-toolbar .eyebrow { font-size: 7px!important; }
+  .section-route .compact-map .map-toolbar { margin-bottom: 10px; }
+  .section-route .compact-map .map-select { margin-top: 10px; font-size: 8px; }
+  .section-route .compact-map .map-select select { min-height: 30px; font-size: 8px; padding: 6px 10px; }
+  .section-route .compact-map .segmented button { font-size: 8px; padding: 4px 7px; }
+  .section-route .route-scroll>.filter-tabs { margin-bottom: 11px; gap: 6px; }
+  .section-route .route-scroll>.filter-tabs button { min-height: 24px; font-size: 8px; padding: 5px 12px; }
+  .section-route .compact-challenge,
+  .section-route .compact-challenge:not(.done),
+  .section-route .compact-challenge.done { grid-template-columns: 22px minmax(0,1fr) 112px; gap: 10px; min-height: 87px; padding: 14px; border-radius: 17px; }
+  .section-route .compact-challenge h2 { font-size: 13px; margin-bottom: 7px; }
+  .section-route .compact-challenge .challenge-category { font-size: 7px; margin-bottom: 5px; }
+  .section-route .compact-challenge .place-tag { font-size: 7px; padding: 2px 6px; }
+  .section-route .compact-challenge .challenge-type-icon { width: 22px; height: 24px; border-radius: 7px; }
+  .section-route .compact-challenge .challenge-type-icon svg { width: 15px; height: 15px; }
+  .section-route .route-card-number { top: 27px; font-size: 7px; }
+  .section-route .compact-challenge .card-actions { gap: 5px; }
+  .section-route .compact-challenge .card-actions>button { min-height: 28px; font-size: 8px; padding: 4px 8px; }
+  .section-route .compact-challenge .challenge-answer-button>svg { width: 20px; height: 20px; }
+  .section-route .compact-challenge .primary-location>svg { width: 13px; height: 13px; }
+  .section-route .desktop-map-guide { padding: 16px; margin-top: 13px; }
+  .section-route .desktop-map-guide h2 { font-size: 12px; }
+  .section-route .desktop-map-guide p { font-size: 9px; }
+  .section-route .desktop-map-guide button { font-size: 8px; }
+}

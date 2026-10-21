@@ -1,0 +1,224 @@
+[
+  {
+    "id": "pasitos",
+    "title": "Pequeñas ideas, grandes descubrimientos",
+    "buildingId": "8",
+    "kind": "freeform",
+    "isBase": true,
+    "description": "Visita Pasitos Pequeños y cuéntanos sobre un proyecto que te haya sorprendido.",
+    "badge": "infant"
+  },
+  {
+    "id": "escuela",
+    "title": "La curiosidad empieza aquí",
+    "buildingId": "3",
+    "kind": "freeform",
+    "isBase": true,
+    "description": "Descubre una idea de la Escuela San Juan Bosco y registra lo que aprendiste."
+  },
+  {
+    "id": "tics",
+    "title": "Tecnología que cuida el agua",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": true,
+    "description": "Conoce AquaSmart, responde dos preguntas y usa el código del stand.",
+    "projectId": "agua",
+    "code": "T1C5",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo de AquaSmart?",
+        "options": [
+          "Cuidar el agua usando sensores",
+          "Aumentar el consumo de agua",
+          "Crear una red social"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué componente mide una variable del entorno?",
+        "options": [
+          "Un cartel",
+          "Un sensor",
+          "Una silla"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "sponsor",
+    "title": "Aliados del camino",
+    "buildingId": "7",
+    "kind": "code",
+    "isBase": true,
+    "description": "Visita el stand de un patrocinador y solicita su código. Ubicación de ejemplo.",
+    "code": "A7L2"
+  },
+  {
+    "id": "photo",
+    "title": "Un recuerdo de ExpoTEC",
+    "buildingId": "7",
+    "kind": "code",
+    "isBase": true,
+    "description": "Tómate una foto en el photobooth y pide el código al encargado. No subas ninguna foto. Ubicación de ejemplo.",
+    "code": "F0T0",
+    "badge": "moment"
+  },
+  {
+    "id": "ciclo",
+    "title": "Una idea para el futuro",
+    "buildingId": "10",
+    "kind": "freeform",
+    "isBase": false,
+    "description": "Explora un proyecto de Tercer Ciclo. Edificio de ejemplo por confirmar."
+  },
+  {
+    "id": "electro",
+    "title": "Energía en movimiento",
+    "buildingId": "15",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Descubre cómo se transforma la energía en este proyecto.",
+    "projectId": "energia",
+    "code": "E2N4",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca demostrar Energía en movimiento?",
+        "options": [
+          "Cómo almacenar fotografías",
+          "Cómo transformar movimiento en energía",
+          "Cómo dibujar un plano"
+        ],
+        "correctIndex": 1
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué dispositivo transforma energía mecánica en eléctrica?",
+        "options": [
+          "Un generador",
+          "Una regla",
+          "Una pantalla"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "dibujo",
+    "title": "Diseña un futuro sostenible",
+    "buildingId": "16",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Observa la Casa del futuro y responde las preguntas del proyecto.",
+    "projectId": "casa",
+    "code": "C4S2",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué propone la Casa del futuro?",
+        "options": [
+          "Eliminar las ventanas",
+          "Usar más luz artificial",
+          "Aprovechar la luz natural"
+        ],
+        "correctIndex": 2
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué permite representar el edificio antes de construirlo?",
+        "options": [
+          "Un modelo digital",
+          "Un altavoz",
+          "Una batería"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "grafico",
+    "title": "Historias que conectan",
+    "buildingId": "18",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Explora cómo el diseño ayuda a comunicar ideas a todas las personas.",
+    "projectId": "diseno",
+    "code": "G8R2",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo del proyecto?",
+        "options": [
+          "Comunicar historias de forma accesible",
+          "Ocultar información",
+          "Fabricar un motor"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué mejora la legibilidad de un texto?",
+        "options": [
+          "Usar letras diminutas",
+          "Un contraste adecuado",
+          "Superponer las palabras"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "mecanica",
+    "title": "Precisión en acción",
+    "buildingId": "19",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce el proyecto de Mecánica de Precisión y valida tu visita.",
+    "projectId": "robot",
+    "code": "P3R8",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué destaca este proyecto?",
+        "options": [
+          "La precisión de piezas y mecanismos",
+          "El cultivo de flores",
+          "La edición de audio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué instrumento sirve para medir dimensiones pequeñas?",
+        "options": [
+          "Un micrófono",
+          "Una linterna",
+          "Un calibrador"
+        ],
+        "correctIndex": 2
+      }
+    ]
+  },
+  {
+    "id": "santo-b",
+    "title": "Historias en las paredes · Edificio B",
+    "buildingId": "11",
+    "kind": "saint",
+    "isBase": false,
+    "description": "Busca el santo escrito en el edificio. Nombre de ejemplo para esta demo.",
+    "answer": "San Juan Bosco"
+  },
+  {
+    "id": "santo-c",
+    "title": "Historias en las paredes · Edificio C",
+    "buildingId": "12",
+    "kind": "saint",
+    "isBase": false,
+    "description": "Descubre a quién está dedicado el edificio. Nombre de ejemplo para esta demo.",
+    "answer": "Santo Domingo Savio"
+  }
+]

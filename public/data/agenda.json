@@ -1,0 +1,145 @@
+[
+  {
+    "id": "viernes-apertura",
+    "title": "Abrimos las puertas a la curiosidad",
+    "category": "general",
+    "time": "09:00",
+    "endTime": "09:30",
+    "buildingId": "7",
+    "description": "Actividad ficticia de bienvenida para probar el recorrido del viernes.",
+    "day": "Viernes",
+    "dayNumber": 13
+  },
+  {
+    "id": "viernes-taller",
+    "title": "Taller de sensores e ideas",
+    "category": "general",
+    "time": "10:00",
+    "endTime": "11:00",
+    "buildingId": "17",
+    "description": "Taller de ejemplo para explorar cómo un sensor ayuda a resolver un problema cotidiano.",
+    "day": "Viernes",
+    "dayNumber": 13
+  },
+  {
+    "id": "viernes-pastoral",
+    "title": "Un momento para encontrarnos",
+    "category": "pastoral",
+    "time": "11:30",
+    "endTime": "12:00",
+    "buildingId": "1",
+    "description": "Encuentro de reflexión y comunidad creado solo para esta prueba.",
+    "day": "Viernes",
+    "dayNumber": 13
+  },
+  {
+    "id": "viernes-radio",
+    "title": "Las voces que abren ExpoTEC",
+    "category": "radio",
+    "time": "13:00",
+    "endTime": "13:45",
+    "buildingId": "9",
+    "description": "Programa ficticio con entrevistas a estudiantes sobre sus primeras ideas.",
+    "day": "Viernes",
+    "dayNumber": 13
+  },
+  {
+    "id": "bienvenida",
+    "title": "Bienvenida a ExpoTEC",
+    "category": "general",
+    "time": "09:00",
+    "buildingId": "7",
+    "description": "Encuentro de apertura en el patio.",
+    "day": "Sábado",
+    "endTime": "09:30",
+    "dayNumber": 14
+  },
+  {
+    "id": "proyectos",
+    "title": "Explora el pabellón de especialidades",
+    "category": "general",
+    "time": "10:00",
+    "buildingId": "5",
+    "description": "Un recorrido por ideas que transforman.",
+    "day": "Sábado",
+    "endTime": "11:00",
+    "dayNumber": 14
+  },
+  {
+    "id": "pastoral",
+    "title": "Un momento para agradecer",
+    "category": "pastoral",
+    "time": "11:00",
+    "buildingId": "1",
+    "description": "Encuentro de la comunidad educativa.",
+    "day": "Sábado",
+    "endTime": "11:30",
+    "dayNumber": 14
+  },
+  {
+    "id": "radio",
+    "title": "Voces de ExpoTEC",
+    "category": "radio",
+    "time": "11:30",
+    "buildingId": "9",
+    "description": "Conversaciones con estudiantes y creadores. Ubicación de ejemplo.",
+    "day": "Sábado",
+    "endTime": "12:00",
+    "dayNumber": 14
+  },
+  {
+    "id": "cierre",
+    "title": "Celebramos el camino recorrido",
+    "category": "general",
+    "time": "15:00",
+    "buildingId": "7",
+    "description": "Compartimos descubrimientos y experiencias.",
+    "day": "Sábado",
+    "endTime": "15:30",
+    "dayNumber": 14
+  },
+  {
+    "id": "domingo-familias",
+    "title": "Pequeños inventores en familia",
+    "category": "general",
+    "time": "09:00",
+    "endTime": "10:00",
+    "buildingId": "8",
+    "description": "Actividad ficticia para descubrir proyectos con las familias de Pasitos.",
+    "day": "Domingo",
+    "dayNumber": 15
+  },
+  {
+    "id": "domingo-proyectos",
+    "title": "Última vuelta por los proyectos",
+    "category": "general",
+    "time": "10:30",
+    "endTime": "11:30",
+    "buildingId": "5",
+    "description": "Recorrido de ejemplo por el área técnica para despedir la feria.",
+    "day": "Domingo",
+    "dayNumber": 15
+  },
+  {
+    "id": "domingo-pastoral",
+    "title": "Gracias por lo que construimos juntos",
+    "category": "pastoral",
+    "time": "12:00",
+    "endTime": "12:30",
+    "buildingId": "1",
+    "description": "Momento de agradecimiento inventado para probar la categoría pastoral.",
+    "day": "Domingo",
+    "dayNumber": 15
+  },
+  {
+    "id": "domingo-radio",
+    "title": "Historias para llevar a casa",
+    "category": "radio",
+    "time": "14:00",
+    "endTime": "14:45",
+    "buildingId": "7",
+    "description": "Transmisión ficticia de cierre con recuerdos y aprendizajes de la feria.",
+    "day": "Domingo",
+    "dayNumber": 15
+  }
+]
