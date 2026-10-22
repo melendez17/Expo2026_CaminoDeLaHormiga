@@ -7,9 +7,9 @@ const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
 const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))])));
 data.users.find(u => u.id === 'ana')!.email = 'ana@example.com';
 const empty = (): RaffleState => ({ manual: [], history: [] });
-const add = (state = empty()) => addManual(data, state, 'k8p2', 'Ana Rodríguez', 'ana@example.com', []);
+const add = (state = empty()) => addManual(data, state, 'k8p2', []);
 function reader(state: RaffleState, tickets: boolean | number = false) {
-  let p = { ...freshProgress(data, 'ana'), startedAt: new Date().toISOString() };
+  let p: ReturnType<typeof freshProgress> = { ...freshProgress(data, 'ana'), startedAt: new Date().toISOString() };
   if (tickets) for (const c of data.challenges.filter(c => c.isBase)) {
     const answers: Record<string, string> = c.kind === 'freeform' ? { projectName: 'Proyecto', level: 'Quinto', description: 'Aprendí sobre tecnología y sensores.' } : { code: c.code!, ...Object.fromEntries((c.questions ?? []).map(q => [q.id, String(q.correctIndex)])) };
     p = completeLocal(data, p, c.id, answers);
@@ -21,22 +21,21 @@ test('manual tickets link existing participants and number each registration', (
   const first = add();
   assert.equal(first.manual[0].id, 'K8P2 1');
   assert.equal(first.manual[0].number, 'K8P2 1');
+  assert.equal(first.manual[0].name, 'Ana Rodríguez');
+  assert.equal(first.manual[0].email, 'ana@example.com');
   assert.equal(add(first).manual[1].id, 'K8P2 2');
-  assert.throws(() => addManual(data, first, 'ZZZZ', 'Ana Rodríguez', 'ana@example.com', []), /registrado/);
-  assert.throws(() => addManual(data, first, 'ADM1', 'Administrador', 'admin@example.com', []), /registrado/);
-  assert.throws(() => addManual(data, first, 'K8P2', 'Otra persona', 'ana@example.com', []), /nombre/);
-  assert.throws(() => addManual(data, first, 'K8P2', 'Ana Rodríguez', 'other@example.com', []), /correo/);
-  assert.throws(() => addManual(data, first, 'K8P2', 'Ana Rodríguez', 'invalid', []), /válido/);
+  assert.throws(() => addManual(data, first, 'ZZZZ', []), /registrado/);
+  assert.throws(() => addManual(data, first, 'ADM1', []), /registrado/);
 });
 test('digital and manual share stable sequence when more digital tickets are earned', () => {
   const digital = digitalTickets(data, reader(empty(), true));
   assert.equal(digital[0].id, 'K8P2 1');
   assert.equal(digital[0].email, 'ana@example.com');
-  const manual = addManual(data, empty(), 'K8P2', 'Ana Rodríguez', 'ana@example.com', digital);
+  const manual = addManual(data, empty(), 'K8P2', digital);
   assert.equal(manual.manual[0].number, 'K8P2 2');
   assert.equal(digitalTickets(data, reader(manual, true))[0].number, 'K8P2 1');
   assert.deepEqual(digitalTickets(data, reader(manual, 2)).map(t => t.number), ['K8P2 1', 'K8P2 3']);
-  const next = addManual(data, manual, 'K8P2', 'Ana Rodríguez', 'ana@example.com', digitalTickets(data, reader(manual, 2)));
+  const next = addManual(data, manual, 'K8P2', digitalTickets(data, reader(manual, 2)));
   assert.equal(next.manual[1].number, 'K8P2 4');
   const manualFirst = add();
   assert.equal(digitalTickets(data, reader(manualFirst, true))[0].number, 'K8P2 2');

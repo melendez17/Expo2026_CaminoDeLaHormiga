@@ -54,18 +54,14 @@ export function digitalTickets(data: LocalData, storage: StorageReader): RaffleT
     return tickets;
   });
 }
-export function addManual(data: LocalData, state: RaffleState, token: string, name: string, email: string, digital: RaffleTicket[]): RaffleState {
+export function addManual(data: LocalData, state: RaffleState, token: string, digital: RaffleTicket[]): RaffleState {
   const code = token.trim().toUpperCase();
   const user = data.users.find(u => u.token === code && u.role !== 'admin');
   if (!user) throw Error('El token no pertenece a un participante registrado. Crea primero su usuario.');
-  if (normalize(name.trim()) !== normalize(user.name)) throw Error('El nombre no coincide con el participante del token. Revisa el registro de usuarios.');
-  const address = z.email().max(254).safeParse(email.trim());
-  if (!address.success) throw Error('Ingresa un correo electrónico válido.');
-  if (user.email && user.email.toLowerCase() !== address.data.toLowerCase()) throw Error('El correo no coincide con el participante del token. Revisa el registro de usuarios.');
   const all = [...digital, ...state.manual, ...state.history.map(h => h.winner)];
   const max = Math.max(0, ...all.filter(t => t.id.startsWith(`${code} `)).map(t => Number(t.id.slice(5)) || 0));
   const id = `${code} ${max + 1}`;
-  const ticket = { id, name: user.name, email: address.data, number: id, source: 'manual' as const };
+  const ticket = { id, name: user.name, email: user.email ?? '', number: id, source: 'manual' as const };
   return { ...state, manual: [...state.manual, ticket] };
 }
 // Rejection sampling avoids bias when the pool size does not divide 2^32.
