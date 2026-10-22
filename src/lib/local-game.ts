@@ -16,7 +16,7 @@ const challengeSchema = z.object({
   if (c.kind === 'saint' && !c.answer) ctx.addIssue({ code: 'custom', message: 'Falta la respuesta del santo' });
 });
 export const localDataSchema = z.object({
-  users: z.array(z.object({ id: z.string(), name: z.string().min(2), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']), role: z.enum(['participant', 'admin']).default('participant') })).min(1),
+  users: z.array(z.object({ id: z.string(), name: z.string().min(2), email: z.union([z.email().max(254), z.literal('')]).optional(), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']), role: z.enum(['participant', 'admin']).default('participant') })).min(1),
   projects: z.array(z.object({ id: z.string().min(1), name: z.string().min(2), buildingId: z.string(), specialty: z.string().min(2), description: z.string().min(5) })),
   challenges: z.array(challengeSchema),
   agenda: z.array(z.object({ id: z.string(), title: z.string(), category: z.enum(['general', 'pastoral', 'radio']), day: z.string().min(1).default('Sábado'), dayNumber: z.number().int().min(1).max(31).optional(), endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), buildingId: z.string(), description: z.string() })),

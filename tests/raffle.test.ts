@@ -28,3 +28,14 @@ test('random sampling rejects biased tail and empty pools', () => {
   assert.equal(randomIndex(1, () => 0xffffffff), 0);
   assert.throws(() => randomIndex(0));
 });
+test('winner email survives saving and old histories remain readable', () => {
+  const state = addManual({ manual: [], history: [] }, 'Ana', 'M99', 'ana@example.com');
+  const drawn = drawRaffle(state, []);
+  assert.equal(drawn.history[0].winner.email, 'ana@example.com');
+  const data = { settings: { dataVersion: 'email-test' } } as LocalData;
+  assert.equal(readRaffle(data, { getItem: () => JSON.stringify(drawn) }).history[0].winner.email, 'ana@example.com');
+  const old = JSON.parse(JSON.stringify(drawn));
+  delete old.manual[0].email; delete old.history[0].winner.email;
+  assert.equal(readRaffle(data, { getItem: () => JSON.stringify(old) }).history[0].winner.email, undefined);
+  assert.throws(() => addManual(state, 'Luis', 'M100', 'invalid-email'));
+});

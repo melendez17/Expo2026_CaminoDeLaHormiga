@@ -3,31 +3,36 @@
     "id": "ana",
     "name": "Ana Rodríguez",
     "token": "K8P2",
-    "kind": "applicant"
+    "kind": "applicant",
+    "email": ""
   },
   {
     "id": "carlos",
     "name": "Carlos Méndez",
     "token": "M4T7",
-    "kind": "visitor"
+    "kind": "visitor",
+    "email": ""
   },
   {
     "id": "sofia",
     "name": "Sofía Vargas",
     "token": "S6F3",
-    "kind": "applicant"
+    "kind": "applicant",
+    "email": ""
   },
   {
     "id": "diego",
     "name": "Diego Castro",
     "token": "D9C5",
-    "kind": "visitor"
+    "kind": "visitor",
+    "email": ""
   },
   {
     "id": "admin",
     "name": "Administrador ExpoTEC",
     "token": "ADM1",
     "kind": "visitor",
-    "role": "admin"
+    "role": "admin",
+    "email": ""
   }
 ]

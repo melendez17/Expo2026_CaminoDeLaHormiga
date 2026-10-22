@@ -67,3 +67,9 @@ test('catálogos anteriores incorporan los días nuevos sin reemplazar actividad
   assert.equal(custom.agenda.filter(event => event.day === 'Viernes').length, 1);
   assert.equal(custom.agenda.find(event => event.day === 'Viernes')?.title, 'Viernes personalizado');
 });
+test('correo de usuario se valida y sobrevive al respaldo de catálogo', () => {
+  const next = validateCatalogChange(data, change(c => c.users[0].email = 'ana@example.com'), 'admin', storage);
+  assert.equal(next.users[0].email, 'ana@example.com');
+  assert.equal(restoreCatalog(data, { getItem: () => JSON.stringify(next) }).users[0].email, 'ana@example.com');
+  assert.throws(() => validateCatalogChange(data, change(c => c.users[0].email = 'correo-invalido'), 'admin', storage));
+});
