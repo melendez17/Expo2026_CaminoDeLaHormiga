@@ -7,10 +7,11 @@ import { PageIntro } from './page-intro';
 import { PlaceTag } from './icons';
 import { AppNavigation } from './app-navigation';
 import { AdminOverview } from './admin-overview';
+import { AdminRaffle } from './admin-raffle';
 import { ParticipantAnswers } from './participant-answers';
 
 type Resource = 'users' | 'challenges' | 'projects';
-type Tab = 'overview' | Resource | 'backup' | 'answers';
+type Tab = 'overview' | Resource | 'backup' | 'answers' | 'raffle';
 type Editor = { resource: Resource; id: string | null };
 const names: Record<string, string> = campus.names;
 function download(name: string, content: string, type: string) {
@@ -103,9 +104,9 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
     <AppNavigation label="Administración local" admin items={[
       { id: 'overview', title: 'Resumen', icon: 'dashboard' }, { id: 'users', title: 'Usuarios', icon: 'users' },
       { id: 'challenges', title: 'Retos', icon: 'route' }, { id: 'projects', title: 'Proyectos', icon: 'projects' },
-      { id: 'answers', title: 'Respuestas', icon: 'answers' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
+      { id: 'answers', title: 'Respuestas', icon: 'answers' }, { id: 'raffle', title: 'Rifa', icon: 'ticket' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
     ] as const} active={tab} onChange={changeTab}/>
-    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={tab === 'overview' ? 'Resumen' : 'Panel de administración'} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
+    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={tab === 'overview' ? 'Resumen' : tab === 'raffle' ? 'Rifa aleatoria' : 'Panel de administración'} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
       <p className="admin-local-note">Modo local de prueba: este token es público. Los cambios y las métricas no se comparten entre dispositivos ni modifican los JSON del repositorio.</p>
       {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="feedback" role="status">{message}</p>}
       {tab === 'overview' && <AdminOverview data={data} rows={rows} onAnswers={showAnswers}/>}
@@ -128,6 +129,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
           return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions">{'token' in entry && entry.role !== 'admin' && <button onClick={() => showAnswers(entry.id)} aria-label={`Ver respuestas: ${title}`}>Ver respuestas</button>}<button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
         })}</div>
       </>}
+      {tab === 'raffle' && <AdminRaffle data={data} />}
       {tab === 'answers' && <ParticipantAnswers data={data} rows={rows} selectedId={selectedParticipant} onSelect={setSelectedParticipant} />}
       {tab === 'backup' && <section className="admin-backup"><h2>Catálogo JSON</h2><p>Exporta el catálogo editado para llevarlo a otro navegador o copiar sus listas a los archivos de public/data. El respaldo contiene usuarios y tokens ficticios. Los progresos individuales se exportan desde el resumen de cada participante.</p><button className="primary" onClick={() => attempt(() => download('catalogo-expotec.json', JSON.stringify(data, null, 2), 'application/json'))}>Exportar catálogo JSON</button><label>Importar catálogo JSON<input type="file" accept="application/json,.json" onChange={async e => {
         const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
