@@ -18,7 +18,7 @@ type Resource = 'users' | 'challenges' | 'projects';
 type Tab = 'overview' | Resource | 'backup' | 'raffle' | 'tickets';
 type Editor = { resource: Resource; id: string | null };
 const names: Record<string, string> = campus.names;
-function download(name: string, content: string, type: string) {
+function download(name: string, content: string | ArrayBuffer, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const link = document.createElement('a'); link.href = url; link.download = name; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -34,6 +34,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   const [kind, setKind] = useState<LocalChallenge['kind']>('freeform');
   const [remove, setRemove] = useState<{ resource: Resource; id: string; title: string } | null>(null);
   const [userKind, setUserKind] = useState<LocalUser['kind'] | ''>('');
+  const [exporting, setExporting] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -108,7 +109,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
         }
         next.challenges = editor.id ? next.challenges.map(c => c.id === id ? value : c) : [...next.challenges, value];
       }
-      onSave(next); setEditor(null); setMessage('Cambio guardado en este navegador. Exporta el catálogo si quieres conservarlo como archivo.');
+      onSave(next); setEditor(null); setMessage('Cambio guardado en este navegador.');
     });
   }
   function removeEntry() {
@@ -120,6 +121,18 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
       if (remove.resource === 'challenges') next.challenges = next.challenges.filter(c => c.id !== remove.id);
       onSave(next); setRemove(null); setMessage('Registro eliminado del catálogo local.');
     });
+  }
+  async function exportExcel() {
+    if (exporting) return;
+    setExporting(true); setError(''); setMessage('');
+    try {
+      const { participantExcel } = await import('@/lib/participant-export');
+      const current = restoreCatalog(data, localStorage);
+      const content = await participantExcel(current, localStorage);
+      download('participantes-expotec.xlsx', content, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      setMessage('Excel generado con usuarios, estados finales y respuestas guardadas en este navegador.');
+    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo generar el Excel. Inténtalo de nuevo.'); }
+    finally { setExporting(false); }
   }
   function report() {
     const header = ['Nombre', 'Perfil', 'Estado', 'Retos', 'Tiquetes', 'Códigos de tiquetes', 'Votos emitidos', 'Votos disponibles', 'Encuesta'];
@@ -135,7 +148,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
       { id: 'challenges', title: 'Retos', icon: 'route' }, { id: 'projects', title: 'Proyectos', icon: 'projects' },
       { id: 'tickets', title: 'Tiquetes', icon: 'ticket' }, { id: 'raffle', title: 'Rifa', icon: 'ticket' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
     ] as const} active={tab} onChange={changeTab}/>
-    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={tab === 'overview' ? 'Resumen' : tab === 'raffle' ? 'Rifa aleatoria' : tab === 'users' ? 'Usuarios' : tab === 'tickets' ? 'Tiquetes' : 'Panel de administración'} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
+    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={tab === 'overview' ? 'Resumen' : tab === 'raffle' ? 'Rifa aleatoria' : tab === 'users' ? 'Usuarios' : tab === 'tickets' ? 'Tiquetes' : tab === 'backup' ? 'Exportar datos' : 'Panel de administración'} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
       <p className="admin-local-note">Modo local de prueba: este token es público. Los cambios y las métricas no se comparten entre dispositivos ni modifican los JSON del repositorio.</p>
       {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="feedback" role="status">{message}</p>}
       {tab === 'overview' && <AdminOverview data={data} rows={rows} onAnswers={showAnswers} ledger={ledger}/>}
@@ -161,10 +174,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
       {tab === 'tickets' && <AdminTickets {...ledger}/>}
       {tab === 'raffle' && <AdminRaffle data={data} />}
       {tab === 'users' && detail && <section className="user-detail"><div className="admin-detail-actions"><button onClick={() => setDetail(null)}>Volver a usuarios</button><div role="group" aria-label="Consultar participante"><button aria-pressed={detail.view === 'answers'} onClick={() => setDetail({ ...detail, view: 'answers' })}>Ver respuestas</button><button aria-pressed={detail.view === 'tickets'} onClick={() => setDetail({ ...detail, view: 'tickets' })}>Ver tiquetes</button></div></div>{!detailUser ? <p>El participante ya no está disponible.</p> : detail.view === 'answers' ? <ParticipantAnswers data={data} rows={rows} selectedId={detail.userId}/> : <ParticipantTickets user={detailUser} ledger={ledger} votesAvailable={rows.find(r => r.user.id === detail.userId)?.stats?.votesAvailable}/>}</section>}
-      {tab === 'backup' && <section className="admin-backup"><h2>Catálogo JSON</h2><p>Exporta el catálogo editado para llevarlo a otro navegador o copiar sus listas a los archivos de public/data. El respaldo contiene usuarios y tokens ficticios. Los progresos individuales se exportan desde el resumen de cada participante.</p><button className="primary" onClick={() => attempt(() => download('catalogo-expotec.json', JSON.stringify(data, null, 2), 'application/json'))}>Exportar catálogo JSON</button><label>Importar catálogo JSON<input type="file" accept="application/json,.json" onChange={async e => {
-        const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
-        try { if (file.size > 2000000) throw Error('El archivo supera el tamaño permitido.'); const value = JSON.parse(await file.text()); onSave(value); setMessage('Catálogo importado y validado.'); setError(''); } catch (e) { setError(e instanceof Error ? e.message : 'Archivo no válido.'); }
-      }} /></label><p className="muted">Los cambios deben mantener tu administrador, los cinco retos base y las respuestas/votos ya guardados. No hay envíos a un servidor.</p></section>}
+      {tab === 'backup' && <section className="admin-backup"><h2>Exportar datos de ExpoTEC</h2><p>Descarga un archivo Excel (.xlsx) con todos los participantes registrados, incluidos quienes no activaron el recorrido. Puedes filtrar dentro de Excel por tipo de usuario y estado final.</p><ul><li><b>Usuarios:</b> nombre, tipo de usuario, identificación, correo, token, estado, avances y votos.</li><li><b>Retos base:</b> cada pregunta y respuesta, con los retos completados y pendientes.</li><li><b>Retos extra:</b> los retos asignados a cada participante y sus respuestas.</li><li><b>Encuestas:</b> respuestas guardadas y estado de la encuesta.</li></ul><button className="primary" onClick={() => void exportExcel()} disabled={exporting}>{exporting ? 'Generando Excel…' : 'Exportar Excel (.xlsx)'}</button><p className="muted">Completado significa que terminó los cinco retos base. Las respuestas pendientes aparecen vacías. El archivo contiene los datos guardados en este navegador al momento de exportar.</p></section>}
     </div></main>
   </div>;
 }

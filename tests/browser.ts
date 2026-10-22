@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import ExcelJS from 'exceljs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { LocalChallenge } from '../src/lib/local-game';
@@ -273,13 +274,19 @@ async function main() {
     await page.reload(); await adminNav('Retos').click();
     await page.getByRole('heading', { name: 'Reto del administrador', exact: true }).waitFor();
     await adminNav('Respaldo').click();
-    const catalogDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Exportar catálogo JSON', exact: true }).click();
-    const catalogFile = await (await catalogDownload).path(); assert.ok(catalogFile);
-    const exportedCatalog = JSON.parse(readFileSync(catalogFile!, 'utf8'));
-    assert.ok(exportedCatalog.users.some((u: { token: string }) => u.token === createdToken));
-    await page.getByLabel('Importar catálogo JSON').setInputFiles(catalogFile!);
-    await page.getByRole('status').filter({ hasText: 'Catálogo importado' }).waitFor();
+    const excelDownload = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Exportar Excel (.xlsx)', exact: true }).click();
+    const excel = await excelDownload;
+    assert.equal(excel.suggestedFilename(), 'participantes-expotec.xlsx');
+    const excelFile = await excel.path(); assert.ok(excelFile);
+    const exportedWorkbook = new ExcelJS.Workbook();
+    await exportedWorkbook.xlsx.readFile(excelFile!);
+    assert.deepEqual(exportedWorkbook.worksheets.map(sheet => sheet.name), ['Usuarios', 'Retos base', 'Retos extra', 'Encuestas']);
+    const userSheet = exportedWorkbook.getWorksheet('Usuarios')!;
+    let foundToken = false;
+    userSheet.eachRow(row => { if (row.getCell(5).value === createdToken) { foundToken = true; assert.equal(row.getCell(6).value, 'Sin activar'); } });
+    assert.ok(foundToken);
+    assert.ok(exportedWorkbook.getWorksheet('Retos base')!.rowCount > 5);
     await adminNav('Resumen').click();
     const reportDownload = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Descargar CSV', exact: true }).click();
@@ -291,7 +298,7 @@ async function main() {
     await page.getByRole('button', { name: 'Ingresar →' }).click();
     await page.getByRole('heading', { name: 'Bienvenido, Valeria.' }).waitFor();
     assert.deepEqual(apiCalls, []); assert.deepEqual(errors, []);
-    console.log('PASS local admin access, participant denial, automatic hexadecimal tokens, visitor without ID and free-text applicant ID, CRUD, persistence, catalog import/export, CSV and new-user login');
+    console.log('PASS local admin access, participant denial, automatic hexadecimal tokens, visitor without ID and free-text applicant ID, CRUD, persistence, Excel export with participants, final states and answers, CSV and new-user login');
     await context.close();
     // Catálogo grande aislado: nunca modifica los JSON ni el navegador anterior.
     const large = Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))]));
