@@ -238,20 +238,19 @@ async function main() {
     console.log('PASS admin participant detail: question text, selected quiz options, freeform, codes, survey, pending and per-user isolation');
 
     await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
-    await page.getByLabel('Número de cédula').fill('123456789');
     await page.getByLabel('Nombre completo').fill('Valeria Prueba');
     await page.getByLabel('Tipo de usuario').selectOption('visitor');
     assert.equal(await page.getByLabel('Token de cuatro caracteres').count(), 0);
     await page.getByRole('button', { name: 'Generar usuario', exact: true }).click();
     await page.getByRole('heading', { name: 'Valeria Prueba', exact: true }).waitFor();
     const createdToken = await page.evaluate(() => JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u: {name:string}) => u.name === 'Valeria Prueba').token as string);
-    assert.match(createdToken, /^\d{4}$/);
+    assert.match(createdToken, /^[0-9A-F]{4}$/);
     await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
-    await page.getByLabel('Número de cédula').fill('1-2345-6789');
     await page.getByLabel('Nombre completo').fill('Otra persona');
     await page.getByLabel('Tipo de usuario').selectOption('applicant');
+    await page.getByLabel('Identificación', { exact: true }).fill('Pasaporte AB-123');
     await page.getByRole('button', { name: 'Generar usuario', exact: true }).click();
-    await page.getByRole('alert').filter({ hasText: 'esa cédula' }).waitFor();
+    await page.getByRole('heading', { name: 'Otra persona', exact: true }).waitFor();
     await adminNav('Proyectos').click(); await page.getByRole('button', { name: 'Nuevo proyecto', exact: true }).click();
     await page.getByLabel('Nombre del proyecto', { exact: true }).fill('Proyecto del administrador');
     await page.getByLabel('Especialidad', { exact: true }).fill('TICs');
@@ -292,7 +291,7 @@ async function main() {
     await page.getByRole('button', { name: 'Ingresar →' }).click();
     await page.getByRole('heading', { name: 'Bienvenido, Valeria.' }).waitFor();
     assert.deepEqual(apiCalls, []); assert.deepEqual(errors, []);
-    console.log('PASS local admin access, participant denial, automatic numeric tokens, duplicate national ID, CRUD, persistence, catalog import/export, CSV and new-user login');
+    console.log('PASS local admin access, participant denial, automatic hexadecimal tokens, visitor without ID and free-text applicant ID, CRUD, persistence, catalog import/export, CSV and new-user login');
     await context.close();
     // Catálogo grande aislado: nunca modifica los JSON ni el navegador anterior.
     const large = Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))]));

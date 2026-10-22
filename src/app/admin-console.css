@@ -278,3 +278,6 @@
 @keyframes raffle-roll { from { transform: translateY(0); filter: blur(1px); } 75% { filter: blur(0); } to { transform: translateY(var(--reel-end)); filter: blur(0); } }
 @media (max-width: 650px) { .raffle-stage-heading { align-items: flex-start; flex-direction: column; gap: 8px; } }
 @media (prefers-reduced-motion: reduce) { .raffle-reel { animation: none; } }
+
+.admin-local .admin-record-list > article > div:first-child { min-width: 0; }
+.admin-local .admin-record-list p { overflow-wrap: anywhere; }

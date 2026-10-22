@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { createParticipant, normalizeNationalId } from '@/lib/user-registration';
+import { createParticipant, parseParticipantDetails } from '@/lib/user-registration';
 import { adminRows, csvField, CATALOG_KEY, restoreCatalog } from '@/lib/local-admin';
 import { normalize, type LocalChallenge, type LocalData, type LocalUser } from '@/lib/local-game';
 import campus from '@/lib/campus.json';
@@ -33,6 +33,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [kind, setKind] = useState<LocalChallenge['kind']>('freeform');
   const [remove, setRemove] = useState<{ resource: Resource; id: string; title: string } | null>(null);
+  const [userKind, setUserKind] = useState<LocalUser['kind'] | ''>('');
   const [savingUser, setSavingUser] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -61,6 +62,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   function showAnswers(id: string) { showParticipant(id, 'answers'); }
   function open(resource: Resource, id: string | null) {
     setError(''); setMessage(''); setRemove(null); setEditor({ resource, id });
+    if (resource === 'users') setUserKind(data.users.find(u => u.id === id)?.kind ?? '');
     if (resource === 'challenges') setKind(data.challenges.find(c => c.id === id)?.kind ?? 'freeform');
   }
   async function save(e: React.FormEvent<HTMLFormElement>) {
@@ -74,7 +76,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
         // A shared catalog lock keeps simultaneous registrations in separate tabs unique.
         await navigator.locks.request(CATALOG_KEY, () => {
           const latest = restoreCatalog(data, localStorage);
-          const created = createParticipant(latest, { nationalId: text('nationalId'), name: text('name'), email: text('email'), kind: text('kind') as LocalUser['kind'] });
+          const created = createParticipant(latest, { nationalId: String(values.get('nationalId') ?? ''), name: text('name'), email: text('email'), kind: text('kind') as LocalUser['kind'] });
           onSave({ ...latest, users: [...latest.users, created] });
           setEditor(null); setMessage(`Usuario generado: ${created.name}. Token de acceso: ${created.token}.`);
         });
@@ -86,7 +88,8 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
       const id = editor.id ?? crypto.randomUUID();
       const next = structuredClone(data);
       if (editor.resource === 'users') {
-        const value: LocalUser = { id, nationalId: normalizeNationalId(text('nationalId')) || undefined, name: text('name'), email: text('email'), token: user!.token, kind: text('kind') as LocalUser['kind'], role: user?.role ?? 'participant' };
+        const details = parseParticipantDetails({ nationalId: String(values.get('nationalId') ?? ''), name: text('name'), email: text('email'), kind: text('kind') as LocalUser['kind'] });
+        const value: LocalUser = { id, ...details, token: user!.token, role: user?.role ?? 'participant' };
         next.users = editor.id ? next.users.map(u => u.id === id ? value : u) : [...next.users, value];
       } else if (editor.resource === 'projects') {
         const value = { id, name: text('name'), buildingId: text('buildingId'), specialty: text('specialty'), description: text('description') };
@@ -139,7 +142,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
       {!detail && (tab === 'users' || tab === 'challenges' || tab === 'projects') && <>
         <div className="admin-section-top"><h2>{tab === 'users' ? 'Usuarios de prueba' : tab === 'challenges' ? 'Catálogo de retos' : 'Proyectos para votar'}</h2><button className="primary" onClick={() => open(tab, null)}>{tab === 'users' ? 'Nuevo usuario' : tab === 'challenges' ? 'Nuevo reto extra' : 'Nuevo proyecto'}</button></div>
         {editor && <section className="admin-editor" key={`${editor.resource}-${editor.id ?? 'new'}`}><h3>{editor.id ? 'Editar registro' : 'Crear registro'}</h3><form onSubmit={save}>
-          {editor.resource === 'users' && <><label>Número de cédula<input name="nationalId" defaultValue={user?.nationalId ?? ''} inputMode="numeric" maxLength={40} required={user?.role !== 'admin'} /></label>{field('Nombre completo', 'name', user?.name)}<label>Correo electrónico (opcional)<input name="email" type="email" defaultValue={user?.email ?? ''} maxLength={254} /></label><label>Tipo de usuario<select name="kind" defaultValue={user?.kind ?? ''} required><option value="" disabled>Selecciona el tipo de usuario</option><option value="visitor">Visitante</option><option value="applicant">Postulante</option></select></label>{editor.id ? <p>Token asignado: <b>{user?.token}</b></p> : <p>Al generar el usuario se asignará automáticamente un token único de cuatro dígitos.</p>}{user?.role === 'admin' && <p>Este registro conserva su rol de administrador.</p>}</>}
+          {editor.resource === 'users' && <><label>Tipo de usuario<select name="kind" value={userKind} onChange={e => setUserKind(e.target.value as LocalUser['kind'])} required><option value="" disabled>Selecciona el tipo de usuario</option><option value="visitor">Visitante</option><option value="applicant">Postulante</option></select></label>{field('Nombre completo', 'name', user?.name)}<label>Correo electrónico (opcional)<input name="email" type="email" defaultValue={user?.email ?? ''} maxLength={254} /></label>{userKind === 'applicant' && <><label>Identificación<input name="nationalId" defaultValue={user?.nationalId ?? ''} required aria-describedby="identification-help" /></label><p className="muted" id="identification-help">Escribe la cédula o el pasaporte tal como aparece en el documento.</p></>}{editor.id ? <p>Token asignado: <b>{user?.token}</b></p> : <p>Al generar el usuario se asignará automáticamente un token hexadecimal único de cuatro caracteres (0–9 y A–F).</p>}{user?.role === 'admin' && <p>Este registro conserva su rol de administrador.</p>}</>}
           {editor.resource === 'projects' && <>{field('Nombre del proyecto', 'name', project?.name)}{field('Especialidad', 'specialty', project?.specialty)}{location(project?.buildingId)}<label>Descripción<textarea name="description" defaultValue={project?.description} maxLength={1000} required /></label></>}
           {editor.resource === 'challenges' && <>{field('Título del reto', 'title', challenge?.title)}{location(challenge?.buildingId)}<label>Descripción<textarea name="description" defaultValue={challenge?.description} maxLength={1000} required /></label><label>Tipo de reto<select name="challengeKind" value={kind} onChange={e => setKind(e.target.value as LocalChallenge['kind'])}><option value="freeform">Formulario libre</option><option value="quiz">Especialidad: dos preguntas y código</option><option value="code">Código de stand / photobooth</option><option value="saint">Nombre del santo</option></select></label><p className="muted">{challenge?.isBase ? 'Reto base. La ruta mantiene exactamente cinco.' : 'Este reto aparecerá en futuras rondas extra.'} Las reglas de retos con respuestas guardadas se conservan.</p>
             {(kind === 'quiz' || kind === 'code') && <label>Código del stand<input name="code" defaultValue={challenge?.code ?? ''} pattern="[A-Za-z0-9]{4}" maxLength={4} minLength={4} required /></label>}
@@ -152,7 +155,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
         <label className="project-search">Buscar en el catálogo<input type="search" value={search} onChange={e => setSearch(e.target.value)} /></label>
         <div className="admin-record-list">{data[tab].filter(entry => normalize(JSON.stringify(entry)).includes(normalize(search))).map(entry => {
           const title = 'title' in entry ? entry.title : entry.name;
-          return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>Cédula: {entry.nationalId || 'Sin registrar'} · Correo: {'email' in entry && entry.email ? entry.email : 'Sin registrar'} · Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions">{'token' in entry && entry.role !== 'admin' && <><button onClick={() => showAnswers(entry.id)} aria-label={`Ver respuestas: ${title}`}>Ver respuestas</button><button onClick={() => showParticipant(entry.id, 'tickets')} aria-label={`Ver tiquetes: ${title}`}>Ver tiquetes</button></>}<button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
+          return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>{entry.kind === 'applicant' && <>Identificación: {entry.nationalId || 'Sin registrar'} · </>}Correo: {'email' in entry && entry.email ? entry.email : 'Sin registrar'} · Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions">{'token' in entry && entry.role !== 'admin' && <><button onClick={() => showAnswers(entry.id)} aria-label={`Ver respuestas: ${title}`}>Ver respuestas</button><button onClick={() => showParticipant(entry.id, 'tickets')} aria-label={`Ver tiquetes: ${title}`}>Ver tiquetes</button></>}<button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
         })}</div>
       </>}
       {tab === 'tickets' && <AdminTickets {...ledger}/>}
