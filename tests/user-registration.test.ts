@@ -1,0 +1,37 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createParticipant, generateUserToken } from '../src/lib/user-registration';
+import { localDataSchema } from '../src/lib/local-game';
+const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
+const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))])));
+test('token generation preserves four digits and excludes every occupied token', () => {
+  assert.equal(generateUserToken([{ token: '0000' }, { token: 'K8P2' }], () => 0), '0001');
+  assert.equal(generateUserToken([], () => 0), '0000');
+  const occupied = Array.from({length:10000}, (_,i) => ({token:String(i).padStart(4,'0')}));
+  assert.throws(() => generateUserToken(occupied), /No quedan tokens/);
+  assert.equal(generateUserToken(occupied.filter(u => u.token !== '0427'), () => 0), '0427');
+});
+test('registration stores national ID and optional email while enforcing unique identities and tokens', () => {
+  const first = createParticipant(data, {kind:'visitor',nationalId:'1-2345-6789',name:'  Persona Prueba  '});
+  assert.equal(first.nationalId, '123456789');
+  assert.equal(first.name, 'Persona Prueba');
+  assert.equal(first.email, undefined);
+  assert.match(first.token, /^\d{4}$/);
+  assert.equal(first.role, 'participant');
+  assert.equal(first.kind, 'visitor');
+  const next = {...data,users:[...data.users,first]};
+  assert.ok(localDataSchema.safeParse(next).success);
+  assert.throws(() => createParticipant(next,{kind:'visitor',nationalId:'123456789',name:'Duplicada'}), /esa cédula/);
+  const second = createParticipant(next,{kind:'applicant',nationalId:'000000001',name:'Segunda Persona',email:' persona@example.com '});
+  assert.equal(second.nationalId,'000000001');
+  assert.equal(second.email,'persona@example.com');
+  assert.equal(second.kind,'applicant');
+  assert.notEqual(first.token,second.token);
+  assert.throws(() => createParticipant(data,{kind:'visitor',nationalId:'',name:'Persona'}));
+  assert.throws(() => createParticipant(data,{kind:'visitor',nationalId:'ABC',name:'Persona'}));
+  assert.throws(() => createParticipant(data,{kind:'visitor',nationalId:'123',name:' '}));
+  assert.throws(() => createParticipant(data,{kind:'visitor',nationalId:'123',name:'Persona',email:'invalid'}));
+  const duplicate = {...next,users:[...next.users,{...first,id:'other',token:'ZZZZ'}]};
+  assert.equal(localDataSchema.safeParse(duplicate).success,false);
+});
