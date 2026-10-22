@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { completeLocal, freshProgress, localDataSchema, storageKey, type LocalProgress } from '../src/lib/local-game';
+import { completeLocal, freshProgress, localDataSchema, storageKey, raffleKey, type LocalProgress } from '../src/lib/local-game';
 const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
 const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(`public/data/${key}.json`, 'utf8'))])));
 let progress: LocalProgress = { ...freshProgress(data, 'ana'), startedAt: new Date().toISOString() };
@@ -36,7 +36,7 @@ for (const width of [1280,390]) {
   assert.equal(await person.getByTestId('ticket-count').innerText(),'2');
   assert.equal(await person.getByTestId('available-votes').innerText(),'2');
   assert.equal(await nav.getByRole('button',{name:'Respuestas',exact:true}).count(),0);
-  assert.equal(await nav.getByRole('button',{name:'Tiquetes',exact:true}).count(),0);
+  assert.equal(await nav.getByRole('button',{name:'Tiquetes',exact:true}).count(),1);
   assert.equal(await wallet.getByText('Digital',{exact:true}).count(),1);
   assert.equal(await wallet.getByText('Manual',{exact:true}).count(),1);
   await admin.getByRole('button',{name:'Sortear ganador'}).click();
@@ -78,8 +78,44 @@ for (const width of [1280,390]) {
   await admin.getByText('M4T7 1',{exact:true}).waitFor();
   assert.ok((await admin.getByRole('region',{name:'Tiquetes de Carlos Méndez'}).innerText()).includes('Votos disponibles: 0'));
 
+  await nav.getByRole('button',{name:'Tiquetes',exact:true}).click();
+  const table=admin.getByRole('region',{name:'Listado de tiquetes'});
+  assert.equal(await admin.getByLabel('Tiquetes por página').inputValue(),'0');
+  assert.equal(await table.locator('tbody tr').count(),3);
+  await admin.getByLabel('Buscar por nombre, token o código').fill('k8p2');
+  assert.equal(await table.locator('tbody tr').count(),2);
+  await admin.getByLabel('Buscar por nombre, token o código').fill('ana rodriguez');
+  assert.equal(await table.locator('tbody tr').count(),2);
+  await admin.getByLabel('Buscar por nombre, token o código').fill('M4T7');
+  assert.equal(await table.locator('tbody tr').count(),1);
+  await admin.getByLabel('Buscar por nombre, token o código').fill('inexistente');
+  await admin.getByText('No encontramos tiquetes con esos filtros.',{exact:true}).waitFor();
+  await admin.getByLabel('Buscar por nombre, token o código').fill('');
+  await admin.getByLabel('Origen del tiquete').selectOption('manual');
+  assert.equal(await table.locator('tbody tr').count(),2);
+  await admin.getByLabel('Origen del tiquete').selectOption('');
+  await admin.getByLabel('Estado del tiquete').selectOption('winner');
+  assert.equal(await table.locator('tbody tr').count(),1);
+  await admin.getByLabel('Estado del tiquete').selectOption('');
+  assert.equal(await table.locator('tbody tr').count(),3);
+  assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await admin.screenshot({path:`work/all-tickets-${width}.png`,fullPage:true});
+  await admin.evaluate(key => {
+    const state=JSON.parse(localStorage.getItem(key)!);
+    const template=state.manual.find((t: {userId?:string})=>t.userId==='ana');
+    for(let i=3;i<=32;i++) state.manual.push({...template,id:`K8P2 ${i}`,number:`K8P2 ${i}`});
+    localStorage.setItem(key,JSON.stringify(state));
+  },raffleKey(data));
+  await admin.reload(); await nav.getByRole('button',{name:'Tiquetes',exact:true}).click();
+  assert.equal(await table.locator('tbody tr').count(),33);
+  await admin.getByLabel('Tiquetes por página').selectOption('25');
+  assert.equal(await table.locator('tbody tr').count(),25);
+  await admin.getByRole('navigation',{name:'Páginas de todos los tiquetes'}).getByRole('button',{name:'Siguiente →'}).click();
+  assert.equal(await table.locator('tbody tr').count(),8);
+  await admin.getByLabel('Tiquetes por página').selectOption('0');
+  assert.equal(await table.locator('tbody tr').count(),33);
   assert.deepEqual(errors,[]);
-  console.log(`PASS ${width}: user detail buttons, shared ticket codes, manual voting, overspend prevention, reload and ownership`);
+  console.log(`PASS ${width}: user detail buttons, shared ticket codes, manual voting, filters by name/token/source/status, all 33 tickets, pagination and reload`);
   await context.close();
 }
 } finally { await browser.close(); }

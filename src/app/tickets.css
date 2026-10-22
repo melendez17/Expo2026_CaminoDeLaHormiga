@@ -14,3 +14,16 @@
 .admin-detail-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
 .admin-detail-actions [role=group] { display: flex; gap: 8px; flex-wrap: wrap; }
 .admin-detail-actions button[aria-pressed=true] { background: #153c29; color: #fff; }
+.ticket-filters { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr)); gap: 16px; margin-block: 24px; align-items: end; }
+.ticket-filters label { min-width: 0; }
+.ticket-filters input, .ticket-filters select { width: 100%; box-sizing: border-box; }
+.all-tickets-table { overflow-x: auto; border-radius: 12px; }
+.all-tickets-table table { width: 100%; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
+.all-tickets-table th, .all-tickets-table td { padding: 16px 12px; border-bottom: 1px solid #b8cdbf; }
+.all-tickets-table th { color: #153c29; white-space: nowrap; }
+.all-tickets-table td { color: #153c29; min-width: 100px; }
+.all-tickets-table td strong { font-size: 20px; white-space: nowrap; }
+.all-tickets-table .ticket-won { color: #765318; font-weight: 700; }
+.all-tickets-table .ticket-eligible { color: #226340; }
+@media(max-width:1000px) { .ticket-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media(max-width:650px) { .ticket-filters { grid-template-columns: minmax(0, 1fr); } }
