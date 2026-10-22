@@ -1,41 +1,78 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addManual, drawRaffle, randomIndex, readRaffle } from '../src/lib/raffle';
-import type { LocalData } from '../src/lib/local-game';
-test('manual tickets reject duplicate numbers and blank names', () => {
-  const state = addManual({ manual: [], history: [] }, ' Ana ', ' a01 ');
-  assert.equal(state.manual[0].name, 'Ana');
-  assert.throws(() => addManual(state, 'Luis', 'A01'), /ya está/);
-  assert.throws(() => addManual(state, ' ', 'A02'));
+import { readFileSync } from 'node:fs';
+import { addManual, digitalTickets, drawRaffle, raffleKey, randomIndex, readRaffle, type RaffleState } from '../src/lib/raffle';
+import { localDataSchema, freshProgress, completeLocal, storageKey } from '../src/lib/local-game';
+const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
+const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))])));
+data.users.find(u => u.id === 'ana')!.email = 'ana@example.com';
+const empty = (): RaffleState => ({ manual: [], history: [] });
+const add = (state = empty()) => addManual(data, state, 'k8p2', 'Ana Rodríguez', 'ana@example.com', []);
+function reader(state: RaffleState, tickets: boolean | number = false) {
+  let p = { ...freshProgress(data, 'ana'), startedAt: new Date().toISOString() };
+  if (tickets) for (const c of data.challenges.filter(c => c.isBase)) {
+    const answers: Record<string, string> = c.kind === 'freeform' ? { projectName: 'Proyecto', level: 'Quinto', description: 'Aprendí sobre tecnología y sensores.' } : { code: c.code!, ...Object.fromEntries((c.questions ?? []).map(q => [q.id, String(q.correctIndex)])) };
+    p = completeLocal(data, p, c.id, answers);
+  }
+  if (tickets === 2) p = { ...p, survey: { expectations: 'Conocer proyectos', interest: 'Tecnología', satisfaction: 5 } };
+  return { getItem: (key: string) => key === raffleKey(data) ? JSON.stringify(state) : key === storageKey(data, 'ana') ? JSON.stringify(p) : null };
+}
+test('manual tickets link existing participants and number each registration', () => {
+  const first = add();
+  assert.equal(first.manual[0].id, 'K8P2 1');
+  assert.equal(first.manual[0].number, 'K8P2 1');
+  assert.equal(add(first).manual[1].id, 'K8P2 2');
+  assert.throws(() => addManual(data, first, 'ZZZZ', 'Ana Rodríguez', 'ana@example.com', []), /registrado/);
+  assert.throws(() => addManual(data, first, 'ADM1', 'Administrador', 'admin@example.com', []), /registrado/);
+  assert.throws(() => addManual(data, first, 'K8P2', 'Otra persona', 'ana@example.com', []), /nombre/);
+  assert.throws(() => addManual(data, first, 'K8P2', 'Ana Rodríguez', 'other@example.com', []), /correo/);
+  assert.throws(() => addManual(data, first, 'K8P2', 'Ana Rodríguez', 'invalid', []), /válido/);
 });
-test('mixed pool records a snapshot and excludes previous winning tickets', () => {
-  const state = addManual({ manual: [], history: [] }, 'Ana', '01');
-  const digital = [{ id: 'digital:luis:1', name: 'Luis', number: 'D-LUIS-1', source: 'digital' as const }];
+test('digital and manual share stable sequence when more digital tickets are earned', () => {
+  const digital = digitalTickets(data, reader(empty(), true));
+  assert.equal(digital[0].id, 'K8P2 1');
+  assert.equal(digital[0].email, 'ana@example.com');
+  const manual = addManual(data, empty(), 'K8P2', 'Ana Rodríguez', 'ana@example.com', digital);
+  assert.equal(manual.manual[0].number, 'K8P2 2');
+  assert.equal(digitalTickets(data, reader(manual, true))[0].number, 'K8P2 1');
+  assert.deepEqual(digitalTickets(data, reader(manual, 2)).map(t => t.number), ['K8P2 1', 'K8P2 3']);
+  const next = addManual(data, manual, 'K8P2', 'Ana Rodríguez', 'ana@example.com', digitalTickets(data, reader(manual, 2)));
+  assert.equal(next.manual[1].number, 'K8P2 4');
+  const manualFirst = add();
+  assert.equal(digitalTickets(data, reader(manualFirst, true))[0].number, 'K8P2 2');
+});
+test('mixed pool records snapshots and excludes winning tickets', () => {
+  const state = add();
+  const digital = [{ id: 'M4T7 1', name: 'Carlos', email: 'carlos@example.com', number: 'M4T7 1', source: 'digital' as const }];
   const first = drawRaffle(state, digital);
-  assert.equal(first.history[0].total, 2);
   const second = drawRaffle(first, digital);
+  assert.equal(first.history[0].total, 2);
   assert.equal(second.history[0].total, 1);
   assert.notEqual(first.history[0].winner.id, second.history[0].winner.id);
   assert.throws(() => drawRaffle(second, digital), /No hay tiquetes/);
+  assert.deepEqual(readRaffle(data, reader(second)), second);
   assert.equal(state.history.length, 0);
-  const data = { settings: { dataVersion: 'test' } } as LocalData;
-  assert.deepEqual(readRaffle(data, { getItem: () => JSON.stringify(second) }), second);
-  assert.throws(() => readRaffle(data, { getItem: () => '{broken' }));
+});
+test('legacy ticket labels migrate without reentering winning tickets', () => {
+  const old = { manual: [{ id: 'manual:001', name: 'Ana Rodríguez', email: 'ana@example.com', number: '001', source: 'manual' as const }], history: [{ id: 'draw', at: new Date().toISOString(), winner: { id: 'digital:ana:1', name: 'Ana Rodríguez', number: 'D-K8P2-1', source: 'digital' as const }, total: 2 }] };
+  const storage = reader(old, true);
+  const restored = readRaffle(data, storage);
+  assert.equal(restored.manual[0].id, 'K8P2 2');
+  assert.equal(restored.history[0].winner.id, 'K8P2 1');
+  assert.equal(digitalTickets(data, storage)[0].id, 'K8P2 1');
+  const drawn = drawRaffle(restored, digitalTickets(data, storage));
+  assert.equal(drawn.history[0].winner.id, 'K8P2 2');
+  assert.deepEqual(readRaffle(data, reader(restored, true)), restored);
+});
+test('winner emails survive persistence and old histories without email remain readable', () => {
+  const drawn = drawRaffle(add(), []);
+  assert.equal(readRaffle(data, reader(drawn)).history[0].winner.email, 'ana@example.com');
+  const old = JSON.parse(JSON.stringify(drawn)); delete old.manual[0].email; delete old.history[0].winner.email;
+  assert.equal(readRaffle(data, reader(old)).history[0].winner.email, undefined);
 });
 test('random sampling rejects biased tail and empty pools', () => {
   const values = [0xffffffff, 5];
   assert.equal(randomIndex(3, () => values.shift()!), 2);
   assert.equal(randomIndex(1, () => 0xffffffff), 0);
   assert.throws(() => randomIndex(0));
-});
-test('winner email survives saving and old histories remain readable', () => {
-  const state = addManual({ manual: [], history: [] }, 'Ana', 'M99', 'ana@example.com');
-  const drawn = drawRaffle(state, []);
-  assert.equal(drawn.history[0].winner.email, 'ana@example.com');
-  const data = { settings: { dataVersion: 'email-test' } } as LocalData;
-  assert.equal(readRaffle(data, { getItem: () => JSON.stringify(drawn) }).history[0].winner.email, 'ana@example.com');
-  const old = JSON.parse(JSON.stringify(drawn));
-  delete old.manual[0].email; delete old.history[0].winner.email;
-  assert.equal(readRaffle(data, { getItem: () => JSON.stringify(old) }).history[0].winner.email, undefined);
-  assert.throws(() => addManual(state, 'Luis', 'M100', 'invalid-email'));
 });

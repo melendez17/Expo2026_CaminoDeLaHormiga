@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { adminRows, type StorageReader } from './local-admin';
-import type { LocalData } from './local-game';
+import { normalize, type LocalData } from './local-game';
 const emailSchema = z.union([z.email().max(254), z.literal('')]).optional();
 const ticketSchema = z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(160), email: emailSchema, number: z.string().trim().min(1).max(80), source: z.enum(['digital', 'manual']) });
 export type RaffleTicket = z.infer<typeof ticketSchema>;
@@ -12,17 +12,61 @@ export function readRaffle(data: LocalData, storage: StorageReader): RaffleState
   if (!raw) return { manual: [], history: [] };
   const parsed = stateSchema.safeParse(JSON.parse(raw));
   if (!parsed.success) throw Error('El historial de rifa no es válido. Revisa el respaldo del navegador antes de continuar.');
-  return parsed.data;
+  const state = parsed.data;
+  const replacements = new Map<string, RaffleTicket>();
+  // Upgrade old digital labels and link legacy manual entries without losing winners.
+  const canonicalDigital = (t: RaffleTicket): RaffleTicket => {
+    if (t.source !== 'digital' || !t.id.startsWith('digital:')) return t;
+    const user = data.users.find(u => t.id.startsWith(`digital:${u.id}:`));
+    const index = Number(t.id.split(':').at(-1));
+    if (!user || !Number.isInteger(index) || index < 1) return t;
+    return { ...t, id: `${user.token} ${index}`, number: `${user.token} ${index}` };
+  };
+  state.history = state.history.map(h => ({ ...h, winner: canonicalDigital(h.winner) }));
+  const counts = new Map(adminRows(data, storage).map(r => [r.user.token, r.stats?.tickets ?? 0]));
+  const reserved = [...state.manual, ...state.history.map(h => h.winner)];
+  state.manual = state.manual.map(t => {
+    if (/^[A-Z0-9]{4} [1-9]\d*$/.test(t.id)) return t;
+    const matches = data.users.filter(u => u.role !== 'admin' && (t.email && u.email ? t.email.toLowerCase() === u.email.toLowerCase() : normalize(t.name) === normalize(u.name)));
+    if (matches.length !== 1) return t;
+    const user = matches[0];
+    const max = Math.max(counts.get(user.token) ?? 0, ...reserved.filter(x => x.id.startsWith(`${user.token} `)).map(x => Number(x.id.split(' ')[1]) || 0));
+    const id = `${user.token} ${max + 1}`;
+    const next = { ...t, id, number: id };
+    reserved.push(next); replacements.set(t.id, next);
+    return next;
+  });
+  state.history = state.history.map(h => ({ ...h, winner: replacements.has(h.winner.id) ? { ...h.winner, id: replacements.get(h.winner.id)!.id, number: replacements.get(h.winner.id)!.number } : h.winner }));
+  return state;
 }
 export function digitalTickets(data: LocalData, storage: StorageReader): RaffleTicket[] {
   const rows = adminRows(data, storage);
   if (rows.some(row => row.error)) throw Error('Hay progresos no válidos. Revisa los datos de participantes antes de rifar.');
-  return rows.flatMap(row => Array.from({ length: row.stats?.tickets ?? 0 }, (_, i) => ({ id: `digital:${row.user.id}:${i + 1}`, name: row.user.name, email: row.user.email, number: `D-${row.user.token}-${i + 1}`, source: 'digital' as const })));
+  const state = readRaffle(data, storage);
+  const manualIds = new Set(state.manual.map(t => t.id));
+  return rows.flatMap(row => {
+    const tickets: RaffleTicket[] = [];
+    let sequence = 1;
+    while (tickets.length < (row.stats?.tickets ?? 0)) {
+      const id = `${row.user.token} ${sequence++}`;
+      if (!manualIds.has(id)) tickets.push({ id, number: id, name: row.user.name, email: row.user.email, source: 'digital' });
+    }
+    return tickets;
+  });
 }
-export function addManual(state: RaffleState, name: string, number: string, email = ''): RaffleState {
-  const ticket = ticketSchema.parse({ id: `manual:${number.trim().toUpperCase()}`, name: name.trim(), email: email.trim(), number: number.trim().toUpperCase(), source: 'manual' });
-  if (state.manual.some(t => t.id === ticket.id)) throw Error('Ese tiquete manual ya está registrado.');
-  return { ...state, manual: [...state.manual, { ...ticket, source: 'manual' }] };
+export function addManual(data: LocalData, state: RaffleState, token: string, name: string, email: string, digital: RaffleTicket[]): RaffleState {
+  const code = token.trim().toUpperCase();
+  const user = data.users.find(u => u.token === code && u.role !== 'admin');
+  if (!user) throw Error('El token no pertenece a un participante registrado. Crea primero su usuario.');
+  if (normalize(name.trim()) !== normalize(user.name)) throw Error('El nombre no coincide con el participante del token. Revisa el registro de usuarios.');
+  const address = z.email().max(254).safeParse(email.trim());
+  if (!address.success) throw Error('Ingresa un correo electrónico válido.');
+  if (user.email && user.email.toLowerCase() !== address.data.toLowerCase()) throw Error('El correo no coincide con el participante del token. Revisa el registro de usuarios.');
+  const all = [...digital, ...state.manual, ...state.history.map(h => h.winner)];
+  const max = Math.max(0, ...all.filter(t => t.id.startsWith(`${code} `)).map(t => Number(t.id.slice(5)) || 0));
+  const id = `${code} ${max + 1}`;
+  const ticket = { id, name: user.name, email: address.data, number: id, source: 'manual' as const };
+  return { ...state, manual: [...state.manual, ticket] };
 }
 // Rejection sampling avoids bias when the pool size does not divide 2^32.
 export function randomIndex(size: number, next = () => crypto.getRandomValues(new Uint32Array(1))[0]): number {

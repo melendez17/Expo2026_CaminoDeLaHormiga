@@ -7,6 +7,8 @@ export function AdminRaffle({ data }: { data: LocalData }) {
   const [digital, setDigital] = useState<RaffleTicket[]>([]);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [participantToken, setParticipantToken] = useState('');
+  const participant = data.users.find(u => u.token === participantToken.trim().toUpperCase() && u.role !== 'admin');
   const busy = useRef(false);
   const [reel, setReel] = useState<{ id: string; tickets: RaffleTicket[] } | null>(null);
   const [spinning, setSpinning] = useState(false);
@@ -27,7 +29,7 @@ export function AdminRaffle({ data }: { data: LocalData }) {
       // Serialize writes across tabs so two draws cannot select the same ticket.
       await navigator.locks.request(raffleKey(data), () => {
         const next = action(readRaffle(data, localStorage));
-        localStorage.setItem(raffleKey(data), JSON.stringify(next)); setState(next); setError(''); afterSave?.(next);
+        localStorage.setItem(raffleKey(data), JSON.stringify(next)); setState(next); setDigital(digitalTickets(data, localStorage)); setError(''); afterSave?.(next);
       });
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar. Revisa el almacenamiento del navegador.'); }
     finally { busy.current = false; }
@@ -64,7 +66,7 @@ export function AdminRaffle({ data }: { data: LocalData }) {
     </div>
     {ready && !spinning && !digitalCount && !manualCount && <p>No hay tiquetes disponibles. Registra un tiquete manual o completa la ruta de un participante.</p>}
     {winner && !spinning && <div className="raffle-winner" role="status"><h3>Último ganador</h3><strong>{winner.winner.name}</strong><p className="raffle-winner-email">{winner.winner.email || 'Correo sin registrar'}</p><p>Tiquete ganador: <b>{winner.winner.number}</b> · {winner.winner.source === 'digital' ? 'Digital' : 'Manual'}</p></div>}
-    <section className="admin-editor"><h3>Registrar tiquete manual</h3><form onSubmit={e => { e.preventDefault(); const form = e.currentTarget; const fields = new FormData(form); void update(current => addManual(current, String(fields.get('name')), String(fields.get('number')), String(fields.get('email')))); }}><label>Nombre del participante<input name="name" required maxLength={160} /></label><label>Correo electrónico del participante<input name="email" type="email" required maxLength={254} /></label><label>Número de tiquete manual<input name="number" required maxLength={80} /></label><div><button type="submit" disabled={!ready || spinning}>Registrar tiquete</button></div></form></section>
+    <section className="admin-editor"><h3>Registrar tiquete manual</h3><p>Ingresa el token de una persona registrada. El nombre y el correo se completan con sus datos. Cada registro añade un tiquete con el siguiente número disponible, por ejemplo: K8P2 1.</p><form onSubmit={e => { e.preventDefault(); const form = e.currentTarget; const fields = new FormData(form); void update(current => addManual(data, current, participantToken, String(fields.get('name')), String(fields.get('email')), digitalTickets(data, localStorage))); }}><label>Token del participante<input name="token" value={participantToken} onChange={e => setParticipantToken(e.target.value.toUpperCase())} required pattern="[A-Za-z0-9]{4}" maxLength={4} autoComplete="off" /></label><label>Nombre del participante<input key={`name-${participant?.id}`} name="name" defaultValue={participant?.name ?? ''} required maxLength={160} /></label><label>Correo electrónico del participante<input key={`email-${participant?.id}`} name="email" type="email" defaultValue={participant?.email ?? ''} required maxLength={254} /></label><div><button type="submit" disabled={!ready || spinning}>Registrar tiquete</button></div></form></section>
     {state.manual.length > 0 && <details><summary>Tiquetes manuales registrados ({state.manual.length})</summary><ul>{state.manual.map(t => <li key={t.id}>{t.number} · {t.name} · {t.email || 'Correo sin registrar'}{used.has(t.id) ? ' · Ganador' : ''}</li>)}</ul></details>}
     <h3>Historial de sorteos</h3>
     {!visibleHistory.length ? <p>Aún no se han realizado sorteos.</p> : <div className="raffle-table"><table><thead><tr><th scope="col">Fecha y hora (Costa Rica)</th><th scope="col">Ganador</th><th scope="col">Correo electrónico</th><th scope="col">Tiquete ganador</th><th scope="col">Tipo</th><th scope="col">Tiquetes participantes</th></tr></thead><tbody>{visibleHistory.map(h => <tr key={h.id}><td><time dateTime={h.at}>{new Date(h.at).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}</time></td><td>{h.winner.name}</td><td>{h.winner.email || 'Sin registrar'}</td><td>{h.winner.number}</td><td>{h.winner.source === 'digital' ? 'Digital' : 'Manual'}</td><td>{h.total}</td></tr>)}</tbody></table></div>}
