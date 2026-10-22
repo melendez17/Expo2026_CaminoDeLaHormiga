@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { adminRows, type StorageReader } from './local-admin';
-import { normalize, type LocalData } from './local-game';
+import { normalize, raffleKey, type LocalData } from './local-game';
 const emailSchema = z.union([z.email().max(254), z.literal('')]).optional();
-const ticketSchema = z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(160), email: emailSchema, number: z.string().trim().min(1).max(80), source: z.enum(['digital', 'manual']) });
+const ticketSchema = z.object({ userId: z.string().optional(), id: z.string().min(1), name: z.string().trim().min(1).max(160), email: emailSchema, number: z.string().trim().min(1).max(80), source: z.enum(['digital', 'manual']) });
 export type RaffleTicket = z.infer<typeof ticketSchema>;
 const stateSchema = z.object({ manual: z.array(ticketSchema.extend({ source: z.literal('manual') })), history: z.array(z.object({ id: z.string(), at: z.iso.datetime(), winner: ticketSchema, total: z.number().int().positive() })) });
 export type RaffleState = z.infer<typeof stateSchema>;
-export const raffleKey = (data: LocalData) => `camino-raffle-v1-${data.settings.dataVersion}`;
+export { raffleKey } from './local-game';
 export function readRaffle(data: LocalData, storage: StorageReader): RaffleState {
   const raw = storage.getItem(raffleKey(data));
   if (!raw) return { manual: [], history: [] };
@@ -39,8 +39,8 @@ export function readRaffle(data: LocalData, storage: StorageReader): RaffleState
   state.history = state.history.map(h => ({ ...h, winner: replacements.has(h.winner.id) ? { ...h.winner, id: replacements.get(h.winner.id)!.id, number: replacements.get(h.winner.id)!.number } : h.winner }));
   return state;
 }
-export function digitalTickets(data: LocalData, storage: StorageReader): RaffleTicket[] {
-  const rows = adminRows(data, storage);
+export function digitalTickets(data: LocalData, storage: StorageReader, userId?: string): RaffleTicket[] {
+  const rows = adminRows(data, storage).filter(row => !userId || row.user.id === userId);
   if (rows.some(row => row.error)) throw Error('Hay progresos no válidos. Revisa los datos de participantes antes de rifar.');
   const state = readRaffle(data, storage);
   const manualIds = new Set(state.manual.map(t => t.id));
@@ -49,7 +49,7 @@ export function digitalTickets(data: LocalData, storage: StorageReader): RaffleT
     let sequence = 1;
     while (tickets.length < (row.stats?.tickets ?? 0)) {
       const id = `${row.user.token} ${sequence++}`;
-      if (!manualIds.has(id)) tickets.push({ id, number: id, name: row.user.name, email: row.user.email, source: 'digital' });
+      if (!manualIds.has(id)) tickets.push({ userId: row.user.id, id, number: id, name: row.user.name, email: row.user.email, source: 'digital' });
     }
     return tickets;
   });
@@ -61,7 +61,7 @@ export function addManual(data: LocalData, state: RaffleState, token: string, di
   const all = [...digital, ...state.manual, ...state.history.map(h => h.winner)];
   const max = Math.max(0, ...all.filter(t => t.id.startsWith(`${code} `)).map(t => Number(t.id.slice(5)) || 0));
   const id = `${code} ${max + 1}`;
-  const ticket = { id, name: user.name, email: user.email ?? '', number: id, source: 'manual' as const };
+  const ticket = { userId: user.id, id, name: user.name, email: user.email ?? '', number: id, source: 'manual' as const };
   return { ...state, manual: [...state.manual, ticket] };
 }
 // Rejection sampling avoids bias when the pool size does not divide 2^32.

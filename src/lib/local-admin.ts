@@ -1,4 +1,4 @@
-import { localDataSchema, parseProgress, freshProgress, storageKey, summary, type LocalData, type LocalProgress } from './local-game';
+import { localDataSchema, parseProgress, freshProgress, storageKey, raffleKey, summary, type LocalData, type LocalProgress } from './local-game';
 import campus from './campus.json';
 export const CATALOG_KEY = 'camino-local-catalog-v1';
 export type StorageReader = Pick<Storage, 'getItem'>;
@@ -34,6 +34,16 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
   if (next.settings.dataVersion !== previous.settings.dataVersion) throw Error('La versión del catálogo debe mantenerse al editar desde el panel.');
   if (JSON.stringify(next.settings) !== JSON.stringify(previous.settings)) throw Error('La edición de reglas se realiza en settings.json para una nueva versión de prueba.');
   for (const entry of [...next.challenges, ...next.projects, ...next.agenda]) if (!Object.hasOwn(campus.names, entry.buildingId)) throw Error('La zona del mapa no existe.');
+  const raffleRaw = storage.getItem(raffleKey(previous));
+  if (raffleRaw) {
+    const saved = JSON.parse(raffleRaw);
+    if (!Array.isArray(saved.manual)) throw Error('Revisa los tiquetes manuales guardados antes de cambiar el catálogo.');
+    for (const user of previous.users) {
+      const hasManual = saved.manual.some((ticket: { userId?: string; id?: string }) => ticket.userId === user.id || ticket.id?.startsWith(`${user.token} `));
+      const replacement = next.users.find(u => u.id === user.id);
+      if (hasManual && (!replacement || replacement.role === 'admin' || replacement.token !== user.token)) throw Error(`No puedes eliminar ni cambiar el token de ${user.name}: tiene tiquetes manuales asociados.`);
+    }
+  }
   for (const row of adminRows(previous, storage)) {
     if (row.error || !row.progress) throw Error(`Revisa los datos guardados de ${row.user.name} antes de cambiar el catálogo.`);
     const p: LocalProgress = row.progress;

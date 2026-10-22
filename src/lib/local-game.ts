@@ -101,3 +101,5 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   return p;
 }
 export const storageKey = (data: LocalData, userId: string) => `camino-local:${data.settings.dataVersion}:${userId}`;
+
+export const raffleKey = (data: LocalData) => `camino-raffle-v1-${data.settings.dataVersion}`;

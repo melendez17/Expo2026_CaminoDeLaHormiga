@@ -75,3 +75,37 @@ test('random sampling rejects biased tail and empty pools', () => {
   assert.equal(randomIndex(1, () => 0xffffffff), 0);
   assert.throws(() => randomIndex(0));
 });
+
+test('admin and participant see the same codes, origins and winning status', async () => {
+  const { ticketLedger } = await import('../src/lib/ticket-ledger');
+  const digital = digitalTickets(data, reader(empty(), true));
+  const manual = addManual(data, empty(), 'K8P2', digital);
+  const storage = reader(drawRaffle(manual, digital), true);
+  const admin = ticketLedger(data, storage);
+  const personal = ticketLedger(data, storage, 'ana');
+  assert.deepEqual(personal, admin.filter(t => t.userId === 'ana'));
+  assert.deepEqual(personal.map(t => t.number), ['K8P2 1', 'K8P2 2']);
+  assert.deepEqual(personal.map(t => t.source), ['digital', 'manual']);
+  assert.equal(personal.filter(t => t.won).length, 1);
+  assert.deepEqual(ticketLedger(data, storage, 'carlos'), []);
+  assert.equal(personal[1].token, 'K8P2');
+});
+test('manual tickets are visible without route progress and another invalid progress does not hide personal codes', async () => {
+  const { ticketLedger } = await import('../src/lib/ticket-ledger');
+  const base = reader(add());
+  const storage = { getItem: (key: string) => key === storageKey(data, 'carlos') ? '{broken' : base.getItem(key) };
+  assert.equal(ticketLedger(data, storage, 'ana')[0].number, 'K8P2 1');
+  assert.throws(() => ticketLedger(data, storage), /progresos/);
+});
+test('catalog changes cannot orphan manual tickets or change their token', async () => {
+  const { validateCatalogChange } = await import('../src/lib/local-admin');
+  const storage = { getItem: (key: string) => key === raffleKey(data) ? JSON.stringify(add()) : null };
+  for (const action of [
+    (next: typeof data) => { next.users = next.users.filter(u => u.id !== 'ana'); },
+    (next: typeof data) => { next.users.find(u => u.id === 'ana')!.token = 'AAAA'; },
+    (next: typeof data) => { next.users.find(u => u.id === 'ana')!.role = 'admin'; }
+  ]) {
+    const next = structuredClone(data); action(next);
+    assert.throws(() => validateCatalogChange(data, next, 'admin', storage), /tiquetes manuales asociados/);
+  }
+});

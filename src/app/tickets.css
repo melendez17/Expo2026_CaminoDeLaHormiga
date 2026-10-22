@@ -1,0 +1,17 @@
+.ticket-wallet { margin-block: 28px; padding-block: 24px; border-block: 1px solid #b8cdbf; color: #153c29; text-align: left; }
+.ticket-wallet h2 { margin-top: 0; }
+.ticket-wallet > p, .admin-tickets > p { line-height: 1.6; }
+.ticket-codes { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.ticket-codes li { background: #eef6ef; color: #153c29; border: 1px solid #b8cdbf; border-radius: 12px; padding: 12px 16px; display: grid; gap: 5px; min-width: 145px; }
+.ticket-codes strong { font-size: 20px; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.ticket-codes span { font-size: 12px; }
+.ticket-codes .ticket-won { color: #765318; font-weight: 700; }
+.ticket-codes .ticket-eligible { color: #226340; }
+.participant-ticket-list article { padding-block: 24px; border-bottom: 1px solid #b8cdbf; }
+.participant-ticket-list header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.participant-ticket-list h3 { margin: 0; }
+.participant-ticket-list p { margin: 8px 0; overflow-wrap: anywhere; }
+.participant-summary-table details { max-width: 250px; min-width: 125px; }
+.participant-summary-table summary { cursor: pointer; }
+.welcome-screen .ticket-wallet { width: min(100%, 650px); margin-inline: auto; }
+@media(max-width:650px) { .participant-ticket-list header { flex-direction: column; gap: 0; } .ticket-codes li { flex: 1 1 145px; min-width: 0; } }

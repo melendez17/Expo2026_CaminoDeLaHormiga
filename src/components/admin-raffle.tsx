@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { TICKETS_CHANGED } from '@/lib/ticket-ledger';
 import type { LocalData } from '@/lib/local-game';
 import { addManual, digitalTickets, drawRaffle, raffleKey, readRaffle, type RaffleState, type RaffleTicket } from '@/lib/raffle';
 export function AdminRaffle({ data }: { data: LocalData }) {
@@ -29,7 +30,7 @@ export function AdminRaffle({ data }: { data: LocalData }) {
       // Serialize writes across tabs so two draws cannot select the same ticket.
       await navigator.locks.request(raffleKey(data), () => {
         const next = action(readRaffle(data, localStorage));
-        localStorage.setItem(raffleKey(data), JSON.stringify(next)); setState(next); setDigital(digitalTickets(data, localStorage)); setError(''); afterSave?.(next);
+        localStorage.setItem(raffleKey(data), JSON.stringify(next)); window.dispatchEvent(new Event(TICKETS_CHANGED)); setState(next); setDigital(digitalTickets(data, localStorage)); setError(''); afterSave?.(next);
       });
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar. Revisa el almacenamiento del navegador.'); }
     finally { busy.current = false; }
