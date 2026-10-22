@@ -7,11 +7,10 @@
 .ticket-codes span { font-size: 12px; }
 .ticket-codes .ticket-won { color: #765318; font-weight: 700; }
 .ticket-codes .ticket-eligible { color: #226340; }
-.participant-ticket-list article { padding-block: 24px; border-bottom: 1px solid #b8cdbf; }
-.participant-ticket-list header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.participant-ticket-list h3 { margin: 0; }
-.participant-ticket-list p { margin: 8px 0; overflow-wrap: anywhere; }
 .participant-summary-table details { max-width: 250px; min-width: 125px; }
 .participant-summary-table summary { cursor: pointer; }
 .welcome-screen .ticket-wallet { width: min(100%, 650px); margin-inline: auto; }
-@media(max-width:650px) { .participant-ticket-list header { flex-direction: column; gap: 0; } .ticket-codes li { flex: 1 1 145px; min-width: 0; } }
+@media(max-width:650px) { .ticket-codes li { flex: 1 1 145px; min-width: 0; } }
+.admin-detail-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.admin-detail-actions [role=group] { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-detail-actions button[aria-pressed=true] { background: #153c29; color: #fff; }

@@ -221,13 +221,15 @@ async function main() {
     assert.equal(await quizCard.locator('.question-answer').count(), 3);
     await page.locator('.survey-answers').getByText('Conocer nuevos proyectos', { exact: true }).waitFor();
     await page.locator('.survey-answers').getByText('TICs', { exact: true }).waitFor();
-    await page.getByLabel('Seleccionar participante').selectOption('carlos');
+    await page.getByRole('button', { name: 'Volver a usuarios', exact: true }).click();
+    await page.getByRole('button', { name: 'Ver respuestas: Carlos Méndez', exact: true }).click();
     await page.getByText('Esta persona todavía no tiene respuestas guardadas.', { exact: true }).waitFor();
     assert.equal(await page.locator('.participant-answer-list .answer-pending').count(), 11);
-    await page.getByLabel('Seleccionar participante').selectOption('diego');
+    await page.getByRole('button', { name: 'Volver a usuarios', exact: true }).click();
+    await page.getByRole('button', { name: 'Ver respuestas: Diego Castro', exact: true }).click();
     await page.getByText('Descubrí cómo cuidar el agua con sensores.', { exact: true }).waitFor();
     await page.reload();
-    await adminNav('Respuestas').click(); await page.getByLabel('Seleccionar participante').selectOption('ana');
+    await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Ver respuestas: Ana Rodríguez', exact: true }).click();
     await page.locator('.participant-answer-header').getByRole('heading', { name: 'Ana Rodríguez', exact: true }).waitFor();
     await adminNav('Usuarios').click();
     await page.getByRole('button', { name: 'Ver respuestas: Ana Rodríguez', exact: true }).click();
@@ -237,6 +239,7 @@ async function main() {
 
     await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
     await page.getByLabel('Nombre completo').fill('Valeria Prueba');
+    await page.getByLabel('Correo electrónico', { exact: true }).fill('valeria@example.com');
     await page.getByLabel('Token de cuatro caracteres').fill('ADM1');
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'tokens duplicados' }).waitFor();

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { addManual, digitalTickets, drawRaffle, raffleKey, randomIndex, readRaffle, type RaffleState } from '../src/lib/raffle';
-import { localDataSchema, freshProgress, completeLocal, storageKey } from '../src/lib/local-game';
+import { localDataSchema, freshProgress, completeLocal, storageKey, manualTicketCount, summary, voteLocal, parseProgress } from '../src/lib/local-game';
 const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
 const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))])));
 data.users.find(u => u.id === 'ana')!.email = 'ana@example.com';
@@ -108,4 +108,42 @@ test('catalog changes cannot orphan manual tickets or change their token', async
     const next = structuredClone(data); action(next);
     assert.throws(() => validateCatalogChange(data, next, 'admin', storage), /tiquetes manuales asociados/);
   }
+});
+
+
+test('one manual ticket grants exactly one vote and survives reload without generating a digital ticket', async () => {
+  const { adminRows } = await import('../src/lib/local-admin');
+  const storage = reader(add());
+  const count = manualTicketCount(data, 'ana', storage);
+  assert.equal(count, 1);
+  assert.equal(manualTicketCount(data, 'carlos', storage), 0);
+  const p = parseProgress(data, 'ana', JSON.parse(storage.getItem(storageKey(data, 'ana'))!), count);
+  assert.equal(summary(data, p, count).votesAvailable, 1);
+  const voted = voteLocal(data, p, data.projects[0].id, count);
+  assert.equal(summary(data, voted, count).votesAvailable, 0);
+  assert.throws(() => voteLocal(data, voted, data.projects[0].id, count), /No tienes votos/);
+  assert.deepEqual(parseProgress(data, 'ana', JSON.parse(JSON.stringify(voted)), count), voted);
+  assert.throws(() => parseProgress(data, 'ana', voted), /votos no válidos/);
+  const reloaded = { getItem: (key: string) => key === storageKey(data, 'ana') ? JSON.stringify(voted) : storage.getItem(key) };
+  assert.equal(adminRows(data, reloaded).find(r => r.user.id === 'ana')!.stats!.votesAvailable, 0);
+  assert.equal(adminRows(data, reloaded).find(r => r.user.id === 'ana')!.stats!.tickets, 1);
+  assert.deepEqual(digitalTickets(data, reloaded), []);
+});
+test('digital and manual vote credits add together and raffle prizes do not consume votes', () => {
+  const initial = reader(empty(), true);
+  const digital = digitalTickets(data, initial);
+  const manual = addManual(data, empty(), 'K8P2', digital);
+  const drawn = drawRaffle(manual, digital);
+  const storage = reader(drawn, true);
+  const count = manualTicketCount(data, 'ana', storage);
+  let p = parseProgress(data, 'ana', JSON.parse(storage.getItem(storageKey(data, 'ana'))!), count);
+  assert.equal(summary(data, p, count).votesAvailable, 2);
+  p = voteLocal(data, p, data.projects[0].id, count);
+  p = voteLocal(data, p, data.projects[0].id, count);
+  assert.equal(summary(data, p, count).votesAvailable, 0);
+  assert.throws(() => voteLocal(data, p, data.projects[0].id, count), /No tienes votos/);
+  const next = addManual(data, drawn, 'K8P2', digital);
+  const added = manualTicketCount(data, 'ana', reader(next, true));
+  assert.equal(summary(data, p, added).votesAvailable, 1);
+  assert.equal(next.manual[1].number, 'K8P2 3');
 });

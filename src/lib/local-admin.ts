@@ -1,4 +1,4 @@
-import { localDataSchema, parseProgress, freshProgress, storageKey, raffleKey, summary, type LocalData, type LocalProgress } from './local-game';
+import { localDataSchema, parseProgress, freshProgress, storageKey, raffleKey, summary, manualTicketCount, type LocalData, type LocalProgress } from './local-game';
 import campus from './campus.json';
 export const CATALOG_KEY = 'camino-local-catalog-v1';
 export type StorageReader = Pick<Storage, 'getItem'>;
@@ -17,8 +17,9 @@ export function adminRows(data: LocalData, storage: StorageReader) {
   return data.users.filter(u => u.role !== 'admin').map(user => {
     try {
       const raw = storage.getItem(storageKey(data, user.id));
-      const progress = raw ? parseProgress(data, user.id, JSON.parse(raw)) : freshProgress(data, user.id);
-      const stats = summary(data, progress);
+      const manual = manualTicketCount(data, user.id, storage);
+      const progress = raw ? parseProgress(data, user.id, JSON.parse(raw), manual) : freshProgress(data, user.id);
+      const stats = summary(data, progress, manual);
       return { user, progress, stats, error: null as string | null, status: stats.routeComplete ? 'Completado' : progress.startedAt ? 'En proceso' : 'Sin activar' };
     } catch {
       return { user, progress: null, stats: null, error: 'Progreso no válido', status: 'Revisar datos' };
@@ -56,7 +57,7 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
       const newChallenge = next.challenges.find(c => c.id === record.challengeId);
       if (!newChallenge || oldChallenge.isBase !== newChallenge.isBase || oldChallenge.kind !== newChallenge.kind || JSON.stringify(oldChallenge.questions) !== JSON.stringify(newChallenge.questions) || oldChallenge.code !== newChallenge.code || oldChallenge.answer !== newChallenge.answer) throw Error('No puedes cambiar reglas de retos que ya tienen respuestas guardadas.');
     }
-    if (nextUser) parseProgress(next, nextUser.id, p);
+    if (nextUser) parseProgress(next, nextUser.id, p, manualTicketCount(next, nextUser.id, storage));
   }
   return next;
 }

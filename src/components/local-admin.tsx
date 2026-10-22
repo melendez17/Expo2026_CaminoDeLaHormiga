@@ -7,13 +7,13 @@ import { PageIntro } from './page-intro';
 import { PlaceTag } from './icons';
 import { AppNavigation } from './app-navigation';
 import { AdminOverview } from './admin-overview';
-import { AdminTickets } from './admin-tickets';
+import { ParticipantTickets } from './participant-tickets';
 import { useTicketLedger } from './use-ticket-ledger';
 import { AdminRaffle } from './admin-raffle';
 import { ParticipantAnswers } from './participant-answers';
 
 type Resource = 'users' | 'challenges' | 'projects';
-type Tab = 'overview' | Resource | 'backup' | 'answers' | 'raffle' | 'tickets';
+type Tab = 'overview' | Resource | 'backup' | 'raffle';
 type Editor = { resource: Resource; id: string | null };
 const names: Record<string, string> = campus.names;
 function download(name: string, content: string, type: string) {
@@ -27,7 +27,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
 }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [search, setSearch] = useState('');
-  const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
+  const [detail, setDetail] = useState<{ userId: string; view: 'answers' | 'tickets' } | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [kind, setKind] = useState<LocalChallenge['kind']>('freeform');
   const [remove, setRemove] = useState<{ resource: Resource; id: string; title: string } | null>(null);
@@ -41,6 +41,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   }, []);
   const rows = adminRows(data, localStorage);
   const ledger = useTicketLedger(data);
+  const detailUser = data.users.find(u => u.id === detail?.userId && u.role !== 'admin');
   const item = editor?.id ? data[editor.resource].find(entry => entry.id === editor.id) : null;
   const user = editor?.resource === 'users' ? item as LocalUser | null : null;
   const challenge = editor?.resource === 'challenges' ? item as LocalChallenge | null : null;
@@ -49,8 +50,12 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
   function attempt(action: () => void) {
     setError(''); try { action(); } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar el cambio.'); }
   }
-  function changeTab(next: Tab) { setTab(next); setEditor(null); setRemove(null); setSearch(''); setError(''); setMessage(''); }
-  function showAnswers(id: string) { changeTab('answers'); setSelectedParticipant(id); }
+  function changeTab(next: Tab) { setTab(next); setDetail(null); setEditor(null); setRemove(null); setSearch(''); setError(''); setMessage(''); }
+  function showParticipant(userId: string, view: 'answers' | 'tickets') {
+    if (tab !== 'users') setSearch('');
+    setTab('users'); setDetail({ userId, view }); setEditor(null); setRemove(null); setError(''); setMessage('');
+  }
+  function showAnswers(id: string) { showParticipant(id, 'answers'); }
   function open(resource: Resource, id: string | null) {
     setError(''); setMessage(''); setRemove(null); setEditor({ resource, id });
     if (resource === 'challenges') setKind(data.challenges.find(c => c.id === id)?.kind ?? 'freeform');
@@ -107,13 +112,13 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
     <AppNavigation label="Administración local" admin items={[
       { id: 'overview', title: 'Resumen', icon: 'dashboard' }, { id: 'users', title: 'Usuarios', icon: 'users' },
       { id: 'challenges', title: 'Retos', icon: 'route' }, { id: 'projects', title: 'Proyectos', icon: 'projects' },
-      { id: 'answers', title: 'Respuestas', icon: 'answers' }, { id: 'tickets', title: 'Tiquetes', icon: 'ticket' }, { id: 'raffle', title: 'Rifa', icon: 'ticket' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
+      { id: 'raffle', title: 'Rifa', icon: 'ticket' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
     ] as const} active={tab} onChange={changeTab}/>
-    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={tab === 'overview' ? 'Resumen' : tab === 'raffle' ? 'Rifa aleatoria' : tab === 'tickets' ? 'Tiquetes' : 'Panel de administración'} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
+    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={tab === 'overview' ? 'Resumen' : tab === 'raffle' ? 'Rifa aleatoria' : tab === 'users' ? 'Usuarios' : 'Panel de administración'} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
       <p className="admin-local-note">Modo local de prueba: este token es público. Los cambios y las métricas no se comparten entre dispositivos ni modifican los JSON del repositorio.</p>
       {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="feedback" role="status">{message}</p>}
       {tab === 'overview' && <AdminOverview data={data} rows={rows} onAnswers={showAnswers} ledger={ledger}/>}
-      {(tab === 'users' || tab === 'challenges' || tab === 'projects') && <>
+      {!detail && (tab === 'users' || tab === 'challenges' || tab === 'projects') && <>
         <div className="admin-section-top"><h2>{tab === 'users' ? 'Usuarios de prueba' : tab === 'challenges' ? 'Catálogo de retos' : 'Proyectos para votar'}</h2><button className="primary" onClick={() => open(tab, null)}>{tab === 'users' ? 'Nuevo usuario' : tab === 'challenges' ? 'Nuevo reto extra' : 'Nuevo proyecto'}</button></div>
         {editor && <section className="admin-editor" key={`${editor.resource}-${editor.id ?? 'new'}`}><h3>{editor.id ? 'Editar registro' : 'Crear registro'}</h3><form onSubmit={save}>
           {editor.resource === 'users' && <>{field('Nombre completo', 'name', user?.name)}<label>Correo electrónico<input name="email" type="email" defaultValue={user?.email ?? ''} maxLength={254} required /></label><label>Token de cuatro caracteres<input name="token" defaultValue={user?.token ?? crypto.randomUUID().slice(0, 4).toUpperCase()} pattern="[A-Za-z0-9]{4}" minLength={4} maxLength={4} required /></label><label>Perfil<select name="kind" defaultValue={user?.kind ?? 'visitor'}><option value="visitor">Visitante</option><option value="applicant">Postulante</option></select></label>{user?.role === 'admin' && <p>Este registro conserva su rol de administrador.</p>}</>}
@@ -129,12 +134,11 @@ export function LocalAdmin({ data, actor, onLogout, onSave }: {
         <label className="project-search">Buscar en el catálogo<input type="search" value={search} onChange={e => setSearch(e.target.value)} /></label>
         <div className="admin-record-list">{data[tab].filter(entry => normalize(JSON.stringify(entry)).includes(normalize(search))).map(entry => {
           const title = 'title' in entry ? entry.title : entry.name;
-          return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>Correo: {'email' in entry && entry.email ? entry.email : 'Sin registrar'} · Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions">{'token' in entry && entry.role !== 'admin' && <button onClick={() => showAnswers(entry.id)} aria-label={`Ver respuestas: ${title}`}>Ver respuestas</button>}<button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
+          return <article key={entry.id}><div><h3>{title}</h3>{'token' in entry && <p>Correo: {'email' in entry && entry.email ? entry.email : 'Sin registrar'} · Token: <b>{entry.token}</b> · {entry.role === 'admin' ? 'Administrador' : entry.kind === 'applicant' ? 'Postulante' : 'Visitante'}</p>}{'buildingId' in entry && <PlaceTag>{names[entry.buildingId]}</PlaceTag>}{'isBase' in entry && <small>{entry.isBase ? 'Reto base' : 'Reto extra'}</small>}</div><div className="admin-record-actions">{'token' in entry && entry.role !== 'admin' && <><button onClick={() => showAnswers(entry.id)} aria-label={`Ver respuestas: ${title}`}>Ver respuestas</button><button onClick={() => showParticipant(entry.id, 'tickets')} aria-label={`Ver tiquetes: ${title}`}>Ver tiquetes</button></>}<button onClick={() => open(tab, entry.id)} aria-label={`Editar: ${title}`}>Editar</button><button className="danger-button" onClick={() => { setRemove({ resource: tab, id: entry.id, title }); setError(''); }} aria-label={`Eliminar: ${title}`}>Eliminar</button></div></article>;
         })}</div>
       </>}
-      {tab === 'tickets' && <AdminTickets data={data} {...ledger}/>}
       {tab === 'raffle' && <AdminRaffle data={data} />}
-      {tab === 'answers' && <ParticipantAnswers data={data} rows={rows} selectedId={selectedParticipant} onSelect={setSelectedParticipant} />}
+      {tab === 'users' && detail && <section className="user-detail"><div className="admin-detail-actions"><button onClick={() => setDetail(null)}>Volver a usuarios</button><div role="group" aria-label="Consultar participante"><button aria-pressed={detail.view === 'answers'} onClick={() => setDetail({ ...detail, view: 'answers' })}>Ver respuestas</button><button aria-pressed={detail.view === 'tickets'} onClick={() => setDetail({ ...detail, view: 'tickets' })}>Ver tiquetes</button></div></div>{!detailUser ? <p>El participante ya no está disponible.</p> : detail.view === 'answers' ? <ParticipantAnswers data={data} rows={rows} selectedId={detail.userId}/> : <ParticipantTickets user={detailUser} ledger={ledger} votesAvailable={rows.find(r => r.user.id === detail.userId)?.stats?.votesAvailable}/>}</section>}
       {tab === 'backup' && <section className="admin-backup"><h2>Catálogo JSON</h2><p>Exporta el catálogo editado para llevarlo a otro navegador o copiar sus listas a los archivos de public/data. El respaldo contiene usuarios y tokens ficticios. Los progresos individuales se exportan desde el resumen de cada participante.</p><button className="primary" onClick={() => attempt(() => download('catalogo-expotec.json', JSON.stringify(data, null, 2), 'application/json'))}>Exportar catálogo JSON</button><label>Importar catálogo JSON<input type="file" accept="application/json,.json" onChange={async e => {
         const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
         try { if (file.size > 2000000) throw Error('El archivo supera el tamaño permitido.'); const value = JSON.parse(await file.text()); onSave(value); setMessage('Catálogo importado y validado.'); setError(''); } catch (e) { setError(e instanceof Error ? e.message : 'Archivo no válido.'); }

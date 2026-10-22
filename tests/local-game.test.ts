@@ -32,7 +32,7 @@ test('especialidad exige ambas respuestas correctas y código', () => {
 });
 test('cinco base otorgan un tiquete y un voto; duplicar reto no duplica premios', () => {
   const p = baseProgress();
-  assert.deepEqual(summary(data, p), { base: 5, extra: 0, routeComplete: true, tickets: 1, votesAvailable: 1 });
+  assert.deepEqual(summary(data, p), { base: 5, extra: 0, routeComplete: true, digitalTickets: 1, manualTickets: 0, tickets: 1, votesAvailable: 1 });
   const repeat = completeLocal(data, p, 'photo', answers(data.challenges.find(c => c.id === 'photo')!));
   assert.equal(repeat.completed.length, 5); assert.equal(summary(data, repeat).tickets, 1);
 });

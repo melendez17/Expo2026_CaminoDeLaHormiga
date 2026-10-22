@@ -47,12 +47,29 @@ export function findUser(data: LocalData, token: string) {
 export function freshProgress(data: LocalData, userId: string): LocalProgress {
   return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], extraIds: [], votes: [], survey: null };
 }
-export function summary(data: LocalData, progress: LocalProgress) {
+// Count vote credits from the persisted manual register, never from imported progress.
+export function manualTicketCount(data: LocalData, userId: string, storage: Pick<Storage, 'getItem'>): number {
+  const user = data.users.find(u => u.id === userId && u.role !== 'admin');
+  if (!user) return 0;
+  const raw = storage.getItem(raffleKey(data));
+  if (!raw) return 0;
+  const parsed = z.object({ manual: z.array(z.object({ id: z.string().min(1), userId: z.string().optional(), name: z.string(), email: z.string().optional(), source: z.literal('manual') })) }).safeParse(JSON.parse(raw));
+  if (!parsed.success) throw Error('Revisa el registro de tiquetes manuales antes de votar.');
+  const owned = parsed.data.manual.filter(t => {
+    if (t.userId) return t.userId === userId;
+    if (/^[A-Z0-9]{4} [1-9]\d*$/.test(t.id)) return t.id.startsWith(`${user.token} `);
+    const matches = data.users.filter(u => u.role !== 'admin' && (t.email && u.email ? t.email.toLowerCase() === u.email.toLowerCase() : normalize(t.name) === normalize(u.name)));
+    return matches.length === 1 && matches[0].id === userId;
+  });
+  return new Set(owned.map(t => t.id)).size;
+}
+export function summary(data: LocalData, progress: LocalProgress, manualTickets = 0) {
   const base = progress.completed.filter(r => data.challenges.some(c => c.id === r.challengeId && c.isBase)).length;
   const extra = progress.completed.length - base;
   const routeComplete = base === 5;
-  const tickets = (routeComplete ? data.settings.baseReward + Math.floor(extra / data.settings.extraEvery) : 0) + (routeComplete && progress.survey ? data.settings.surveyBonus : 0);
-  return { base, extra, routeComplete, tickets, votesAvailable: tickets - progress.votes.length };
+  const digitalTickets = (routeComplete ? data.settings.baseReward + Math.floor(extra / data.settings.extraEvery) : 0) + (routeComplete && progress.survey ? data.settings.surveyBonus : 0);
+  const tickets = digitalTickets + manualTickets;
+  return { base, extra, routeComplete, digitalTickets, manualTickets, tickets, votesAvailable: tickets - progress.votes.length };
 }
 export function validateAnswers(challenge: LocalChallenge, answers: Answers): string | null {
   if (challenge.kind === 'freeform') {
@@ -80,12 +97,12 @@ export function generateExtras(data: LocalData, progress: LocalProgress, random 
   for (let i = candidates.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [candidates[i], candidates[j]] = [candidates[j], candidates[i]]; }
   return { ...progress, extraIds: [...progress.extraIds, ...candidates.slice(0, data.settings.extraBatchSize).map(c => c.id)] };
 }
-export function voteLocal(data: LocalData, progress: LocalProgress, projectId: string): LocalProgress {
-  if (summary(data, progress).votesAvailable <= 0) throw Error('No tienes votos disponibles. Completa más retos para conseguir otro tiquete.');
+export function voteLocal(data: LocalData, progress: LocalProgress, projectId: string, manualTickets = 0): LocalProgress {
+  if (summary(data, progress, manualTickets).votesAvailable <= 0) throw Error('No tienes votos disponibles. Consigue otro tiquete para volver a votar.');
   if (!data.projects.some(p => p.id === projectId)) throw Error('El proyecto no existe.');
   return { ...progress, votes: [...progress.votes, { projectId, at: new Date().toISOString() }] };
 }
-export function parseProgress(data: LocalData, userId: string, input: unknown): LocalProgress {
+export function parseProgress(data: LocalData, userId: string, input: unknown, manualTickets = 0): LocalProgress {
   const parsed = progressSchema.safeParse(input);
   if (!parsed.success) throw Error('El formato del progreso no es válido. Revisa los campos del archivo.');
   const p = parsed.data;
@@ -96,7 +113,7 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
     const c = data.challenges.find(c => c.id === record.challengeId);
     if (!c || (!c.isBase && !p.extraIds.includes(c.id)) || validateAnswers(c, record.answers)) throw Error('El archivo contiene respuestas o retos no válidos.');
   }
-  if (p.votes.some(v => !data.projects.some(project => project.id === v.projectId)) || summary(data, p).votesAvailable < 0) throw Error('El archivo contiene votos no válidos.');
+  if (p.votes.some(v => !data.projects.some(project => project.id === v.projectId)) || summary(data, p, manualTickets).votesAvailable < 0) throw Error('El archivo contiene votos no válidos.');
   if ((p.extraIds.length || p.survey) && !summary(data, p).routeComplete) throw Error('Los retos base no están completos.');
   return p;
 }

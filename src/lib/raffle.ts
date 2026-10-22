@@ -23,7 +23,7 @@ export function readRaffle(data: LocalData, storage: StorageReader): RaffleState
     return { ...t, id: `${user.token} ${index}`, number: `${user.token} ${index}` };
   };
   state.history = state.history.map(h => ({ ...h, winner: canonicalDigital(h.winner) }));
-  const counts = new Map(adminRows(data, storage).map(r => [r.user.token, r.stats?.tickets ?? 0]));
+  const counts = new Map(adminRows(data, storage).map(r => [r.user.token, r.stats?.digitalTickets ?? 0]));
   const reserved = [...state.manual, ...state.history.map(h => h.winner)];
   state.manual = state.manual.map(t => {
     if (/^[A-Z0-9]{4} [1-9]\d*$/.test(t.id)) return t;
@@ -47,7 +47,7 @@ export function digitalTickets(data: LocalData, storage: StorageReader, userId?:
   return rows.flatMap(row => {
     const tickets: RaffleTicket[] = [];
     let sequence = 1;
-    while (tickets.length < (row.stats?.tickets ?? 0)) {
+    while (tickets.length < (row.stats?.digitalTickets ?? 0)) {
       const id = `${row.user.token} ${sequence++}`;
       if (!manualIds.has(id)) tickets.push({ userId: row.user.id, id, number: id, name: row.user.name, email: row.user.email, source: 'digital' });
     }
