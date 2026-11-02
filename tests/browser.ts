@@ -239,6 +239,7 @@ async function main() {
 
     await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
     await page.getByLabel('Nombre completo').fill('Valeria Prueba');
+    await page.getByLabel('Correo electrónico',{exact:true}).fill('valeria@example.com');
     assert.equal(await page.locator('input[name="token"]').count(),0);
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     const valeriaToken=await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba').token as string);
@@ -246,6 +247,7 @@ async function main() {
     await page.getByRole('heading', { name: 'Valeria Prueba', exact: true }).waitFor();
     await page.getByRole('button',{name:'Editar: Valeria Prueba',exact:true}).click();
     assert.equal(await page.locator('input[name="token"]').count(),0);
+    assert.equal(await page.getByLabel('Correo electrónico',{exact:true}).inputValue(),'valeria@example.com');
     await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba').token),valeriaToken);
     await adminNav('Proyectos').click(); await page.getByRole('button', { name: 'Nuevo proyecto', exact: true }).click();
@@ -354,6 +356,7 @@ async function main() {
     for (const [role,label] of variants) {
       await rolePage.getByRole('button',{name:'Nuevo usuario',exact:true}).click();
       await rolePage.getByLabel('Nombre completo').fill(`Admisión ${label}`);
+      await rolePage.getByLabel('Correo electrónico',{exact:true}).fill(`${role}@example.com`);
       assert.equal(await rolePage.locator('input[name="token"]').count(),0);
       assert.equal(await rolePage.getByLabel('Rol',{exact:true}).locator('option').count(),6);
       await rolePage.getByLabel('Rol',{exact:true}).selectOption(role);

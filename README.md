@@ -112,3 +112,5 @@ El sorteo incluye tiquetes digitales y manuales y guarda nombre del ganador, ID 
 La demo incluye dos proyectos de décimo y dos de undécimo por especialidad para probar distintas asignaciones. Son ejemplos ficticios. Para probar estos cambios en un despliegue de Vercel debe seleccionarse la rama `correccion-roles-proyectos-tiquetes`.
 
 Los usuarios nuevos creados desde el administrador reciben automáticamente un token único de cuatro caracteres al guardar. El formulario no solicita token; al editar una persona se conserva su código de acceso.
+
+El registro solicita un correo electrónico válido y obligatorio; se guarda en el catálogo y se incluye en el CSV administrativo. Los usuarios de catálogos anteriores sin correo siguen siendo compatibles; al editarlos se solicita completarlo. El acceso continúa mediante token.

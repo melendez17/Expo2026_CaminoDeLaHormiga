@@ -18,7 +18,7 @@ const challengeSchema = z.object({
 });
 export const localDataSchema = z.object({
   schemaRevision: z.number().int().min(1).default(3),
-  users: z.array(z.object({ id: z.string(), name: z.string().min(2), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']).default('visitor'), assignedSpecialty: z.string().transform(canonicalSpecialty).optional(), role: z.enum(['participant', 'admin', 'visitor', 'pasitos', 'school', 'third_cycle', 'fourth_cycle']).optional() }).transform(user => {
+  users: z.array(z.object({ id: z.string(), name: z.string().min(2), email: z.string().trim().toLowerCase().pipe(z.email({error:'Ingresa un correo electrónico válido.'})).optional(), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']).default('visitor'), assignedSpecialty: z.string().transform(canonicalSpecialty).optional(), role: z.enum(['participant', 'admin', 'visitor', 'pasitos', 'school', 'third_cycle', 'fourth_cycle']).optional() }).transform(user => {
     const role = !user.role || user.role === 'participant' ? (user.kind === 'applicant' ? 'fourth_cycle' as const : 'visitor' as const) : user.role;
     return { ...user, role, kind: isAdmissionRole(role) ? 'applicant' as const : 'visitor' as const };
   }).superRefine((user,ctx)=>{if(user.assignedSpecialty&&!specialties.some(s=>s.name===user.assignedSpecialty))ctx.addIssue({code:'custom',message:'La especialidad asignada no es válida'});})).min(1),

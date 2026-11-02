@@ -90,3 +90,12 @@ test('tokens automáticos de cuatro caracteres evitan colisiones y recorren el e
     assert.ok(!users.some(user=>user.token===token));
   }
 });
+
+test('correo se valida, se normaliza y los usuarios anteriores siguen siendo compatibles', () => {
+  const valid=change(c=>{c.users[0].email='  ANA@EXAMPLE.COM  ';});
+  assert.equal(validateCatalogChange(data,valid,'admin',storage).users[0].email,'ana@example.com');
+  assert.throws(()=>validateCatalogChange(data,change(c=>{c.users[0].email='incorrecto';}),'admin',storage),/correo electrónico válido/);
+  assert.throws(()=>localDataSchema.parse(change(c=>{c.users[0].email='';})));
+  const legacy=structuredClone(data);delete legacy.users[0].email;
+  assert.equal(localDataSchema.parse(legacy).users[0].email,undefined);
+});
