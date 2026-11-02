@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { LocalData, LocalProgress } from '@/lib/local-game';
-import { normalize } from '@/lib/local-game';
+import { normalize, routeChallenges } from '@/lib/local-game';
 import campus from '@/lib/campus.json';
 import { CampusMap } from './campus-map';
 import { AppIcon } from './icons';
@@ -13,7 +13,8 @@ export function FullCampusMap({ data, progress, selected, onSelect, onReturn }: 
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
   const active = selected ?? '7';
-  const challenges = data.challenges.filter(c => c.isBase || progress.extraIds.includes(c.id));
+  const routeIds=new Set(routeChallenges(data,progress).map(c=>c.id));
+  const challenges = data.challenges.filter(c => routeIds.has(c.id) || progress.extraIds.includes(c.id));
   const atPlace = challenges.filter(c => c.buildingId === active);
   const events = data.agenda.filter(e => e.buildingId === active).sort((a, b) => (a.dayNumber ?? 0) - (b.dayNumber ?? 0) || a.time.localeCompare(b.time));
   const places = Object.entries(names).map(([id, name]) => ({ id, name, count: challenges.filter(c => c.buildingId === id).length }))

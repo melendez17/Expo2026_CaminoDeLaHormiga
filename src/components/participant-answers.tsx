@@ -1,8 +1,9 @@
 'use client';
-import type { LocalData } from '@/lib/local-game';
+import { routeChallenges, type LocalData } from '@/lib/local-game';
 import type { adminRows } from '@/lib/local-admin';
 import { challengeAnswers } from '@/lib/participant-answers';
 import campus from '@/lib/campus.json';
+import { roleLabel } from '@/lib/taxonomy';
 import { PlaceTag } from './icons';
 type Row = ReturnType<typeof adminRows>[number];
 const names: Record<string, string> = campus.names;
@@ -15,12 +16,13 @@ export function ParticipantAnswers({ data, rows, selectedId, onSelect }: {
 }) {
   const row = rows.find(r => r.user.id === selectedId);
   const progress = row?.progress;
-  const challenges = data.challenges.filter(c => c.isBase || progress?.extraIds.includes(c.id));
+  const baseIds=new Set(progress?routeChallenges(data,progress).map(c=>c.id):[]);
+  const challenges = data.challenges.filter(c => baseIds.has(c.id) || progress?.extraIds.includes(c.id));
   return <section className="participant-answers">
     <div className="admin-section-top"><h2>Respuestas por participante</h2></div>
     <label className="answer-user-select">Seleccionar participante<select value={selectedId ?? ''} onChange={e => onSelect(e.target.value || null)}><option value="">Selecciona una persona</option>{rows.map(r => <option key={r.user.id} value={r.user.id}>{r.user.name} · {r.user.token}</option>)}</select></label>
     {!row ? <p className="empty">Selecciona un participante para consultar sus preguntas y respuestas.</p> : <>
-      <header className="participant-answer-header"><div><span className="eyebrow">FICHA DEL PARTICIPANTE</span><h3>{row.user.name}</h3><p>{row.user.kind === 'applicant' ? 'Postulante' : 'Visitante'} · Token {row.user.token}</p></div><span className="place-tag">{row.status}</span></header>
+      <header className="participant-answer-header"><div><span className="eyebrow">FICHA DEL PARTICIPANTE</span><h3>{row.user.name}</h3><p>{roleLabel(row.user.role)} · Token {row.user.token}</p></div><span className="place-tag">{row.status}</span></header>
       {row.error || !progress ? <p className="form-error" role="alert">Los datos de esta persona no son válidos. No podemos presentar sus respuestas hasta revisar el progreso guardado.</p> : <>
         <p className="muted">{progress.completed.length} retos completados · Respuestas guardadas en este navegador. Se muestran los retos completados y los pendientes; los intentos incorrectos no se conservan en esta demo.</p>
         {progress.startedAt && <p className="answer-date">Inicio del camino: {formatDate(progress.startedAt)} · Hora de Costa Rica</p>}
@@ -28,7 +30,7 @@ export function ParticipantAnswers({ data, rows, selectedId, onSelect }: {
         <div className="participant-answer-list">{challenges.map(challenge => {
           const record = progress.completed.find(c => c.challengeId === challenge.id);
           return <article key={challenge.id} className={`participant-answer-card ${record ? 'answered' : 'unanswered'}`}>
-            <div className="answer-card-top"><div><span className="eyebrow">{challenge.isBase ? 'RETO BASE' : 'RETO EXTRA'} · {record ? 'COMPLETADO' : 'PENDIENTE'}</span><h4>{challenge.title}</h4></div><PlaceTag>{names[challenge.buildingId]}</PlaceTag></div>
+            <div className="answer-card-top"><div><span className="eyebrow">{baseIds.has(challenge.id) ? 'RETO BASE' : 'RETO EXTRA'} · {record ? 'COMPLETADO' : 'PENDIENTE'}</span><h4>{challenge.title}</h4></div><PlaceTag>{names[challenge.buildingId]}</PlaceTag></div>
             {record && <p className="answer-date">Respondido: {formatDate(record.at)}</p>}
             <dl>{challengeAnswers(challenge, record?.answers).map((detail, i) => <div key={i} className="question-answer"><dt>{detail.question}</dt><dd>{detail.answer === null ? <span className="answer-pending">Sin respuesta</span> : <><span className="answer-text">{detail.answer}</span>{detail.correct !== undefined && <span className={`answer-result ${detail.correct ? 'correct' : 'incorrect'}`}>{detail.correct ? 'Correcta' : 'Incorrecta'}</span>}</>}</dd></div>)}</dl>
           </article>;

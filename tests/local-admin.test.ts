@@ -20,12 +20,12 @@ test('catálogo exige administrador, tokens únicos y conservar acceso propio', 
 });
 test('agregar usuario y proyecto persiste catálogo con validación de zonas', () => {
   const next = validateCatalogChange(data, change(c => {
-    c.users.push({ id: 'prueba', name: 'Persona de Prueba', token: 'P123', kind: 'visitor', role: 'participant' });
-    c.projects.push({ id: 'huerta', name: 'Huerta inteligente', description: 'Sensores para la huerta.', specialty: 'TICs', buildingId: '17' });
+    c.users.push({ id: 'prueba', name: 'Persona de Prueba', token: 'P123', kind: 'visitor', role: 'visitor' });
+    c.projects.push({ id: 'huerta', name: 'Huerta inteligente', description: 'Sensores para la huerta.', category: 'specialty', level:10, specialty: 'Desarrollo Web', buildingId: '17' });
   }), 'admin', storage);
   const saved = new Map([[CATALOG_KEY, JSON.stringify(next)]]);
   assert.equal(restoreCatalog(data, { getItem: key => saved.get(key) ?? null }).users.length, 6);
-  assert.throws(() => validateCatalogChange(data, change(c => c.projects[0].buildingId = '99'), 'admin', storage), /zona del mapa/);
+  assert.throws(() => validateCatalogChange(data, change(c => c.projects[0].buildingId = '99'), 'admin', storage), /zona del mapa|edificio seleccionado/);
 });
 test('retos base y proyectos referenciados no pueden eliminarse', () => {
   assert.throws(() => validateCatalogChange(data, change(c => c.challenges = c.challenges.filter(r => r.id !== 'pasitos')), 'admin', storage), /cinco retos/);
@@ -66,4 +66,16 @@ test('catálogos anteriores incorporan los días nuevos sin reemplazar actividad
   const custom = restoreCatalog(data, { getItem: () => JSON.stringify(saved) });
   assert.equal(custom.agenda.filter(event => event.day === 'Viernes').length, 1);
   assert.equal(custom.agenda.find(event => event.day === 'Viernes')?.title, 'Viernes personalizado');
+});
+
+test('el catálogo anterior recibe los proyectos y retos necesarios de admisión sin pisar sus ediciones',()=>{
+  const old=JSON.parse(JSON.stringify(data));delete old.schemaRevision;
+  old.projects=old.projects.filter((p:{id:string})=>!p.id.startsWith('adm-')&&p.id!=='ciber');
+  old.challenges=old.challenges.filter((c:{id:string})=>!c.id.startsWith('reto-'));
+  old.projects[0].name='Proyecto editado anteriormente';
+  const migrated=restoreCatalog(data,{getItem:()=>JSON.stringify(old)});
+  assert.equal(migrated.schemaRevision,3);
+  assert.equal(migrated.projects[0].name,'Proyecto editado anteriormente');
+  assert.equal(migrated.projects.filter(p=>p.category==='third_cycle').length,2);
+  assert.ok(migrated.challenges.some(c=>c.projectId==='ciber'));
 });

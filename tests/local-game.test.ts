@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { completeLocal, findUser, freshProgress, generateExtras, localDataSchema, parseProgress, summary, validateAnswers, voteLocal, type Answers, type LocalChallenge, type LocalProgress } from '../src/lib/local-game';
+import { completeLocal, findUser, freshProgress, generateExtras, extraChallenges, localDataSchema, parseProgress, summary, validateAnswers, voteLocal, type Answers, type LocalChallenge, type LocalProgress } from '../src/lib/local-game';
 const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
 const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))])));
 function answers(c: LocalChallenge): Answers {
@@ -32,14 +32,14 @@ test('especialidad exige ambas respuestas correctas y código', () => {
 });
 test('cinco base otorgan un tiquete y un voto; duplicar reto no duplica premios', () => {
   const p = baseProgress();
-  assert.deepEqual(summary(data, p), { base: 5, extra: 0, routeComplete: true, tickets: 1, votesAvailable: 1 });
+  assert.deepEqual(summary(data, p), { base: 5, baseTarget: 5, extra: 0, routeComplete: true, digitalTickets: 1, manualTickets: 0, tickets: 1, votesAvailable: 1 });
   const repeat = completeLocal(data, p, 'photo', answers(data.challenges.find(c => c.id === 'photo')!));
   assert.equal(repeat.completed.length, 5); assert.equal(summary(data, repeat).tickets, 1);
 });
 test('generar extras sin repetir, completar pares y agotar catálogo', () => {
   let p: LocalProgress = baseProgress();
   let batches = 0;
-  while (p.extraIds.length < data.challenges.filter(c => !c.isBase).length) {
+  while (p.extraIds.length < extraChallenges(data).filter(c=>!c.isBase).length) {
     p = generateExtras(data, p, () => 0.5); batches++;
     assert.equal(new Set(p.extraIds).size, p.extraIds.length);
     assert.throws(() => generateExtras(data, p), /Termina/);

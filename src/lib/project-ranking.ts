@@ -1,5 +1,5 @@
 import type { LocalData, LocalProgress } from './local-game';
-export function rankProjects(projects: LocalData['projects'], votes: LocalProgress['votes']) {
+export function rankProjects<T extends Pick<LocalData['projects'][number], 'id' | 'name' | 'specialty'>>(projects: T[], votes: LocalProgress['votes']) {
   const counts = new Map<string, number>();
   for (const vote of votes) counts.set(vote.projectId, (counts.get(vote.projectId) ?? 0) + 1);
   const sorted = projects.map(project => ({ ...project, votes: counts.get(project.id) ?? 0 })).sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, 'es') || a.id.localeCompare(b.id));

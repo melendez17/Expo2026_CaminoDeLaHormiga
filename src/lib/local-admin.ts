@@ -5,13 +5,20 @@ export type StorageReader = Pick<Storage, 'getItem'>;
 export function restoreCatalog(base: LocalData, storage: StorageReader): LocalData {
   const raw = storage.getItem(CATALOG_KEY);
   if (!raw) return base;
-  const value = localDataSchema.safeParse(JSON.parse(raw));
+  const input = JSON.parse(raw);
+  const value = localDataSchema.safeParse(input);
   if (!value.success || value.data.settings.dataVersion !== base.settings.dataVersion) throw Error('El catálogo local no es compatible. Exporta o revisa su respaldo antes de reemplazarlo.');
   // Añade días nuevos del JSON también a catálogos editados antes de esta versión.
   // Las actividades de días ya presentes en el catálogo local se conservan.
   const existingDays = new Set(value.data.agenda.map(event => event.day));
   const newDays = base.agenda.filter(event => !existingDays.has(event.day));
-  return newDays.length ? { ...value.data, agenda: [...value.data.agenda, ...newDays] } : value.data;
+  const result = newDays.length ? { ...value.data, agenda: [...value.data.agenda, ...newDays] } : value.data;
+  if ((input.schemaRevision ?? 1) < 3) {
+    const projects = base.projects.filter(p => !result.projects.some(old=>old.id===p.id));
+    const challenges = base.challenges.filter(c => !result.challenges.some(old=>old.id===c.id));
+    return {...result,schemaRevision:3,projects:[...result.projects,...projects],challenges:[...result.challenges,...challenges]};
+  }
+  return result;
 }
 export function adminRows(data: LocalData, storage: StorageReader) {
   return data.users.filter(u => u.role !== 'admin').map(user => {
@@ -37,7 +44,7 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
   for (const row of adminRows(previous, storage)) {
     if (row.error || !row.progress) throw Error(`Revisa los datos guardados de ${row.user.name} antes de cambiar el catálogo.`);
     const p: LocalProgress = row.progress;
-    const hasProgress = !!p.startedAt || !!p.completed.length || !!p.votes.length;
+    const hasProgress = !!p.startedAt || !!p.completed.length || !!p.votes.length || !!p.manualTickets.length;
     const nextUser = next.users.find(u => u.id === row.user.id);
     if (hasProgress && (!nextUser || nextUser.role === 'admin')) throw Error(`No puedes quitar a ${row.user.name}: tiene progreso local.`);
     if (hasProgress && JSON.stringify(previous.challenges.filter(c => c.isBase)) !== JSON.stringify(next.challenges.filter(c => c.isBase))) throw Error('Los cinco retos base están en uso. Para cambiarlos, inicia una nueva versión de prueba desde los JSON.');

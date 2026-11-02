@@ -104,7 +104,7 @@ La agenda ofrece tarjetas y una tabla por día (con desplazamiento horizontal de
 
 ## Uso offline y pruebas
 
-El service worker `camino-shell-json-v14` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
+El service worker `camino-shell-json-v15` prepara mapas, JSON, HTML, tipografía local y los scripts estáticos iniciales, y elimina cachés antiguas de la aplicación al activarse. Ya no registra sincronización de servidor. Una vez listo permite recargar y continuar sin conexión. El progreso se guarda inmediatamente de forma local.
 
 El navegador necesita permitir almacenamiento local. Si el guardado falla, se muestra un error antes de actualizar el estado visible. Se escucha el evento de almacenamiento para refrescar avances entre pestañas; localStorage no proporciona transacciones para la concurrencia de múltiples dispositivos. No es un reemplazo del backend para producción.
 
@@ -176,3 +176,15 @@ El mismo logo aparece en login, bienvenida y encabezados del participante: blanc
 ### Agenda de los tres días
 
 La agenda de prueba incluye viernes 13, sábado 14 y domingo 15 de noviembre, ordenados por fecha, con categorías General, Pastoral y CEDES Radio. Las actividades de viernes y domingo son ficticias para la demo; no constituyen programación oficial. La selección inicial sigue siendo sábado. Se emplea verde oscuro en los días, filas y ubicaciones. Los días nuevos del JSON se incorporan también al restaurar catálogos locales antiguos, conservando las actividades de los días que ya estaban presentes y todo el progreso.
+
+## Revisión de roles, proyectos y tiquetes
+
+La fuente vigente para las rutas por modalidad es la tabla de README.md. `role` es la clasificación de usuario y `kind` es un dato de compatibilidad derivado: Pasitos, Escuela, Tercer ciclo y Cuarto ciclo son admisión. Los antiguos perfiles `applicant` sin modalidad se migran provisionalmente a Cuarto ciclo; si no tienen especialidad, un administrador debe asignarla antes de iniciar una ruta nueva. Los progresos iniciados antes de esta revisión conservan los cinco retos generales para no perder respuestas.
+
+`projects.category` usa `pasitos`, `school`, `third_cycle` o `specialty`. Las especialidades válidas están en `src/lib/taxonomy.ts`. Los alias antiguos se normalizan: TICs → Desarrollo Web, Dibujo y Modelado → Dibujo y Modelado de Edificaciones. Ciberseguridad también pertenece a TICs; no se crean edificios nuevos. Los nuevos proyectos de ejemplo de admisión y sus retos se incorporan a los catálogos antiguos sin reemplazar ediciones. Al guardarse, el catálogo lleva `schemaRevision: 3`.
+
+Al iniciar admisión se sortean proyectos distintos de las categorías indicadas y se guardan sus IDs en `routeIds`. El extra obligatorio forma parte de los cinco retos de la ruta. En Cuarto ciclo la ruta inicial contiene un proyecto de décimo y otro de undécimo de `assignedSpecialty`, dos de otras especialidades distintas y un extra. El premio se calcula al terminar los cinco retos de la ruta. El catálogo de votación sigue disponible para todos; la asignación se refiere a las visitas y retos obligatorios.
+
+`manualTickets` se guarda en el progreso de cada participante con ID, fecha y emisor administrador. Se emite una unidad por pulsación de Crear y añade un voto. Importar un progreso anterior o reiniciar la prueba conserva los tiquetes manuales existentes. El registro de sorteos usa `camino-raffle:<dataVersion>`; no se reinicia al salir del panel ni al recargar. Los datos inválidos se señalan y no se sobrescriben silenciosamente.
+
+`projects.level` es `"preescolar"` o un número del 1 al 11, validado según el área. Las especialidades admiten únicamente 10 y 11. Los proyectos y sus niveles se editan desde Admin → Proyectos. La demo incluye varios equipos por nivel de cada especialidad. Los extras disponibles se limitan a retos `code` o `saint` sin `projectId`; se excluyen los que ya estén en la ruta y los que ya se hayan generado. Los proyectos de exposición solo se asignan como visitas de la ruta.

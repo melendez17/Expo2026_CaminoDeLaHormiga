@@ -82,11 +82,11 @@ async function main() {
     assert.equal(await page.getByTestId('available-votes').innerText(), '1');
     await nav('Votar').click();
     await page.getByLabel('Buscar proyecto por nombre').fill('AquaSmart');
-    assert.equal(await page.locator('.local-project').count(), 1);
-    await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).click();
+    assert.equal(await page.locator('.local-project').count(), 4);
+    await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).first().click();
     await page.getByRole('button', { name: 'Confirmar voto', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.vote-balance>b')?.textContent === '0');
-    assert.equal(await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).first().isDisabled(), true);
     await nav('Mi resumen').click();
     assert.equal(await page.getByTestId('ticket-count').innerText(), '1');
     assert.equal(await page.getByTestId('available-votes').innerText(), '0');
@@ -111,12 +111,12 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('[data-testid=ticket-count]')?.textContent === '3');
     await nav('Votar').click();
     await page.getByLabel('Buscar proyecto por nombre').fill('AquaSmart');
-    await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).click();
+    await page.getByRole('button', { name: 'Dar 1 voto', exact: true }).first().click();
     await page.getByRole('button', { name: 'Confirmar voto', exact: true }).click();
     await nav('Mi resumen').click();
     const aquaVotes = page.locator('.vote-history li').filter({ hasText: 'AquaSmart' });
     assert.equal(await aquaVotes.count(), 1);
-    assert.match(await aquaVotes.innerText(), /TICs/);
+    assert.match(await aquaVotes.innerText(), /Desarrollo Web/);
     assert.match(await aquaVotes.innerText(), /2 votos/);
     assert.match(await aquaVotes.innerText(), /Último voto/);
     await page.reload(); await nav('Mi resumen').click();
@@ -162,7 +162,9 @@ async function main() {
     assert.equal(await page.locator('.map-toolbar strong').textContent(), 'Mecánica de Precisión');
     await page.getByRole('searchbox', { name: 'Ir a un edificio' }).fill('Pasitos');
     const pasitosPlace = page.getByRole('button', { name: 'Seleccionar lugar: Centro infantil Pasitos Pequeños', exact: true });
-    assert.match(await pasitosPlace.innerText(), /1 reto/);
+    const mapExtraIds=await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local:demo-2026-v1:ana')!).extraIds as string[]);
+    const pasitosCount=challenges.filter(c=>c.buildingId==='8'&&(c.isBase||mapExtraIds.includes(c.id))).length;
+    assert.match(await pasitosPlace.innerText(),new RegExp(`${pasitosCount} reto`));
     await pasitosPlace.click();
     assert.equal(await pasitosPlace.getAttribute('aria-pressed'), 'true');
     assert.match(await page.locator('.campus-selection').innerText(), /Pequeñas ideas, grandes descubrimientos/);
@@ -245,7 +247,7 @@ async function main() {
     await page.getByRole('heading', { name: 'Valeria Prueba', exact: true }).waitFor();
     await adminNav('Proyectos').click(); await page.getByRole('button', { name: 'Nuevo proyecto', exact: true }).click();
     await page.getByLabel('Nombre del proyecto', { exact: true }).fill('Proyecto del administrador');
-    await page.getByLabel('Especialidad', { exact: true }).fill('TICs');
+    await page.getByLabel('Especialidad', { exact: true }).selectOption('Desarrollo Web');
     await page.getByLabel('Descripción', { exact: true }).fill('Proyecto creado desde el panel de prueba.');
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     await page.getByRole('heading', { name: 'Proyecto del administrador', exact: true }).waitFor();
@@ -255,7 +257,7 @@ async function main() {
     await page.getByRole('button', { name: 'Eliminar: Proyecto editado', exact: true }).click();
     await page.getByRole('button', { name: 'Confirmar eliminación', exact: true }).click();
     await page.getByRole('heading', { name: 'Proyecto editado', exact: true }).waitFor({ state: 'hidden' });
-    await adminNav('Retos').click(); await page.getByRole('button', { name: 'Nuevo reto extra', exact: true }).click();
+    await adminNav('Retos').click(); await page.getByRole('button', { name: 'Nuevo reto', exact: true }).click();
     await page.getByLabel('Título del reto').fill('Reto del administrador');
     await page.getByLabel('Descripción', { exact: true }).fill('Valida tu visita con el código de prueba.');
     await page.getByLabel('Tipo de reto').selectOption('code');
@@ -311,7 +313,7 @@ async function main() {
     await projectPages.getByRole('button', { name: 'Siguiente →', exact: true }).click();
     assert.match(await projectPages.innerText(), /11–20/);
     await stress.getByLabel('Buscar en votos por proyecto').fill('AquaSmart');
-    assert.equal(await stress.locator('.compact-ranking>li').count(), 1);
+    assert.equal(await stress.locator('.compact-ranking>li').count(), 4);
     assert.match(await stress.locator('.compact-ranking').innerText(), /3/);
     await stress.getByLabel('Buscar en votos por proyecto').fill('no existe');
     assert.equal(await stress.locator('.compact-ranking>li').count(), 0);
@@ -337,7 +339,115 @@ async function main() {
     await stress.setViewportSize({ width: 320, height: 844 });
     assert.equal(await stress.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await stressContext.close();
-    console.log('PASS admin: 125 projects, real top three, reduced ranking, search, pagination, 25 participants, detail links and mobile');
+    console.log(`PASS admin: ${large.projects.length} projects, real top three, reduced ranking, search, pagination, 25 participants, detail links and mobile`);
+    const roleContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const rolePage = await roleContext.newPage();
+    await rolePage.goto(base + '/admin');
+    await rolePage.getByLabel('Token de acceso').fill('ADM1');
+    await rolePage.getByRole('button', { name: 'Ingresar →' }).click();
+    const roleNav = (name: string) => rolePage.getByRole('navigation', { name: 'Administración local' }).getByRole('button', { name, exact:true });
+    const variants = [['pasitos','Pasitos','E001'],['school','Escuela','E002'],['third_cycle','Tercer ciclo','E003'],['fourth_cycle','Cuarto ciclo','E004']];
+    await roleNav('Usuarios').click();
+    for (const [role,label,token] of variants) {
+      await rolePage.getByRole('button',{name:'Nuevo usuario',exact:true}).click();
+      await rolePage.getByLabel('Nombre completo').fill(`Admisión ${label}`);
+      await rolePage.getByLabel('Token de cuatro caracteres').fill(token);
+      assert.equal(await rolePage.getByLabel('Rol',{exact:true}).locator('option').count(),6);
+      await rolePage.getByLabel('Rol',{exact:true}).selectOption(role);
+      if(role==='fourth_cycle')await rolePage.getByLabel('Especialidad asignada',{exact:true}).selectOption('Ciberseguridad');
+      await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+      await rolePage.getByRole('heading',{name:`Admisión ${label}`,exact:true}).waitFor();
+    }
+    await roleNav('Proyectos').click();
+    await rolePage.getByRole('button',{name:'Nuevo proyecto',exact:true}).click();
+    await rolePage.getByLabel('Nombre del proyecto',{exact:true}).fill('Ciberseguridad de prueba');
+    await rolePage.getByLabel('Especialidad',{exact:true}).selectOption('Ciberseguridad');
+    await rolePage.getByLabel('Nivel del proyecto',{exact:true}).selectOption('11');
+    await rolePage.getByLabel('Descripción',{exact:true}).fill('Proyecto de ejemplo para probar Ciberseguridad en el edificio TICs.');
+    await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+    const savedCatalog = await rolePage.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!));
+    const cyber = savedCatalog.projects.find((p:{name:string})=>p.name==='Ciberseguridad de prueba');
+    assert.equal(cyber.buildingId,'17');assert.equal(cyber.category,'specialty');assert.equal(cyber.level,11);
+    assert.equal(savedCatalog.users.find((u:{token:string})=>u.token==='E004').assignedSpecialty,'Ciberseguridad');
+    for (const [role,,token] of variants) { const u=savedCatalog.users.find((u:{token:string})=>u.token===token);assert.equal(u.role,role);assert.equal(u.kind,'applicant'); }
+    await rolePage.getByRole('button',{name:'Nuevo proyecto',exact:true}).click();
+    await rolePage.getByLabel('Nombre del proyecto',{exact:true}).fill('Proyecto de escuela');
+    await rolePage.getByLabel('Área del proyecto').selectOption('school');
+    await rolePage.getByLabel('Descripción',{exact:true}).fill('Una idea de ejemplo desarrollada en la escuela.');
+    await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+    await rolePage.getByRole('heading',{name:'Proyecto de escuela',exact:true}).waitFor();
+    await roleNav('Tiquetes').click();
+    assert.equal(await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).isDisabled(),true);
+    await rolePage.getByLabel('Token del participante').fill('ZZZZ');
+    await rolePage.getByRole('button',{name:'Crear',exact:true}).click();
+    await rolePage.getByRole('alert').filter({hasText:'participante válido'}).waitFor();
+    await rolePage.getByLabel('Token del participante').fill('E001');
+    await rolePage.getByRole('button',{name:'Crear',exact:true}).click();
+    await rolePage.getByRole('status').filter({hasText:'creado para Admisión Pasitos'}).waitFor();
+    assert.equal(await rolePage.locator('.ticket-register tbody tr').count(),1);
+    const manualCode=await rolePage.locator('.ticket-register code').innerText();
+    await rolePage.getByLabel('Premio (opcional)').fill('Premio de prueba');
+    await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).click();
+    await rolePage.getByRole('heading',{name:'Admisión Pasitos',exact:true}).waitFor();
+    assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
+    await rolePage.reload();await roleNav('Tiquetes').click();
+    assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
+    await rolePage.getByRole('button',{name:'Preparar otro sorteo',exact:true}).click();
+    assert.equal(await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).isDisabled(),true);
+    if(process.env.TICKETS_SCREENSHOT_PATH) {
+      await rolePage.screenshot({path:process.env.TICKETS_SCREENSHOT_PATH});
+      await rolePage.setViewportSize({width:390,height:844});
+      await rolePage.locator('.admin-local').evaluate(el=>el.scrollTop=0);
+      await rolePage.screenshot({path:process.env.TICKETS_SCREENSHOT_PATH.replace('.png','-mobile.png')});
+      await rolePage.setViewportSize({width:320,height:844});
+      assert.equal(await rolePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    }
+    await rolePage.getByRole('button',{name:'Salir',exact:true}).click();
+    await rolePage.goto(base);
+    for(const [,label,token] of variants) {
+      await rolePage.getByLabel('Token de acceso').fill(token);
+      await rolePage.getByRole('button',{name:'Ingresar →'}).click();
+      await rolePage.getByRole('button',{name:'Iniciar el camino →'}).click();
+      const participantNav=(name:string)=>rolePage.getByRole('navigation',{name:'Navegación principal'}).getByRole('button',{name,exact:true});
+      await participantNav('Votar').click();
+      await rolePage.getByLabel('Buscar proyecto por nombre').fill('Ciberseguridad de prueba');
+      assert.equal(await rolePage.locator('.local-project').count(),1);
+      await participantNav('Mi resumen').click();
+      if(label==='Pasitos') {assert.equal(await rolePage.getByTestId('ticket-count').innerText(),'1');assert.equal(await rolePage.getByTestId('available-votes').innerText(),'1');}
+      const user=savedCatalog.users.find((u:{token:string})=>u.token===token);
+      const assigned=await rolePage.evaluate(id=>JSON.parse(localStorage.getItem(`camino-local:demo-2026-v1:${id}`)!).routeIds as string[],user.id);
+      assert.equal(assigned.length,5);
+      if(label==='Cuarto ciclo') {
+        const ownProjects=assigned.map(id=>challenges.find(c=>c.id===id)!).filter(c=>c.projectId).map(c=>savedCatalog.projects.find((p:{id:string})=>p.id===c.projectId)).filter((p:{specialty:string})=>p.specialty==='Ciberseguridad');
+        assert.deepEqual(ownProjects.map((p:{level:number})=>p.level).sort(),[10,11]);
+      }
+
+      await participantNav('Retos').click();
+      for(const id of assigned) {
+        const c=challenges.find(c=>c.id===id)!;
+        await rolePage.getByRole('button',{name:`Responder: ${c.title}`,exact:true}).click();
+        const dialog=rolePage.getByRole('dialog');
+        if(c.kind==='freeform') {
+          await dialog.getByLabel('Nombre del proyecto',{exact:true}).fill('Proyecto de admisión');
+          await dialog.getByLabel('Nivel',{exact:true}).fill(label);
+          await dialog.getByLabel('¿Qué descubriste?').fill('Aprendí sobre proyectos y sus ideas para mejorar la comunidad.');
+        }
+        if(c.kind==='quiz')for(const q of c.questions!)await dialog.getByRole('radio',{name:q.options[q.correctIndex],exact:true}).check();
+        if(c.code)await dialog.getByLabel('Código del stand').fill(c.code);
+        if(c.kind==='saint')await dialog.getByLabel('Nombre del santo').fill(c.answer!);
+        await dialog.getByRole('button',{name:'Completar reto',exact:true}).click();
+        await dialog.waitFor({state:'hidden'});
+      }
+      await participantNav('Mi resumen').click();
+      await rolePage.getByRole('heading',{name:'Tu encuesta de admisión',exact:true}).waitFor();
+      assert.equal(await rolePage.getByTestId('ticket-count').innerText(),label==='Pasitos'?'2':'1');
+      await rolePage.reload();await participantNav('Retos').click();
+      assert.equal(await rolePage.locator('.challenge-card.done').count(),assigned.length);
+      await rolePage.getByRole('button',{name:'Salir',exact:true}).click();
+    }
+    await roleContext.close();
+    console.log('PASS four admission roles, project categories, Cyber in TICs, role-specific routes, token-only manual ticket, raffle, persistence and admission surveys');
+
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -220,5 +220,676 @@
     "isBase": false,
     "description": "Descubre a quién está dedicado el edificio. Nombre de ejemplo para esta demo.",
     "answer": "Santo Domingo Savio"
+  },
+  {
+    "id": "reto-adm-pasitos",
+    "title": "Pequeños inventores",
+    "buildingId": "8",
+    "kind": "freeform",
+    "isBase": false,
+    "description": "Visita Pequeños inventores y registra lo que aprendiste.",
+    "projectId": "adm-pasitos"
+  },
+  {
+    "id": "reto-adm-escuela",
+    "title": "Guardianes del jardín",
+    "buildingId": "3",
+    "kind": "freeform",
+    "isBase": false,
+    "description": "Visita Guardianes del jardín y registra lo que aprendiste.",
+    "projectId": "adm-escuela"
+  },
+  {
+    "id": "reto-adm-tercer-huerta",
+    "title": "Huerta que aprende",
+    "buildingId": "10",
+    "kind": "freeform",
+    "isBase": false,
+    "description": "Visita Huerta que aprende y registra lo que aprendiste.",
+    "projectId": "adm-tercer-huerta"
+  },
+  {
+    "id": "reto-adm-tercer-recicla",
+    "title": "Segunda vida a los materiales",
+    "buildingId": "11",
+    "kind": "freeform",
+    "isBase": false,
+    "description": "Visita Segunda vida a los materiales y registra lo que aprendiste.",
+    "projectId": "adm-tercer-recicla"
+  },
+  {
+    "id": "reto-ciber",
+    "title": "Red segura",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce el proyecto de Ciberseguridad y valida tu visita.",
+    "projectId": "ciber",
+    "code": "C1B3",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca proteger Red segura?",
+        "options": [
+          "La información y el acceso a los sistemas",
+          "Solo el color de la pantalla",
+          "El tamaño del edificio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué ayuda a proteger una cuenta?",
+        "options": [
+          "Compartir la contraseña",
+          "Usar autenticación de dos factores",
+          "Reutilizar siempre la misma contraseña"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-agua-10-b",
+    "title": "AquaSmart · Décimo B",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce AquaSmart · Décimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "agua-10-b",
+    "code": "Q00B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo de AquaSmart?",
+        "options": [
+          "Cuidar el agua usando sensores",
+          "Aumentar el consumo de agua",
+          "Crear una red social"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué componente mide una variable del entorno?",
+        "options": [
+          "Un cartel",
+          "Un sensor",
+          "Una silla"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-agua-11-a",
+    "title": "AquaSmart · Undécimo A",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce AquaSmart · Undécimo A y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "agua-11-a",
+    "code": "Q01A",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo de AquaSmart?",
+        "options": [
+          "Cuidar el agua usando sensores",
+          "Aumentar el consumo de agua",
+          "Crear una red social"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué componente mide una variable del entorno?",
+        "options": [
+          "Un cartel",
+          "Un sensor",
+          "Una silla"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-agua-11-b",
+    "title": "AquaSmart · Undécimo B",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce AquaSmart · Undécimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "agua-11-b",
+    "code": "Q01B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo de AquaSmart?",
+        "options": [
+          "Cuidar el agua usando sensores",
+          "Aumentar el consumo de agua",
+          "Crear una red social"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué componente mide una variable del entorno?",
+        "options": [
+          "Un cartel",
+          "Un sensor",
+          "Una silla"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-energia-10-b",
+    "title": "Energía en movimiento · Décimo B",
+    "buildingId": "15",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Energía en movimiento · Décimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "energia-10-b",
+    "code": "Q10B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca demostrar Energía en movimiento?",
+        "options": [
+          "Cómo almacenar fotografías",
+          "Cómo transformar movimiento en energía",
+          "Cómo dibujar un plano"
+        ],
+        "correctIndex": 1
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué dispositivo transforma energía mecánica en eléctrica?",
+        "options": [
+          "Un generador",
+          "Una regla",
+          "Una pantalla"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "reto-energia-11-a",
+    "title": "Energía en movimiento · Undécimo A",
+    "buildingId": "15",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Energía en movimiento · Undécimo A y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "energia-11-a",
+    "code": "Q11A",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca demostrar Energía en movimiento?",
+        "options": [
+          "Cómo almacenar fotografías",
+          "Cómo transformar movimiento en energía",
+          "Cómo dibujar un plano"
+        ],
+        "correctIndex": 1
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué dispositivo transforma energía mecánica en eléctrica?",
+        "options": [
+          "Un generador",
+          "Una regla",
+          "Una pantalla"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "reto-energia-11-b",
+    "title": "Energía en movimiento · Undécimo B",
+    "buildingId": "15",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Energía en movimiento · Undécimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "energia-11-b",
+    "code": "Q11B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca demostrar Energía en movimiento?",
+        "options": [
+          "Cómo almacenar fotografías",
+          "Cómo transformar movimiento en energía",
+          "Cómo dibujar un plano"
+        ],
+        "correctIndex": 1
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué dispositivo transforma energía mecánica en eléctrica?",
+        "options": [
+          "Un generador",
+          "Una regla",
+          "Una pantalla"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "reto-casa-10-b",
+    "title": "Casa del futuro · Décimo B",
+    "buildingId": "16",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Casa del futuro · Décimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "casa-10-b",
+    "code": "Q20B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué propone la Casa del futuro?",
+        "options": [
+          "Eliminar las ventanas",
+          "Usar más luz artificial",
+          "Aprovechar la luz natural"
+        ],
+        "correctIndex": 2
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué permite representar el edificio antes de construirlo?",
+        "options": [
+          "Un modelo digital",
+          "Un altavoz",
+          "Una batería"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "reto-casa-11-a",
+    "title": "Casa del futuro · Undécimo A",
+    "buildingId": "16",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Casa del futuro · Undécimo A y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "casa-11-a",
+    "code": "Q21A",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué propone la Casa del futuro?",
+        "options": [
+          "Eliminar las ventanas",
+          "Usar más luz artificial",
+          "Aprovechar la luz natural"
+        ],
+        "correctIndex": 2
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué permite representar el edificio antes de construirlo?",
+        "options": [
+          "Un modelo digital",
+          "Un altavoz",
+          "Una batería"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "reto-casa-11-b",
+    "title": "Casa del futuro · Undécimo B",
+    "buildingId": "16",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Casa del futuro · Undécimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "casa-11-b",
+    "code": "Q21B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué propone la Casa del futuro?",
+        "options": [
+          "Eliminar las ventanas",
+          "Usar más luz artificial",
+          "Aprovechar la luz natural"
+        ],
+        "correctIndex": 2
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué permite representar el edificio antes de construirlo?",
+        "options": [
+          "Un modelo digital",
+          "Un altavoz",
+          "Una batería"
+        ],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "reto-diseno-10-b",
+    "title": "Historias que conectan · Décimo B",
+    "buildingId": "18",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Historias que conectan · Décimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "diseno-10-b",
+    "code": "Q30B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo del proyecto?",
+        "options": [
+          "Comunicar historias de forma accesible",
+          "Ocultar información",
+          "Fabricar un motor"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué mejora la legibilidad de un texto?",
+        "options": [
+          "Usar letras diminutas",
+          "Un contraste adecuado",
+          "Superponer las palabras"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-diseno-11-a",
+    "title": "Historias que conectan · Undécimo A",
+    "buildingId": "18",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Historias que conectan · Undécimo A y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "diseno-11-a",
+    "code": "Q31A",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo del proyecto?",
+        "options": [
+          "Comunicar historias de forma accesible",
+          "Ocultar información",
+          "Fabricar un motor"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué mejora la legibilidad de un texto?",
+        "options": [
+          "Usar letras diminutas",
+          "Un contraste adecuado",
+          "Superponer las palabras"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-diseno-11-b",
+    "title": "Historias que conectan · Undécimo B",
+    "buildingId": "18",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Historias que conectan · Undécimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "diseno-11-b",
+    "code": "Q31B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Cuál es el objetivo del proyecto?",
+        "options": [
+          "Comunicar historias de forma accesible",
+          "Ocultar información",
+          "Fabricar un motor"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué mejora la legibilidad de un texto?",
+        "options": [
+          "Usar letras diminutas",
+          "Un contraste adecuado",
+          "Superponer las palabras"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-robot-10-b",
+    "title": "Precisión en acción · Décimo B",
+    "buildingId": "19",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Precisión en acción · Décimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "robot-10-b",
+    "code": "Q40B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué destaca este proyecto?",
+        "options": [
+          "La precisión de piezas y mecanismos",
+          "El cultivo de flores",
+          "La edición de audio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué instrumento sirve para medir dimensiones pequeñas?",
+        "options": [
+          "Un micrófono",
+          "Una linterna",
+          "Un calibrador"
+        ],
+        "correctIndex": 2
+      }
+    ]
+  },
+  {
+    "id": "reto-robot-11-a",
+    "title": "Precisión en acción · Undécimo A",
+    "buildingId": "19",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Precisión en acción · Undécimo A y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "robot-11-a",
+    "code": "Q41A",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué destaca este proyecto?",
+        "options": [
+          "La precisión de piezas y mecanismos",
+          "El cultivo de flores",
+          "La edición de audio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué instrumento sirve para medir dimensiones pequeñas?",
+        "options": [
+          "Un micrófono",
+          "Una linterna",
+          "Un calibrador"
+        ],
+        "correctIndex": 2
+      }
+    ]
+  },
+  {
+    "id": "reto-robot-11-b",
+    "title": "Precisión en acción · Undécimo B",
+    "buildingId": "19",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Precisión en acción · Undécimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "robot-11-b",
+    "code": "Q41B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué destaca este proyecto?",
+        "options": [
+          "La precisión de piezas y mecanismos",
+          "El cultivo de flores",
+          "La edición de audio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué instrumento sirve para medir dimensiones pequeñas?",
+        "options": [
+          "Un micrófono",
+          "Una linterna",
+          "Un calibrador"
+        ],
+        "correctIndex": 2
+      }
+    ]
+  },
+  {
+    "id": "reto-ciber-10-b",
+    "title": "Red segura · Décimo B",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Red segura · Décimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "ciber-10-b",
+    "code": "Q50B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca proteger Red segura?",
+        "options": [
+          "La información y el acceso a los sistemas",
+          "Solo el color de la pantalla",
+          "El tamaño del edificio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué ayuda a proteger una cuenta?",
+        "options": [
+          "Compartir la contraseña",
+          "Usar autenticación de dos factores",
+          "Reutilizar siempre la misma contraseña"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-ciber-11-a",
+    "title": "Red segura · Undécimo A",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Red segura · Undécimo A y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "ciber-11-a",
+    "code": "Q51A",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca proteger Red segura?",
+        "options": [
+          "La información y el acceso a los sistemas",
+          "Solo el color de la pantalla",
+          "El tamaño del edificio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué ayuda a proteger una cuenta?",
+        "options": [
+          "Compartir la contraseña",
+          "Usar autenticación de dos factores",
+          "Reutilizar siempre la misma contraseña"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "reto-ciber-11-b",
+    "title": "Red segura · Undécimo B",
+    "buildingId": "17",
+    "kind": "quiz",
+    "isBase": false,
+    "description": "Conoce Red segura · Undécimo B y responde las preguntas del proyecto de ejemplo.",
+    "projectId": "ciber-11-b",
+    "code": "Q51B",
+    "questions": [
+      {
+        "id": "objective",
+        "prompt": "¿Qué busca proteger Red segura?",
+        "options": [
+          "La información y el acceso a los sistemas",
+          "Solo el color de la pantalla",
+          "El tamaño del edificio"
+        ],
+        "correctIndex": 0
+      },
+      {
+        "id": "technical",
+        "prompt": "¿Qué ayuda a proteger una cuenta?",
+        "options": [
+          "Compartir la contraseña",
+          "Usar autenticación de dos factores",
+          "Reutilizar siempre la misma contraseña"
+        ],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "extra-cdc",
+    "title": "Descubre el puesto de CDC",
+    "buildingId": "7",
+    "kind": "code",
+    "isBase": false,
+    "description": "Visita el puesto de CDC y solicita su código de prueba.",
+    "code": "C3D2"
+  },
+  {
+    "id": "extra-photobooth",
+    "title": "Una foto para recordar",
+    "buildingId": "7",
+    "kind": "code",
+    "isBase": false,
+    "description": "Visita el photobooth y solicita el código de tu recuerdo.",
+    "code": "F0T2"
+  },
+  {
+    "id": "extra-puesto",
+    "title": "Conoce un puesto del campus",
+    "buildingId": "9",
+    "kind": "code",
+    "isBase": false,
+    "description": "Averigua qué ofrece este puesto y valida la visita con el código.",
+    "code": "P0S2"
   }
 ]

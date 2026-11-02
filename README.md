@@ -15,9 +15,9 @@ Abre la dirección que muestra la terminal (puerto 3000 por defecto). No hace fa
 
 | Token | Persona ficticia | Perfil |
 |---|---|---|
-| `K8P2` | Ana Rodríguez | Postulante |
+| `K8P2` | Ana Rodríguez | Visitante |
 | `M4T7` | Carlos Méndez | Visitante |
-| `S6F3` | Sofía Vargas | Postulante |
+| `S6F3` | Sofía Vargas | Admisión · Cuarto ciclo · Desarrollo Web |
 | `D9C5` | Diego Castro | Visitante |
 | `ADM1` | Administrador ExpoTEC | Administrador de prueba |
 
@@ -31,12 +31,12 @@ Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local co
 2. **Bienvenida:** aparece el nombre de la persona y el botón «Iniciar el camino».
 3. **Retos:** en móvil el mapa ocupa aproximadamente un tercio del espacio disponible arriba y los retos se desplazan abajo; en escritorio el mapa aparece junto a la lista. «Ubicación» resalta el edificio y «Hacer reto» abre el formulario.
 4. **Especialidades:** dos preguntas de selección única, visualmente «marca con X», más código de stand. Las respuestas incorrectas permiten volver a intentar sin otorgar premios.
-5. **Más retos:** tras los cinco base, genera rondas de dos extras sin repetir. Completa la ronda antes de pedir otra. Al agotarse el catálogo, añade más entradas al JSON.
-6. **Mi resumen:** tiquetes, votos disponibles, retos, votos emitidos, insignias y encuesta con bono.
+5. **Más retos:** tras completar la ruta base, genera rondas de dos extras sin repetir. Completa la ronda antes de pedir otra. Al agotarse el catálogo, añade más entradas al JSON.
+6. **Mi resumen:** tiquetes, votos disponibles, retos, votos emitidos y encuesta con bono.
 7. **Votar:** busca por nombre de proyecto o especialidad y confirma a cuál entregar un voto. Puedes repartir votos o apoyar varias veces un proyecto si tienes saldo.
 8. **Agenda y mapa completo:** accesos independientes desde la navegación principal.
 
-Cinco retos base → **1 tiquete y 1 voto**. Cada dos retos extra → **otro tiquete y voto**. Votar consume el voto, pero conserva el tiquete para la rifa. La encuesta entrega un bono inicial de 1, configurable.
+Ruta base completa → **1 tiquete y 1 voto**. Cada dos retos extra → **otro tiquete y voto**. Votar consume el voto, pero conserva el tiquete para la rifa. La encuesta entrega un bono inicial de 1, configurable.
 
 Los usuarios, proyectos, horarios, respuestas y ubicaciones de actividades son ejemplos para pruebas; los polígonos y mapas vienen del HTML adjunto. Cada diálogo tiene «Ayuda para probar este reto» con sus respuestas/código de ejemplo. Esos datos son públicos deliberadamente en esta demo; no es autenticación ni validación antifraude de producción.
 
@@ -88,3 +88,25 @@ El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`,
 ## Publicar en Vercel
 
 La demo puede publicarse sin variables de entorno usando la rama `implementacion-v0.1`. Consulta [la guía de publicación](docs/vercel.md); `vercel.json` incluye la configuración de Next.js.
+
+## Roles y rutas de admisión
+
+La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Los roles disponibles son Admin, Visitante, Pasitos, Escuela, Tercer ciclo y Cuarto ciclo. Las cuatro modalidades de admisión comparten acceso y encuesta, y sus proyectos se asignan al iniciar:
+
+| Rol | Ruta obligatoria |
+|---|---|
+| Visitante | Los cinco retos generales existentes |
+| Pasitos | 1 proyecto de Pasitos + 1 de Escuela + 2 de especialidad + 1 extra |
+| Escuela | 1 de Escuela + 1 de Tercer ciclo + 2 de especialidad + 1 extra |
+| Tercer ciclo | 2 de Tercer ciclo + 2 de especialidad + 1 extra |
+| Cuarto ciclo | 1 de décimo y 1 de undécimo de su especialidad + 2 de otras especialidades + 1 extra |
+
+El campo `kind` se deriva del rol; ya no se edita por separado. Cuarto ciclo necesita `assignedSpecialty` para iniciar una ruta nueva. Web y Ciberseguridad son especialidades independientes con el mismo edificio `17` (TICs). Cada proyecto tiene nivel: Preescolar para Pasitos, primero a sexto para Escuela, séptimo a noveno para Tercer ciclo y décimo u undécimo para Especialidad. Los proyectos se clasifican como Pasitos, Escuela, Tercer ciclo o Especialidad; sus retos se relacionan mediante `projectId`. Los extras son actividades sin proyecto (photobooth, CDC, puestos o santos); las visitas a proyectos no se generan como extras. Si faltan proyectos con retos de una categoría, nivel o especialidad, se informa al usuario sin asignar una ruta parcial. Los progresos anteriores conservan su recorrido y sus respuestas.
+
+## Tiquetes manuales y rifa local
+
+En Admin → **Tiquetes**, introduce el token del participante y pulsa **Crear**. Cada emisión otorga un tiquete y un voto, sin completar retos ficticios. Se conserva ID, fecha y emisor; los tiquetes manuales se incluyen en métricas y resumen.
+
+El sorteo incluye tiquetes digitales y manuales y guarda nombre del ganador, ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
+
+La demo incluye dos proyectos de décimo y dos de undécimo por especialidad para probar distintas asignaciones. Son ejemplos ficticios. Para probar estos cambios en un despliegue de Vercel debe seleccionarse la rama `correccion-roles-proyectos-tiquetes`.

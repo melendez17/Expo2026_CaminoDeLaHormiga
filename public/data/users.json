@@ -3,25 +3,30 @@
     "id": "ana",
     "name": "Ana Rodríguez",
     "token": "K8P2",
-    "kind": "applicant"
+    "kind": "visitor",
+    "role": "visitor"
   },
   {
     "id": "carlos",
     "name": "Carlos Méndez",
     "token": "M4T7",
-    "kind": "visitor"
+    "kind": "visitor",
+    "role": "visitor"
   },
   {
     "id": "sofia",
     "name": "Sofía Vargas",
     "token": "S6F3",
-    "kind": "applicant"
+    "kind": "applicant",
+    "role": "fourth_cycle",
+    "assignedSpecialty": "Desarrollo Web"
   },
   {
     "id": "diego",
     "name": "Diego Castro",
     "token": "D9C5",
-    "kind": "visitor"
+    "kind": "visitor",
+    "role": "visitor"
   },
   {
     "id": "admin",

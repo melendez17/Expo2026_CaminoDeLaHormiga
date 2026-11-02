@@ -3,35 +3,252 @@
     "id": "agua",
     "name": "AquaSmart",
     "buildingId": "17",
-    "specialty": "TICs",
-    "description": "Un sistema de sensores para cuidar el agua."
+    "specialty": "Desarrollo Web",
+    "description": "Un sistema de sensores para cuidar el agua.",
+    "category": "specialty",
+    "level": 10
   },
   {
     "id": "energia",
     "name": "Energía en movimiento",
     "buildingId": "15",
     "specialty": "Electromecánica",
-    "description": "Transformamos el movimiento en energía."
+    "description": "Transformamos el movimiento en energía.",
+    "category": "specialty",
+    "level": 10
   },
   {
     "id": "casa",
     "name": "Casa del futuro",
     "buildingId": "16",
-    "specialty": "Dibujo y Modelado",
-    "description": "Una vivienda diseñada para aprovechar la luz natural."
+    "specialty": "Dibujo y Modelado de Edificaciones",
+    "description": "Una vivienda diseñada para aprovechar la luz natural.",
+    "category": "specialty",
+    "level": 10
   },
   {
     "id": "diseno",
     "name": "Historias que conectan",
     "buildingId": "18",
     "specialty": "Diseño Gráfico Multimedia",
-    "description": "Diseño accesible que cuenta las historias del campus."
+    "description": "Diseño accesible que cuenta las historias del campus.",
+    "category": "specialty",
+    "level": 10
   },
   {
     "id": "robot",
     "name": "Precisión en acción",
     "buildingId": "19",
     "specialty": "Mecánica de Precisión",
-    "description": "Piezas y mecanismos que trabajan con precisión."
+    "description": "Piezas y mecanismos que trabajan con precisión.",
+    "category": "specialty",
+    "level": 10
+  },
+  {
+    "id": "adm-pasitos",
+    "name": "Pequeños inventores",
+    "buildingId": "8",
+    "category": "pasitos",
+    "specialty": "Pasitos",
+    "description": "Una exploración de materiales y colores creada por Pasitos.",
+    "level": "preescolar"
+  },
+  {
+    "id": "adm-escuela",
+    "name": "Guardianes del jardín",
+    "buildingId": "3",
+    "category": "school",
+    "specialty": "Escuela",
+    "description": "Ideas de la escuela para observar y cuidar las plantas.",
+    "level": 5
+  },
+  {
+    "id": "adm-tercer-huerta",
+    "name": "Huerta que aprende",
+    "buildingId": "10",
+    "category": "third_cycle",
+    "specialty": "Tercer ciclo",
+    "description": "Un proyecto de tercer ciclo sobre cultivo y observación.",
+    "level": 8
+  },
+  {
+    "id": "adm-tercer-recicla",
+    "name": "Segunda vida a los materiales",
+    "buildingId": "11",
+    "category": "third_cycle",
+    "specialty": "Tercer ciclo",
+    "description": "Un proyecto de tercer ciclo que transforma materiales reutilizados.",
+    "level": 8
+  },
+  {
+    "id": "ciber",
+    "name": "Red segura",
+    "buildingId": "17",
+    "category": "specialty",
+    "specialty": "Ciberseguridad",
+    "description": "Un proyecto para reconocer amenazas y proteger la información.",
+    "level": 10
+  },
+  {
+    "id": "agua-10-b",
+    "name": "AquaSmart · Décimo B",
+    "buildingId": "17",
+    "specialty": "Desarrollo Web",
+    "description": "Proyecto ficticio de Desarrollo Web de décimo para la demo.",
+    "category": "specialty",
+    "level": 10
+  },
+  {
+    "id": "agua-11-a",
+    "name": "AquaSmart · Undécimo A",
+    "buildingId": "17",
+    "specialty": "Desarrollo Web",
+    "description": "Proyecto ficticio de Desarrollo Web de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "agua-11-b",
+    "name": "AquaSmart · Undécimo B",
+    "buildingId": "17",
+    "specialty": "Desarrollo Web",
+    "description": "Proyecto ficticio de Desarrollo Web de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "energia-10-b",
+    "name": "Energía en movimiento · Décimo B",
+    "buildingId": "15",
+    "specialty": "Electromecánica",
+    "description": "Proyecto ficticio de Electromecánica de décimo para la demo.",
+    "category": "specialty",
+    "level": 10
+  },
+  {
+    "id": "energia-11-a",
+    "name": "Energía en movimiento · Undécimo A",
+    "buildingId": "15",
+    "specialty": "Electromecánica",
+    "description": "Proyecto ficticio de Electromecánica de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "energia-11-b",
+    "name": "Energía en movimiento · Undécimo B",
+    "buildingId": "15",
+    "specialty": "Electromecánica",
+    "description": "Proyecto ficticio de Electromecánica de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "casa-10-b",
+    "name": "Casa del futuro · Décimo B",
+    "buildingId": "16",
+    "specialty": "Dibujo y Modelado de Edificaciones",
+    "description": "Proyecto ficticio de Dibujo y Modelado de Edificaciones de décimo para la demo.",
+    "category": "specialty",
+    "level": 10
+  },
+  {
+    "id": "casa-11-a",
+    "name": "Casa del futuro · Undécimo A",
+    "buildingId": "16",
+    "specialty": "Dibujo y Modelado de Edificaciones",
+    "description": "Proyecto ficticio de Dibujo y Modelado de Edificaciones de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "casa-11-b",
+    "name": "Casa del futuro · Undécimo B",
+    "buildingId": "16",
+    "specialty": "Dibujo y Modelado de Edificaciones",
+    "description": "Proyecto ficticio de Dibujo y Modelado de Edificaciones de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "diseno-10-b",
+    "name": "Historias que conectan · Décimo B",
+    "buildingId": "18",
+    "specialty": "Diseño Gráfico Multimedia",
+    "description": "Proyecto ficticio de Diseño Gráfico Multimedia de décimo para la demo.",
+    "category": "specialty",
+    "level": 10
+  },
+  {
+    "id": "diseno-11-a",
+    "name": "Historias que conectan · Undécimo A",
+    "buildingId": "18",
+    "specialty": "Diseño Gráfico Multimedia",
+    "description": "Proyecto ficticio de Diseño Gráfico Multimedia de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "diseno-11-b",
+    "name": "Historias que conectan · Undécimo B",
+    "buildingId": "18",
+    "specialty": "Diseño Gráfico Multimedia",
+    "description": "Proyecto ficticio de Diseño Gráfico Multimedia de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "robot-10-b",
+    "name": "Precisión en acción · Décimo B",
+    "buildingId": "19",
+    "specialty": "Mecánica de Precisión",
+    "description": "Proyecto ficticio de Mecánica de Precisión de décimo para la demo.",
+    "category": "specialty",
+    "level": 10
+  },
+  {
+    "id": "robot-11-a",
+    "name": "Precisión en acción · Undécimo A",
+    "buildingId": "19",
+    "specialty": "Mecánica de Precisión",
+    "description": "Proyecto ficticio de Mecánica de Precisión de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "robot-11-b",
+    "name": "Precisión en acción · Undécimo B",
+    "buildingId": "19",
+    "specialty": "Mecánica de Precisión",
+    "description": "Proyecto ficticio de Mecánica de Precisión de undécimo para la demo.",
+    "category": "specialty",
+    "level": 11
+  },
+  {
+    "id": "ciber-10-b",
+    "name": "Red segura · Décimo B",
+    "buildingId": "17",
+    "category": "specialty",
+    "specialty": "Ciberseguridad",
+    "description": "Proyecto ficticio de Ciberseguridad de décimo para la demo.",
+    "level": 10
+  },
+  {
+    "id": "ciber-11-a",
+    "name": "Red segura · Undécimo A",
+    "buildingId": "17",
+    "category": "specialty",
+    "specialty": "Ciberseguridad",
+    "description": "Proyecto ficticio de Ciberseguridad de undécimo para la demo.",
+    "level": 11
+  },
+  {
+    "id": "ciber-11-b",
+    "name": "Red segura · Undécimo B",
+    "buildingId": "17",
+    "category": "specialty",
+    "specialty": "Ciberseguridad",
+    "description": "Proyecto ficticio de Ciberseguridad de undécimo para la demo.",
+    "level": 11
   }
 ]

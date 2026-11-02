@@ -1,0 +1,48 @@
+.admin-local .participant-role { display: block; margin-top: 4px; color: #526e5c; font-size: 10px; }
+.admin-local .participant-identity>div>strong { color: #173b24; font-size: 13px; }
+.admin-local .project-classification { color: #176343; font-weight: 600; font-size: 12px; }
+.admin-local .admin-ticket-section>h2 { font-size: 28px; font-weight: 850; margin-bottom: 13px; }
+.ticket-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0 30px; align-items: start; }
+.ticket-issue-panel, .ticket-draw-panel { background: #fff; border: 1px solid #dce9df; border-radius: 20px; padding: 26px; min-width: 0; }
+.admin-local .ticket-issue-panel h3, .admin-local .ticket-draw-panel h3 { font-size: 21px; font-weight: 800; margin: 0 0 13px; }
+.ticket-issue-panel p, .ticket-draw-panel>p { color: #4e6d59; line-height: 1.7; font-size: 13px; }
+.ticket-actions-grid form { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+.ticket-actions-grid form label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #365d46; }
+.admin-local .ticket-actions-grid input { width: 100%; }
+.admin-local .ticket-issue-panel input { text-transform: uppercase; font-size: 20px; letter-spacing: .15em; font-weight: 650; }
+.ticket-pool-count { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.ticket-pool-count strong { font-size: 40px; font-weight: 850; color: #137548; }
+.ticket-pool-count span { color: #526e5c; font-size: 12px; }
+.raffle-winner { margin-top: 20px; padding: 22px; background: linear-gradient(125deg,#092719,#164b2c); border-radius: 15px; color: white; }
+.raffle-winner>span { color: #b3eb9a; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+.admin-local .raffle-winner h4 { color: white; font-size: 26px; font-weight: 800; margin: 12px 0; }
+.raffle-winner code { display: block; font-size: 12px; overflow-wrap: anywhere; line-height: 1.7; color: #caf5b9; }
+.raffle-winner p { font-size: 11px; color: #c3dec7; }
+.admin-local .raffle-winner button { background: transparent; color: #e5f9df; border: 1px solid #85ae7a; border-radius: 25px; padding: 10px 13px; font-size: 11px; margin-top: 10px; }
+.ticket-register code { display: block; max-width: 250px; overflow-wrap: anywhere; font-size: 11px; line-height: 1.6; }
+.ticket-register td small { display: block; margin-top: 5px; font-size: 10px; color: #597461; }
+.admin-local .ticket-history-heading { margin: 30px 0 18px; font-size: 21px; }
+.raffle-history { list-style: none; padding: 0; margin: 0; }
+.raffle-history li { display: flex; gap: 20px; justify-content: space-between; align-items: center; border-bottom: 1px solid #dce9df; padding: 17px 0; }
+.raffle-history strong { font-size: 14px; color: #193e29; }
+.raffle-history p { font-size: 11px; color: #597461; margin-top: 5px; line-height: 1.6; }
+.raffle-history code { max-width: 40%; overflow-wrap: anywhere; font-size: 11px; color: #176343; }
+@media(max-width:1319px) {
+  .admin-local .admin-navigation { position: static; transform: none; }
+}
+@media(max-width:799px) {
+  .ticket-actions-grid { grid-template-columns: minmax(0,1fr); gap: 15px; }
+  .ticket-issue-panel, .ticket-draw-panel { padding: 20px 16px; border-radius: 16px; }
+  .ticket-pool-count { flex-wrap: wrap; gap: 4px 12px; }
+  .raffle-history li { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .raffle-history code { max-width: 100%; }
+  .admin-local .admin-ticket-section>h2 { font-size: 24px; }
+}
+.admin-ticket-section .feedback { overflow-wrap: anywhere; }
+@media(min-width:1320px) {
+  .admin-local .admin-navigation button { padding-left: 12px; padding-right: 12px; }
+  .admin-local .admin-navigation .navigation-label { font-size: 10px; }
+}
+@media(max-width:799px) {
+  .admin-local .admin-title-row .page-intro h1 { overflow-wrap: anywhere; font-size: 36px; }
+}

@@ -1,8 +1,10 @@
 'use client';
+import { categoryLabel, levelLabel, type ProjectLevel, type ProjectCategory } from '@/lib/taxonomy';
 import type { LocalChallenge } from '@/lib/local-game';
 import { AppIcon, PinIcon, PlaceTag } from './icons';
 
-function category(challenge: LocalChallenge, place: string, specialty?: string): { name: string; tone: string } {
+function category(challenge: LocalChallenge, place: string, specialty?: string, projectCategory?: ProjectCategory): { name: string; tone: string } {
+  if (projectCategory && projectCategory!=='specialty') return {name:categoryLabel(projectCategory),tone:projectCategory==='school'?'school':projectCategory==='third_cycle'?'third-cycle':'pasitos'};
   const area = `${specialty ?? ''} ${place}`.toLocaleLowerCase('es');
   if (/pasitos|infantil/.test(area)) return { name: 'Pasitos', tone: 'pasitos' };
   if (/escuela/.test(area)) return { name: 'Escuela', tone: 'school' };
@@ -13,16 +15,16 @@ function category(challenge: LocalChallenge, place: string, specialty?: string):
   return { name: challenge.kind === 'saint' ? 'Descubre el campus' : 'Explora un proyecto', tone: 'campus' };
 }
 
-export function ChallengeCard({ challenge, index, completed, specialty, place, onLocate, onAnswer }: {
-  challenge: LocalChallenge; index: number; completed: boolean; specialty?: string; place: string;
+export function ChallengeCard({ challenge, index, completed, specialty, projectCategory, projectName, projectLevel, requiredExtra=false, place, onLocate, onAnswer }: {
+  challenge: LocalChallenge; index: number; completed: boolean; specialty?: string; projectCategory?: ProjectCategory; projectName?: string; projectLevel?: ProjectLevel; requiredExtra?: boolean; place: string;
   onLocate: () => void; onAnswer: () => void;
 }) {
-  const group = category(challenge, place, specialty);
+  const group = category(challenge, place, specialty, projectCategory);
   return <article className={`challenge-card compact-challenge ${completed ? 'done' : ''}`}>
     <span className={`challenge-type-icon theme-${group.tone}`}><AppIcon name="quiz"/><small className="route-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</small></span>
     <div className="challenge-content">
-      <span className="challenge-category">{group.name}<span className="sr-only"> · Reto {index + 1} · {challenge.isBase ? 'Camino base' : 'Extra'}</span></span>
-      <h2>{challenge.title}</h2>
+      <span className="challenge-category">{requiredExtra?'Reto extra de tu ruta':`${group.name}${projectLevel===undefined?'':` · ${levelLabel(projectLevel)}`}`}<span className="sr-only"> · Reto {index + 1} · {challenge.isBase ? 'Camino base' : 'Extra'}</span></span>
+      <h2>{projectName??challenge.title}</h2>
       <PlaceTag>{place}</PlaceTag>
       {completed && <span className="challenge-status is-complete"><AppIcon name="check" width="13" height="13"/>Completado</span>}
     </div>
