@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { localDataSchema, freshProgress, extraChallenges, summary, parseProgress, storageKey, completeLocal, availableProjects, routeChallenges, startLocal, generateExtras, voteLocal, type LocalData, type LocalProgress } from '../src/lib/local-game';
-import { roles, admissionRoles } from '../src/lib/taxonomy';
+import { roles, participantAreas, isAdmissionRole } from '../src/lib/taxonomy';
 import { issueManualTicket, raffleTickets, drawTicket, readDraws, raffleKey, secureIndex } from '../src/lib/local-tickets';
 import { validateCatalogChange } from '../src/lib/local-admin';
 const raw=Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key=>[key,JSON.parse(readFileSync(new URL(`../public/data/${key}.json`,import.meta.url),'utf8'))]));
@@ -13,15 +13,15 @@ function baseProgress(catalog:LocalData=data) {
   for(const c of catalog.challenges.filter(c=>c.isBase)) p=completeLocal(catalog,p,c.id,c.kind==='freeform'?{projectName:'Proyecto',level:'Primero',description:'Aprendí sobre tecnología y sensores.'}:{code:c.code!,...Object.fromEntries((c.questions??[]).map(q=>[q.id,String(q.correctIndex)]))});
   return p;
 }
-test('seis roles, cuatro modalidades de admisión y migración del perfil anterior',()=>{
-  assert.equal(roles.length,6);
+test('tres roles, áreas de afinidad y migración del perfil anterior',()=>{
+  assert.equal(roles.length,3);
   for(const role of roles) {
     const fixture=structuredClone(raw);fixture.users[0].role=role.value;
     const user=localDataSchema.parse(fixture).users[0];
-    assert.equal(user.kind,admissionRoles.some(value=>value===role.value)?'applicant':'visitor');
+    assert.equal(user.role,role.value);assert.equal(Object.hasOwn(user,'kind'),false);
   }
   const old=structuredClone(raw);old.users[0].role='participant';old.users[0].kind='applicant';
-  assert.equal(localDataSchema.parse(old).users[0].role,'fourth_cycle');
+  assert.equal(localDataSchema.parse(old).users[0].role,'admission');
 });
 test('categorías de proyecto y especialidades completas; Web y Ciberseguridad comparten TICs',()=>{
   for(const specialty of ['Desarrollo Web','Ciberseguridad']) {
@@ -53,7 +53,7 @@ test('rutas por modalidad cumplen las cantidades y categorías, sin proyectos re
 });
 test('Cuarto ciclo combina décimo y undécimo de su especialidad, un tercero propio, otro externo y un extra',()=>{
   const fixture=structuredClone(raw);fixture.users[0].role='fourth_cycle';delete fixture.users[0].assignedSpecialty;
-  assert.throws(()=>startLocal(localDataSchema.parse(fixture),freshProgress(data,'ana')),/asignarte una especialidad/);
+  assert.throws(()=>startLocal(localDataSchema.parse(fixture),freshProgress(data,'ana')),/asignarte un área/);
   fixture.users[0].assignedSpecialty='Ciberseguridad';
   const catalog=localDataSchema.parse(fixture);
   let p=startLocal(catalog,freshProgress(catalog,'ana'));
@@ -154,4 +154,37 @@ test('datos antiguos sin manualTickets se restauran; registros manuales inválid
   assert.throws(()=>parseProgress(data,'ana',{...old,manualTickets:[{id:'x',actorId:'carlos',at:new Date().toISOString()}]}),/emisor/);
   for(let i=0;i<20;i++)assert.ok(secureIndex(17)>=0&&secureIndex(17)<17);
   assert.throws(()=>secureIndex(0));
+});
+
+test('Visitante y Admisión reciben las mismas cuotas por área, incluidas todas las especialidades',()=>{
+  assert.equal(participantAreas.length,9);
+  for(const area of participantAreas) {
+    const paths=[];
+    for(const role of ['visitor','admission']) {
+      const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role,area:area.value});
+      const catalog=localDataSchema.parse(fixture),user=catalog.users[0];
+      const p=startLocal(catalog,freshProgress(catalog,user.id),()=>.3);
+      paths.push(p.routeIds);assert.equal(p.routeIds.length,5);
+      assert.equal(user.area,area.value);assert.equal(user.role,role);assert.equal(isAdmissionRole(role),role==='admission');
+      assert.equal(Object.hasOwn(user,'kind'),false);assert.equal(Object.hasOwn(user,'assignedSpecialty'),false);
+      const projects=routeChallenges(catalog,p).filter(c=>c.projectId).map(c=>catalog.projects.find(project=>project.id===c.projectId)!);
+      if(!['school','pasitos','third_cycle'].includes(area.value)) {
+        const own=projects.filter(project=>project.specialty===area.value);assert.equal(own.length,3);assert.ok(own.some(p=>p.level===10));assert.ok(own.some(p=>p.level===11));assert.equal(projects.length-own.length,1);
+      }
+      assert.deepEqual(parseProgress(catalog,user.id,p),p);
+    }
+    assert.deepEqual(paths[0],paths[1]);
+  }
+});
+test('área canónica, roles anteriores migrados sin datos redundantes y permisos independientes',()=>{
+  for(const [legacyRole,area] of [['pasitos','pasitos'],['school','school'],['third_cycle','third_cycle'],['fourth_cycle','Ciberseguridad']]) {
+    const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role:legacyRole,kind:'applicant',assignedSpecialty:legacyRole==='fourth_cycle'?'Ciberseguridad':undefined});
+    const migrated=localDataSchema.parse(fixture).users[0];assert.equal(migrated.role,'admission');assert.equal(migrated.area,area);assert.equal(Object.hasOwn(migrated,'kind'),false);assert.equal(Object.hasOwn(migrated,'assignedSpecialty'),false);
+  }
+  for(const [area,expected] of [['Escuela','school'],['Tercer ciclo','third_cycle'],['TICs','Desarrollo Web']]) {
+    const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role:'visitor',area});assert.equal(localDataSchema.parse(fixture).users[0].area,expected);
+  }
+  const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role:'admission',area:'Cuarto ciclo'});assert.equal(localDataSchema.safeParse(fixture).success,false);
+  delete fixture.users[0].area;const pending=localDataSchema.parse(fixture);assert.throws(()=>startLocal(pending,freshProgress(pending,'ana')),/asignarte un área/);
+  Object.assign(fixture.users[0],{role:'admin',area:'school'});const admin=localDataSchema.parse(fixture);assert.equal(admin.users[0].area,undefined);assert.throws(()=>startLocal(admin,freshProgress(admin,'ana')),/administrador/);
 });

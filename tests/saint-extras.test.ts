@@ -32,7 +32,7 @@ test('fallar reemplaza extra, no suma premios, no se repite y conserva respuesta
  assert.throws(()=>validateCatalogChange(data,modified,'admin',{getItem:key=>key.endsWith(':ana')?JSON.stringify(p):null}),/respuestas guardadas/);
 });
 test('reemplazo en ruta de admisión conserva cinco retos y las cuotas de proyectos',()=>{
- const catalog=structuredClone(data);catalog.users[0].role='pasitos';catalog.users[0].kind='applicant';
+ const catalog=structuredClone(data);catalog.users[0].role='admission';catalog.users[0].area='pasitos';
  const initial=startLocal(catalog,freshProgress(catalog,'ana'));
  initial.routeIds[4]='santo-b';
  const p=replaceFailedSaint(catalog,initial,'santo-b',{saintChoice:'2'},()=>0);

@@ -3,7 +3,7 @@ import { routeChallenges, type LocalData } from '@/lib/local-game';
 import type { adminRows } from '@/lib/local-admin';
 import { challengeAnswers } from '@/lib/participant-answers';
 import campus from '@/lib/campus.json';
-import { roleLabel } from '@/lib/taxonomy';
+import { roleLabel, areaLabel } from '@/lib/taxonomy';
 import { PlaceTag } from './icons';
 type Row = ReturnType<typeof adminRows>[number];
 const names: Record<string, string> = campus.names;
@@ -22,7 +22,7 @@ export function ParticipantAnswers({ data, rows, selectedId, onSelect }: {
     <div className="admin-section-top"><h2>Respuestas por participante</h2></div>
     <label className="answer-user-select">Seleccionar participante<select value={selectedId ?? ''} onChange={e => onSelect(e.target.value || null)}><option value="">Selecciona una persona</option>{rows.map(r => <option key={r.user.id} value={r.user.id}>{r.user.name} · {r.user.token}</option>)}</select></label>
     {!row ? <p className="empty">Selecciona un participante para consultar sus preguntas y respuestas.</p> : <>
-      <header className="participant-answer-header"><div><span className="eyebrow">FICHA DEL PARTICIPANTE</span><h3>{row.user.name}</h3><p>{roleLabel(row.user.role)} · Token {row.user.token}</p></div><span className="place-tag">{row.status}</span></header>
+      <header className="participant-answer-header"><div><span className="eyebrow">FICHA DEL PARTICIPANTE</span><h3>{row.user.name}</h3><p>{roleLabel(row.user.role)}{row.user.area&&` · ${areaLabel(row.user.area)}`} · Token {row.user.token}</p></div><span className="place-tag">{row.status}</span></header>
       {row.error || !progress ? <p className="form-error" role="alert">Los datos de esta persona no son válidos. No podemos presentar sus respuestas hasta revisar el progreso guardado.</p> : <>
         <p className="muted">{progress.completed.length} retos completados · Respuestas guardadas en este navegador. Se muestran los retos completados y los pendientes; los intentos incorrectos se conservan junto al reto extra asignado.</p>
         {progress.startedAt && <p className="answer-date">Inicio del camino: {formatDate(progress.startedAt)} · Hora de Costa Rica</p>}

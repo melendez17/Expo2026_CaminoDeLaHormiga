@@ -17,7 +17,7 @@ Abre la dirección que muestra la terminal (puerto 3000 por defecto). No hace fa
 |---|---|---|
 | `K8P2` | Ana Rodríguez | Visitante |
 | `M4T7` | Carlos Méndez | Visitante |
-| `S6F3` | Sofía Vargas | Admisión · Cuarto ciclo · Desarrollo Web |
+| `S6F3` | Sofía Vargas | Admisión · Desarrollo Web |
 | `D9C5` | Diego Castro | Visitante |
 | `ADM1` | Administrador ExpoTEC | Administrador de prueba |
 
@@ -89,19 +89,24 @@ El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`,
 
 La demo puede publicarse sin variables de entorno usando la rama `implementacion-v0.1`. Consulta [la guía de publicación](docs/vercel.md); `vercel.json` incluye la configuración de Next.js.
 
-## Roles y rutas de admisión
+## Roles y áreas de afinidad
 
-La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Los roles disponibles son Admin, Visitante, Pasitos, Escuela, Tercer ciclo y Cuarto ciclo. Las cuatro modalidades de admisión comparten acceso y encuesta, y sus proyectos se asignan al iniciar:
+La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Solo existen tres roles: Admin (`admin`), Visitante (`visitor`) y Admisión (`admission`). El rol controla el acceso y la encuesta; el área controla la asignación de retos para Visitante y Admisión por igual.
 
-| Rol | Ruta obligatoria |
+El formulario exige **Área de afinidad** para los participantes. Ofrece Escuela (`school`), Pasitos (`pasitos`), Tercer ciclo (`third_cycle`) y las seis especialidades: Desarrollo Web, Ciberseguridad, Dibujo y Modelado de Edificaciones, Diseño Gráfico Multimedia, Electromecánica y Mecánica de Precisión. No hay opción Cuarto ciclo ni segundo campo de especialidad: se elige la especialidad directamente como `area`.
+
+| Área | Ruta obligatoria |
 |---|---|
-| Visitante | Los cinco retos generales existentes |
 | Pasitos | 1 proyecto de Pasitos + 1 de Escuela + 2 de especialidad + 1 extra |
 | Escuela | 1 de Escuela + 1 de Tercer ciclo + 2 de especialidad + 1 extra |
 | Tercer ciclo | 2 de Tercer ciclo + 2 de especialidad + 1 extra |
-| Cuarto ciclo | 1 de décimo y 1 de undécimo de su especialidad + otro distinto de su especialidad (décimo o undécimo) + 1 de otra especialidad + 1 extra |
+| Una especialidad | 1 de décimo + 1 de undécimo de esa especialidad + otro distinto de ella (décimo o undécimo) + 1 de otra especialidad + 1 extra |
 
-El campo `kind` se deriva del rol; ya no se edita por separado. Cuarto ciclo necesita `assignedSpecialty` para iniciar una ruta nueva. Web y Ciberseguridad son especialidades independientes con el mismo edificio `17` (TICs). Cada proyecto tiene nivel: Preescolar para Pasitos, primero a sexto para Escuela, séptimo a noveno para Tercer ciclo y décimo u undécimo para Especialidad. Los proyectos se clasifican como Pasitos, Escuela, Tercer ciclo o Especialidad; sus retos se relacionan mediante `projectId`. Los extras son actividades sin proyecto (photobooth, CDC, puestos o santos); las visitas a proyectos no se generan como extras. Si faltan proyectos con retos de una categoría, nivel o especialidad, se informa al usuario sin asignar una ruta parcial. Los progresos anteriores conservan su recorrido y sus respuestas.
+Ejemplo: `{"role":"visitor","area":"Desarrollo Web"}`. `{"role":"admission","area":"Desarrollo Web"}` recibe las mismas cuotas, con encuesta de admisión. Los visitantes conservan su encuesta de experiencia. Admin no necesita área y los participantes no pueden acceder al panel.
+
+Los catálogos anteriores se normalizan al leer: los roles de nivel pasan a `admission` con su área, `assignedSpecialty` se traslada a `area` y `kind` desaparece del usuario normalizado y de los respaldos nuevos. Los visitantes antiguos sin área conservan la ruta general de cinco retos; al crearlos o editarlos desde el panel se exige elegir área. Las rutas ya iniciadas, respuestas y tokens se conservan, y cambiar de área se bloquea si invalida una ruta asignada.
+
+Web y Ciberseguridad comparten el edificio TICs (`17`). Los proyectos tienen categoría, especialidad y nivel; los extras son actividades sin proyecto. Si falta catálogo suficiente para preparar una ruta completa, se informa antes de asignarla.
 
 ## Tiquetes manuales y rifa local
 

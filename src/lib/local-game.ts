@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { hasIncorrectAnswer } from './incorrect-answer';
-import { canonicalSpecialty, categoryLabel, specialties, isAdmissionRole } from './taxonomy';
+import { canonicalSpecialty, categoryLabel, specialties, canonicalArea, participantAreas, routeArea } from './taxonomy';
 const questionSchema = z.object({
   id: z.string().min(1), prompt: z.string().min(1),
   options: z.array(z.string()).min(2).max(6), correctIndex: z.number().int().nonnegative()
@@ -22,10 +22,21 @@ const challengeSchema = z.object({
 export const localDataSchema = z.object({
   agendaManaged: z.boolean().default(false),
   schemaRevision: z.number().int().min(1).default(3),
-  users: z.array(z.object({ id: z.string(), name: z.string().min(2), firstName: z.string().trim().min(1).max(160).optional(), firstSurname: z.string().trim().min(1).max(160).optional(), secondSurname: z.string().trim().min(1).max(160).optional(), email: z.string().trim().toLowerCase().pipe(z.email({error:'Ingresa un correo electrónico válido.'})).optional(), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']).default('visitor'), assignedSpecialty: z.string().transform(canonicalSpecialty).optional(), role: z.enum(['participant', 'admin', 'visitor', 'pasitos', 'school', 'third_cycle', 'fourth_cycle']).optional() }).transform(user => {
-    const role = !user.role || user.role === 'participant' ? (user.kind === 'applicant' ? 'fourth_cycle' as const : 'visitor' as const) : user.role;
-    return { ...user, name: user.firstName && user.firstSurname && user.secondSurname ? [user.firstName,user.firstSurname,user.secondSurname].join(' ') : user.name, role, kind: isAdmissionRole(role) ? 'applicant' as const : 'visitor' as const };
-  }).superRefine((user,ctx)=>{if([user.firstName,user.firstSurname,user.secondSurname].some(value=>value!==undefined)&&![user.firstName,user.firstSurname,user.secondSurname].every(Boolean))ctx.addIssue({code:'custom',message:'Completa el nombre y ambos apellidos.'});if(user.assignedSpecialty&&!specialties.some(s=>s.name===user.assignedSpecialty))ctx.addIssue({code:'custom',message:'La especialidad asignada no es válida'});})).min(1),
+  users: z.array(z.object({
+    id:z.string(),name:z.string().min(2),firstName:z.string().trim().min(1).max(160).optional(),firstSurname:z.string().trim().min(1).max(160).optional(),secondSurname:z.string().trim().min(1).max(160).optional(),email:z.string().trim().toLowerCase().pipe(z.email({error:'Ingresa un correo electrónico válido.'})).optional(),token:z.string().regex(/^[A-Z0-9]{4}$/),
+    role:z.enum(['admin','visitor','admission','visitante','admision','participant','pasitos','school','third_cycle','fourth_cycle']).optional(),area:z.string().transform(canonicalArea).optional(),
+    // Solo lectura de respaldos anteriores; no se conservan estos campos.
+    kind:z.enum(['applicant','visitor']).optional(),assignedSpecialty:z.string().transform(canonicalSpecialty).optional()
+  }).transform(user=>{
+    const {kind,assignedSpecialty,role:oldRole,area:oldArea,...profile}=user;
+    const legacyArea=['pasitos','school','third_cycle'].includes(oldRole??'')?oldRole:assignedSpecialty;
+    const role=oldRole==='admin'?'admin' as const:oldRole==='admission'||oldRole==='admision'||['pasitos','school','third_cycle','fourth_cycle'].includes(oldRole??'')||((!oldRole||oldRole==='participant')&&kind==='applicant')?'admission' as const:'visitor' as const;
+    const area=role==='admin'?undefined:oldArea??legacyArea;
+    return {...profile,name:user.firstName&&user.firstSurname&&user.secondSurname?[user.firstName,user.firstSurname,user.secondSurname].join(' '):user.name,role,...(area?{area}:{})};
+  }).superRefine((user,ctx)=>{
+    if([user.firstName,user.firstSurname,user.secondSurname].some(v=>v!==undefined)&&![user.firstName,user.firstSurname,user.secondSurname].every(Boolean))ctx.addIssue({code:'custom',message:'Completa el nombre y ambos apellidos.'});
+    if(user.area&&!participantAreas.some(a=>a.value===user.area))ctx.addIssue({code:'custom',message:'El área de afinidad no es válida.'});
+  })).min(1),
   projects: z.array(z.object({ id: z.string().min(1), name: z.string().min(2), buildingId: z.string(), category: z.enum(['pasitos','school','third_cycle','specialty']).optional(), level: z.union([z.literal('preescolar'),z.number().int().min(1).max(11)]).optional(), specialty: z.string().default(''), description: z.string().min(5) }).transform(project => {
     const category = project.category ?? (project.buildingId === '8' ? 'pasitos' : project.buildingId === '3' ? 'school' : 'specialty');
     const level=project.level??(category==='pasitos'?'preescolar':category==='school'?5:category==='third_cycle'?8:10);
@@ -91,26 +102,27 @@ export function startLocal(data:LocalData,progress:LocalProgress,random=Math.ran
   if(progress.startedAt)return progress;
   const user=data.users.find(u=>u.id===progress.userId);
   if(!user)throw Error('El participante no existe.');
-  if(!isAdmissionRole(user.role))return {...progress,startedAt:new Date().toISOString()};
+  const affinity=routeArea(user);
+  if(user.role==='admin')throw Error('El administrador no tiene ruta de participante.');
+  if(!affinity){if(user.role==='admission')throw Error('El administrador debe asignarte un área antes de iniciar.');return {...progress,startedAt:new Date().toISOString()};}
   const shuffle=<T,>(values:T[])=>{const result=[...values];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;};
-  const plans:Record<string,[string,number][]>={pasitos:[['pasitos',1],['school',1],['specialty',2]],school:[['school',1],['third_cycle',1],['specialty',2]],third_cycle:[['third_cycle',2],['specialty',2]],fourth_cycle:[]};
-  if(user.role==='fourth_cycle'&&!user.assignedSpecialty)throw Error('El administrador debe asignarte una especialidad antes de iniciar.');
+  const plans:Record<string,[string,number][]>={pasitos:[['pasitos',1],['school',1],['specialty',2]],school:[['school',1],['third_cycle',1],['specialty',2]],third_cycle:[['third_cycle',2],['specialty',2]],specialty:[]};
   const ids:string[]=[];
-  if(user.role==='fourth_cycle') {
+  if(affinity==='specialty') {
     for(const level of [10,11]) {
-      const candidates=data.projects.filter(p=>p.category==='specialty'&&p.specialty===user.assignedSpecialty&&p.level===level).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
-      if(!candidates.length)throw Error(`Faltan proyectos con retos de ${user.assignedSpecialty} de ${level===10?'décimo':'undécimo'}.`);
+      const candidates=data.projects.filter(p=>p.category==='specialty'&&p.specialty===user.area&&p.level===level).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
+      if(!candidates.length)throw Error(`Faltan proyectos con retos de ${user.area} de ${level===10?'décimo':'undécimo'}.`);
       ids.push(shuffle(candidates)[0].id);
     }
-    const remaining=data.projects.filter(p=>p.category==='specialty'&&p.specialty===user.assignedSpecialty).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c&&!ids.includes(c.id));
+    const remaining=data.projects.filter(p=>p.category==='specialty'&&p.specialty===user.area).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c&&!ids.includes(c.id));
     if(!remaining.length)throw Error('Falta un tercer proyecto distinto de tu especialidad con un reto.');
     ids.push(shuffle(remaining)[0].id);
-    const others=data.projects.filter(p=>p.category==='specialty'&&p.specialty!==user.assignedSpecialty).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
+    const others=data.projects.filter(p=>p.category==='specialty'&&p.specialty!==user.area).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
     if(!others.length)throw Error('Falta un proyecto de otra especialidad con un reto.');
     ids.push(shuffle(others)[0].id);
   }
 
-  for(const [category,count] of plans[user.role]) {
+  for(const [category,count] of plans[affinity]) {
     const candidates=data.projects.filter(p=>p.category===category).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
     if(candidates.length<count)throw Error(`Faltan proyectos con retos de ${categoryLabel(category)} para preparar tu ruta. Solicita ayuda al administrador.`);
     if(category==='specialty'&&count>1) {
@@ -229,16 +241,17 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   return p;
 }
 function validRoute(data:LocalData,p:LocalProgress) {
- const user=data.users.find(u=>u.id===p.userId);if(!user||!isAdmissionRole(user.role))return false;
+ const user=data.users.find(u=>u.id===p.userId);if(!user||user.role==='admin')return false;
+ const affinity=routeArea(user);if(!affinity)return false;
  const projects=p.routeIds.map(id=>data.challenges.find(c=>c.id===id)!).filter(c=>c.projectId).map(c=>data.projects.find(project=>project.id===c.projectId)!);
  if(new Set(projects.map(project=>project.id)).size!==projects.length)return false;
  if(p.routeIds.length!==5||projects.length!==4||p.routeIds.filter(id=>extraChallenges(data).some(c=>c.id===id)).length!==1)return false;
- if(user.role==='fourth_cycle') {
-   const own=projects.filter(project=>project.specialty===user.assignedSpecialty&&project.category==='specialty');
-   const others=projects.filter(project=>project.specialty!==user.assignedSpecialty&&project.category==='specialty');
+ if(affinity==='specialty') {
+   const own=projects.filter(project=>project.specialty===user.area&&project.category==='specialty');
+   const others=projects.filter(project=>project.specialty!==user.area&&project.category==='specialty');
    return own.length===3&&own.some(p=>p.level===10)&&own.some(p=>p.level===11)&&others.length===1;
  }
  const count=(category:string)=>projects.filter(project=>project.category===category).length;
- return new Set(projects.filter(p=>p.category==='specialty').map(p=>p.specialty)).size===2&&count('specialty')===2&&(user.role==='pasitos'?count('pasitos')===1&&count('school')===1:user.role==='school'?count('school')===1&&count('third_cycle')===1:count('third_cycle')===2);
+ return new Set(projects.filter(p=>p.category==='specialty').map(p=>p.specialty)).size===2&&count('specialty')===2&&(affinity==='pasitos'?count('pasitos')===1&&count('school')===1:affinity==='school'?count('school')===1&&count('third_cycle')===1:count('third_cycle')===2);
 }
 export const storageKey = (data: LocalData, userId: string) => `camino-local:${data.settings.dataVersion}:${userId}`;

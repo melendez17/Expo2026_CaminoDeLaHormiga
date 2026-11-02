@@ -32,10 +32,10 @@ Si cambias preguntas, códigos o reglas después de iniciar pruebas, usa una nue
 En `users.json` agrega un objeto con ID y token únicos. Los tokens son cuatro letras mayúsculas o números. No son contraseñas reales.
 
 ```json
-{ "id": "lucia", "name": "Lucía Ejemplo", "token": "L2C8", "kind": "visitor" }
+{ "id": "lucia", "name": "Lucía Ejemplo", "token": "L2C8", "role": "visitor", "area": "school" }
 ```
 
-`kind` admite `visitor` o `applicant`. La encuesta de postulantes se identifica como admisión de prueba; todos pueden seguir jugando tras completar los cinco retos base.
+`role` define el perfil y la ruta. Los roles de admisión acceden a su encuesta; todos pueden seguir jugando tras completar su ruta. El área (`area`) determina los retos; las especialidades son áreas directamente.
 
 ## Agregar un proyecto buscable
 
@@ -179,11 +179,11 @@ La agenda de prueba incluye viernes 13, sábado 14 y domingo 15 de noviembre, or
 
 ## Revisión de roles, proyectos y tiquetes
 
-La fuente vigente para las rutas por modalidad es la tabla de README.md. `role` es la clasificación de usuario y `kind` es un dato de compatibilidad derivado: Pasitos, Escuela, Tercer ciclo y Cuarto ciclo son admisión. Los antiguos perfiles `applicant` sin modalidad se migran provisionalmente a Cuarto ciclo; si no tienen especialidad, un administrador debe asignarla antes de iniciar una ruta nueva. Los progresos iniciados antes de esta revisión conservan los cinco retos generales para no perder respuestas.
+La fuente vigente para las rutas por modalidad es la tabla de README.md. `role` es la única clasificación de usuario. El antiguo `kind` se acepta solo para importar catálogos previos y se elimina del resultado: Los roles actuales son Admin, Visitante y Admisión; Pasitos, Escuela, Tercer ciclo y las especialidades son áreas de afinidad. Los antiguos perfiles `applicant` sin modalidad se migran a Admisión; si no tienen área, un administrador debe asignarla antes de iniciar una ruta nueva. Los progresos iniciados antes de esta revisión conservan los cinco retos generales para no perder respuestas.
 
 `projects.category` usa `pasitos`, `school`, `third_cycle` o `specialty`. Las especialidades válidas están en `src/lib/taxonomy.ts`. Los alias antiguos se normalizan: TICs → Desarrollo Web, Dibujo y Modelado → Dibujo y Modelado de Edificaciones. Ciberseguridad también pertenece a TICs; no se crean edificios nuevos. Los nuevos proyectos de ejemplo de admisión y sus retos se incorporan a los catálogos antiguos sin reemplazar ediciones. Al guardarse, el catálogo lleva `schemaRevision: 3`.
 
-Al iniciar admisión se sortean proyectos distintos de las categorías indicadas y se guardan sus IDs en `routeIds`. El extra obligatorio forma parte de los cinco retos de la ruta. En Cuarto ciclo la ruta inicial contiene un proyecto de décimo y otro de undécimo de `assignedSpecialty`, otro proyecto distinto de esa misma especialidad (décimo o undécimo), uno de otra especialidad aleatoria y un extra. El premio se calcula al terminar los cinco retos de la ruta. El catálogo de votación sigue disponible para todos; la asignación se refiere a las visitas y retos obligatorios.
+Al iniciar admisión se sortean proyectos distintos de las categorías indicadas y se guardan sus IDs en `routeIds`. El extra obligatorio forma parte de los cinco retos de la ruta. Cuando el área es una especialidad, la ruta inicial contiene un proyecto de décimo y otro de undécimo de `area`, otro proyecto distinto de esa misma especialidad (décimo o undécimo), uno de otra especialidad aleatoria y un extra. El premio se calcula al terminar los cinco retos de la ruta. El catálogo de votación sigue disponible para todos; la asignación se refiere a las visitas y retos obligatorios.
 
 `manualTickets` se guarda en el progreso de cada participante con ID, fecha y emisor administrador. Se emite una unidad por pulsación de Crear y añade un voto. Importar un progreso anterior o reiniciar la prueba conserva los tiquetes manuales existentes. El registro de sorteos usa `camino-raffle:<dataVersion>`; no se reinicia al salir del panel ni al recargar. Los datos inválidos se señalan y no se sobrescriben silenciosamente.
 

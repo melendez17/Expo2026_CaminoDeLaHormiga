@@ -20,7 +20,7 @@ test('catálogo exige administrador, tokens únicos y conservar acceso propio', 
 });
 test('agregar usuario y proyecto persiste catálogo con validación de zonas', () => {
   const next = validateCatalogChange(data, change(c => {
-    c.users.push({ id: 'prueba', name: 'Persona de Prueba', token: 'P123', kind: 'visitor', role: 'visitor' });
+    c.users.push({ id: 'prueba', name: 'Persona de Prueba', token: 'P123', role: 'visitor' });
     c.projects.push({ id: 'huerta', name: 'Huerta inteligente', description: 'Sensores para la huerta.', category: 'specialty', level:10, specialty: 'Desarrollo Web', buildingId: '17' });
   }), 'admin', storage);
   const saved = new Map([[CATALOG_KEY, JSON.stringify(next)]]);

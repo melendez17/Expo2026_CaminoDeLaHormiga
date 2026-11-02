@@ -242,6 +242,7 @@ async function main() {
     await page.getByLabel('Apellido 1',{exact:true}).fill('Prueba');
     await page.getByLabel('Apellido 2',{exact:true}).fill('Registro');
     await page.getByLabel('Correo electrónico',{exact:true}).fill('valeria@example.com');
+    await page.getByLabel('Área de afinidad',{exact:true}).selectOption('school');
     assert.equal(await page.locator('input[name="token"]').count(),0);
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     const valeriaToken=await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba Registro').token as string);
@@ -362,9 +363,9 @@ async function main() {
       await rolePage.getByLabel('Apellido 2',{exact:true}).fill('Prueba');
       await rolePage.getByLabel('Correo electrónico',{exact:true}).fill(`${role}@example.com`);
       assert.equal(await rolePage.locator('input[name="token"]').count(),0);
-      assert.equal(await rolePage.getByLabel('Rol',{exact:true}).locator('option').count(),6);
-      await rolePage.getByLabel('Rol',{exact:true}).selectOption(role);
-      if(role==='fourth_cycle')await rolePage.getByLabel('Especialidad asignada',{exact:true}).selectOption('Ciberseguridad');
+      assert.equal(await rolePage.getByLabel('Rol',{exact:true}).locator('option').count(),3);
+      await rolePage.getByLabel('Rol',{exact:true}).selectOption('admission');
+      await rolePage.getByLabel('Área de afinidad',{exact:true}).selectOption(role==='fourth_cycle'?'Ciberseguridad':role);
       await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
       const generatedToken=await rolePage.evaluate(name=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name===name).token as string,`Admisión ${label} Prueba`);
       variants.find(v=>v[0]===role)![2]=generatedToken;
@@ -380,8 +381,8 @@ async function main() {
     const savedCatalog = await rolePage.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!));
     const cyber = savedCatalog.projects.find((p:{name:string})=>p.name==='Ciberseguridad de prueba');
     assert.equal(cyber.buildingId,'17');assert.equal(cyber.category,'specialty');assert.equal(cyber.level,11);
-    assert.equal(savedCatalog.users.find((u:{token:string})=>u.token===variants[3][2]).assignedSpecialty,'Ciberseguridad');
-    for (const [role,,token] of variants) { const u=savedCatalog.users.find((u:{token:string})=>u.token===token);assert.equal(u.role,role);assert.equal(u.kind,'applicant'); }
+    assert.equal(savedCatalog.users.find((u:{token:string})=>u.token===variants[3][2]).area,'Ciberseguridad');
+    for (const [role,,token] of variants) { const u=savedCatalog.users.find((u:{token:string})=>u.token===token);assert.equal(u.role,'admission');assert.equal(u.area,role==='fourth_cycle'?'Ciberseguridad':role);assert.equal(Object.hasOwn(u,'kind'),false);assert.equal(Object.hasOwn(u,'assignedSpecialty'),false); }
     await rolePage.getByRole('button',{name:'Nuevo proyecto',exact:true}).click();
     await rolePage.getByLabel('Nombre del proyecto',{exact:true}).fill('Proyecto de escuela');
     await rolePage.getByLabel('Área del proyecto').selectOption('school');
@@ -459,7 +460,7 @@ async function main() {
       await rolePage.getByRole('button',{name:'Salir',exact:true}).click();
     }
     await roleContext.close();
-    console.log('PASS four admission roles, project categories, Cyber in TICs, role-specific routes, token-only manual ticket, raffle, persistence and admission surveys');
+    console.log('PASS three roles, admission affinity areas, project categories, Cyber in TICs, role-specific routes, token-only manual ticket, raffle, persistence and admission surveys');
 
   } finally { await browser.close(); }
 }

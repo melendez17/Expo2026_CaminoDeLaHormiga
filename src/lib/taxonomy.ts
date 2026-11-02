@@ -1,8 +1,4 @@
-export const roles = [
-  { value: 'admin', label: 'Admin' }, { value: 'visitor', label: 'Visitante' },
-  { value: 'pasitos', label: 'Pasitos' }, { value: 'school', label: 'Escuela' },
-  { value: 'third_cycle', label: 'Tercer ciclo' }, { value: 'fourth_cycle', label: 'Cuarto ciclo' }
-] as const;
+export const roles = [{value:'admin',label:'Admin'},{value:'visitor',label:'Visitante'},{value:'admission',label:'Admisión'}] as const;
 export const projectCategories = [
   { value: 'pasitos', label: 'Pasitos' }, { value: 'school', label: 'Escuela' },
   { value: 'third_cycle', label: 'Tercer ciclo' }, { value: 'specialty', label: 'Especialidad' }
@@ -28,5 +24,17 @@ export function projectLabel(project: { category: ProjectCategory; specialty: st
   return project.level===undefined?area:`${area} · ${levelLabel(project.level)}`;
 }
 
-export const admissionRoles = ['pasitos','school','third_cycle','fourth_cycle'] as const;
-export const isAdmissionRole = (role: string) => admissionRoles.some(value=>value===role);
+export const isAdmissionRole = (role: string) => role === 'admission';
+export const participantAreas = [
+  {value:'school',label:'Escuela'},{value:'pasitos',label:'Pasitos'},{value:'third_cycle',label:'Tercer ciclo'},
+  ...specialties.map(s=>({value:s.name,label:s.name}))
+];
+export const areaLabel = (area?:string) => participantAreas.find(a=>a.value===area)?.label ?? area ?? 'Sin área asignada';
+export function canonicalArea(value:string) {
+  const aliases:Record<string,string>={'escuela':'school','school':'school','pasitos':'pasitos','tercer ciclo':'third_cycle','tercer_ciclo':'third_cycle','third_cycle':'third_cycle'};
+  return aliases[normalized(value)]??canonicalSpecialty(value);
+}
+export function routeArea(user:{area?:string}) {
+  if(specialties.some(s=>s.name===user.area))return 'specialty';
+  return ['school','pasitos','third_cycle'].includes(user.area??'')?user.area:undefined;
+}
