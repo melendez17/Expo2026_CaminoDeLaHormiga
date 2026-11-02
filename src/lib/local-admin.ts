@@ -21,7 +21,7 @@ export function restoreCatalog(base: LocalData, storage: StorageReader): LocalDa
   // Añade días nuevos del JSON también a catálogos editados antes de esta versión.
   // Las actividades de días ya presentes en el catálogo local se conservan.
   const existingDays = new Set(value.data.agenda.map(event => event.day));
-  const newDays = base.agenda.filter(event => !existingDays.has(event.day));
+  const newDays = value.data.agendaManaged ? [] : base.agenda.filter(event => !existingDays.has(event.day));
   const result = newDays.length ? { ...value.data, agenda: [...value.data.agenda, ...newDays] } : value.data;
   if ((input.schemaRevision ?? 1) < 3) {
     const projects = base.projects.filter(p => !result.projects.some(old=>old.id===p.id));

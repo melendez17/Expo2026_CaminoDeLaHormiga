@@ -20,6 +20,7 @@ const challengeSchema = z.object({
   if (c.kind === 'saint' && !c.answer && !c.questions?.length) ctx.addIssue({ code: 'custom', message: 'Falta la respuesta del santo' });
 });
 export const localDataSchema = z.object({
+  agendaManaged: z.boolean().default(false),
   schemaRevision: z.number().int().min(1).default(3),
   users: z.array(z.object({ id: z.string(), name: z.string().min(2), firstName: z.string().trim().min(1).max(160).optional(), firstSurname: z.string().trim().min(1).max(160).optional(), secondSurname: z.string().trim().min(1).max(160).optional(), email: z.string().trim().toLowerCase().pipe(z.email({error:'Ingresa un correo electrónico válido.'})).optional(), token: z.string().regex(/^[A-Z0-9]{4}$/), kind: z.enum(['applicant', 'visitor']).default('visitor'), assignedSpecialty: z.string().transform(canonicalSpecialty).optional(), role: z.enum(['participant', 'admin', 'visitor', 'pasitos', 'school', 'third_cycle', 'fourth_cycle']).optional() }).transform(user => {
     const role = !user.role || user.role === 'participant' ? (user.kind === 'applicant' ? 'fourth_cycle' as const : 'visitor' as const) : user.role;
@@ -38,7 +39,7 @@ export const localDataSchema = z.object({
     }
   })),
   challenges: z.array(challengeSchema),
-  agenda: z.array(z.object({ id: z.string(), title: z.string(), category: z.enum(['general', 'pastoral', 'radio']), day: z.string().min(1).default('Sábado'), dayNumber: z.number().int().min(1).max(31).optional(), endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), buildingId: z.string(), description: z.string() })),
+  agenda: z.array(z.object({ id: z.string(), title: z.string().trim().min(1).max(160), category: z.enum(['general', 'pastoral', 'radio']), day: z.string().min(1).default('Sábado'), dayNumber: z.number().int().min(1).max(31).optional(), endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), buildingId: z.string(), description: z.string() })),
   settings: z.object({ dataVersion: z.string(), title: z.string(), baseReward: z.number().int().positive(), extraEvery: z.number().int().positive(), surveyBonus: z.number().int().nonnegative(), extraBatchSize: z.number().int().positive(), radioUrl: z.url().nullable(), agendaNote: z.string() })
 }).superRefine((data, ctx) => {
   if (data.challenges.filter(c => c.isBase).length !== 5) ctx.addIssue({ code: 'custom', message: 'Deben existir cinco retos base' });
@@ -46,6 +47,7 @@ export const localDataSchema = z.object({
     if (new Set(entries.map(e => e.id)).size !== entries.length) ctx.addIssue({ code: 'custom', message: 'Hay identificadores duplicados' });
   }
   if (new Set(data.users.map(u => u.token)).size !== data.users.length) ctx.addIssue({ code: 'custom', message: 'Hay tokens duplicados' });
+  for(const event of data.agenda)if(event.endTime&&event.endTime<=event.time)ctx.addIssue({code:'custom',message:'La hora de finalización debe ser posterior a la hora de inicio.'});
   for (const c of data.challenges) if (c.projectId && !data.projects.some(p => p.id === c.projectId)) ctx.addIssue({ code: 'custom', message: 'El proyecto del reto no existe' });
 });
 export type LocalData = z.infer<typeof localDataSchema>;

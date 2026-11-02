@@ -111,3 +111,25 @@ test('nombre y dos apellidos se guardan separados y componen el nombre completo'
   assert.throws(()=>localDataSchema.parse(input));
   assert.equal(localDataSchema.parse(data).users[0].name,data.users[0].name);
 });
+
+test('agenda administrada permite crear, editar y borrar sin recuperar días eliminados',()=>{
+  const emptyStorage={getItem:()=>null};
+  const created=change(c=>{c.agendaManaged=true;c.agenda.push({id:'agenda-admin',title:'Taller nuevo',day:'Viernes',dayNumber:13,time:'12:00',endTime:'13:00',category:'general',buildingId:'17',description:'Actividad de prueba.'});});
+  const saved=validateCatalogChange(data,created,'admin',emptyStorage);
+  const edited=structuredClone(saved);edited.agenda.find(e=>e.id==='agenda-admin')!.title='Taller actualizado';
+  assert.equal(validateCatalogChange(saved,edited,'admin',emptyStorage).agenda.find(e=>e.id==='agenda-admin')?.title,'Taller actualizado');
+  const removed={...edited,agenda:edited.agenda.filter(e=>e.day!=='Viernes')};
+  const valid=validateCatalogChange(edited,removed,'admin',emptyStorage);
+  const restored=restoreCatalog(data,{getItem:key=>key===CATALOG_KEY?JSON.stringify(valid):null});
+  assert.ok(!restored.agenda.some(e=>e.day==='Viernes'));
+  const cleared=validateCatalogChange(valid,{...valid,agenda:[]},'admin',emptyStorage);
+  assert.deepEqual(restoreCatalog(data,{getItem:()=>JSON.stringify(cleared)}).agenda,[]);
+  assert.throws(()=>validateCatalogChange(data,created,'ana',emptyStorage),/administrador/);
+});
+test('agenda rechaza títulos vacíos, horarios invertidos y edificios desconocidos',()=>{
+  const emptyStorage={getItem:()=>null};
+  assert.throws(()=>validateCatalogChange(data,change(c=>{c.agenda[0].title='   ';}),'admin',emptyStorage));
+  assert.throws(()=>validateCatalogChange(data,change(c=>{c.agenda[0].time='12:00';c.agenda[0].endTime='11:00';}),'admin',emptyStorage),/posterior/);
+  assert.throws(()=>validateCatalogChange(data,change(c=>{c.agenda[0].endTime=c.agenda[0].time;}),'admin',emptyStorage),/posterior/);
+  assert.throws(()=>validateCatalogChange(data,change(c=>{c.agenda[0].buildingId='inexistente';}),'admin',emptyStorage),/zona/);
+});
