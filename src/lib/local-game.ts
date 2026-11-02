@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { hasIncorrectAnswer } from './incorrect-answer';
 import { canonicalSpecialty, categoryLabel, specialties, isAdmissionRole } from './taxonomy';
 const questionSchema = z.object({
   id: z.string().min(1), prompt: z.string().min(1),
@@ -54,6 +55,7 @@ export type Answers = Record<string, string>;
 export const progressSchema = z.object({
   version: z.literal(1), dataVersion: z.string(), userId: z.string(), startedAt: z.string().nullable(),
   completed: z.array(z.object({ challengeId: z.string(), answers: z.record(z.string(), z.string()), at: z.string() })),
+  failedAnswers: z.array(z.object({challengeId:z.string(),answers:z.record(z.string(),z.string()),at:z.iso.datetime(),extraId:z.string()})).default([]),
   failedExtras: z.array(z.object({challengeId:z.string(),answers:z.record(z.string(),z.string()),at:z.iso.datetime(),replacementId:z.string()})).default([]),
   routeIds: z.array(z.string()).default([]),
   manualTickets: z.array(z.object({ id: z.string().min(1), actorId: z.string().min(1), at: z.iso.datetime() })).default([]),
@@ -66,7 +68,7 @@ export function findUser(data: LocalData, token: string) {
   return data.users.find(u => u.token === token.trim().toUpperCase()) ?? null;
 }
 export function freshProgress(data: LocalData, userId: string): LocalProgress {
-  return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], failedExtras: [], routeIds: [], manualTickets: [], extraIds: [], votes: [], survey: null };
+  return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], failedAnswers: [], failedExtras: [], routeIds: [], manualTickets: [], extraIds: [], votes: [], survey: null };
 }
 export function summary(data: LocalData, progress: LocalProgress) {
   const ids = new Set(routeChallenges(data,progress).map(c=>c.id));
@@ -143,6 +145,22 @@ export function replaceFailedSaint(data:LocalData,progress:LocalProgress,id:stri
   const replacementId=candidates[Math.floor(random()*candidates.length)].id;
   return {...progress,routeIds:progress.routeIds.map(c=>c===id?replacementId:c),extraIds:progress.extraIds.map(c=>c===id?replacementId:c),failedExtras:[...progress.failedExtras,{challengeId:id,answers,at:new Date().toISOString(),replacementId}]};
 }
+export function addExtraForWrongAnswer(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
+  const challenge=data.challenges.find(c=>c.id===id);
+  if(!progress.startedAt||!challenge||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
+  if(!hasIncorrectAnswer(challenge,answers))throw Error('El intento no contiene una respuesta incorrecta válida.');
+  if(challenge.kind==='saint')return replaceFailedSaint(data,progress,id,answers,random);
+  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId)]);
+  const candidates=extraChallenges(data).filter(c=>!used.has(c.id));
+  if(!candidates.length)throw Error('No quedan retos extra disponibles. Solicita al administrador que añada otro reto extra.');
+  const extraId=candidates[Math.floor(random()*candidates.length)].id;
+  return {...progress,extraIds:[...progress.extraIds,extraId],failedAnswers:[...progress.failedAnswers,{challengeId:id,answers,at:new Date().toISOString(),extraId}]};
+}
+function grantedExtraIds(progress:LocalProgress) {
+  const granted=new Set(progress.failedAnswers.map(f=>f.extraId));
+  for(const f of progress.failedExtras)if(granted.has(f.challengeId))granted.add(f.replacementId);
+  return granted;
+}
 export function validateAnswers(challenge: LocalChallenge, answers: Answers): string | null {
   if (challenge.kind === 'freeform') {
     if ((answers.projectName?.trim().length ?? 0) < 2 || !answers.level?.trim() || (answers.description?.trim().length ?? 0) < 10) return 'Completa el nombre, el nivel y una descripción de al menos 10 caracteres.';
@@ -185,6 +203,12 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   if (new Set(p.manualTickets.map(t => t.id)).size !== p.manualTickets.length || p.manualTickets.some(t => !data.users.some(u => u.id === t.actorId && u.role === 'admin'))) throw Error('Los tiquetes manuales tienen identificadores duplicados o un emisor no válido.');
   if (new Set(p.extraIds).size !== p.extraIds.length || p.extraIds.some(id => !extraChallenges(data).some(c => c.id === id) || routeChallenges(data,p).some(c=>c.id===id))) throw Error('La lista de retos adicionales no es válida.');
   if ((!p.startedAt && (p.routeIds.length || p.completed.length || p.extraIds.length || p.votes.length || p.survey)) || new Set(p.completed.map(c => c.challengeId)).size !== p.completed.length) throw Error('El progreso está duplicado o no tiene inicio.');
+  const granted=grantedExtraIds(p);
+  if(new Set(p.failedAnswers.map(f=>f.extraId)).size!==p.failedAnswers.length||(!p.startedAt&&p.failedAnswers.length))throw Error('Los retos extra por respuesta incorrecta no son válidos.');
+  for(const record of p.failedAnswers) {
+    const c=data.challenges.find(c=>c.id===record.challengeId);
+    if(!c||!['quiz','code'].includes(c.kind)||!hasIncorrectAnswer(c,record.answers)||(!routeChallenges(data,p).some(c=>c.id===record.challengeId)&&!p.extraIds.includes(record.challengeId))||!extraChallenges(data).some(c=>c.id===record.extraId)||(!p.extraIds.includes(record.extraId)&&!p.failedExtras.some(f=>f.challengeId===record.extraId)))throw Error('El historial de respuestas incorrectas no es válido.');
+  }
   const failedIds=new Set(p.failedExtras.map(f=>f.challengeId));
   if(failedIds.size!==p.failedExtras.length||(!p.startedAt&&p.failedExtras.length))throw Error('Los intentos de retos extra no son válidos.');
   for(const [index,record] of p.failedExtras.entries()) {
@@ -199,7 +223,7 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
     if (!c || (!routeChallenges(data,p).some(base=>base.id===c.id) && !p.extraIds.includes(c.id)) || validateAnswers(c, record.answers)) throw Error('El archivo contiene respuestas o retos no válidos.');
   }
   if (p.votes.some(v => !data.projects.some(project => project.id === v.projectId)) || summary(data, p).votesAvailable < 0) throw Error('El archivo contiene votos no válidos.');
-  if ((p.extraIds.length || p.survey) && !summary(data, p).routeComplete) throw Error('Los retos base no están completos.');
+  if ((p.survey || p.extraIds.some(id=>!granted.has(id))) && !summary(data, p).routeComplete) throw Error('Los retos base no están completos.');
   return p;
 }
 function validRoute(data:LocalData,p:LocalProgress) {

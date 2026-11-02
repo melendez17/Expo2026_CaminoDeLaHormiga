@@ -58,7 +58,7 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
     const nextUser = next.users.find(u => u.id === row.user.id);
     if (hasProgress && (!nextUser || nextUser.role === 'admin')) throw Error(`No puedes quitar a ${row.user.name}: tiene progreso local.`);
     if (hasProgress && JSON.stringify(previous.challenges.filter(c => c.isBase)) !== JSON.stringify(next.challenges.filter(c => c.isBase))) throw Error('Los cinco retos base están en uso. Para cambiarlos, inicia una nueva versión de prueba desde los JSON.');
-    for (const record of [...p.completed,...p.failedExtras]) {
+    for (const record of [...p.completed,...p.failedExtras,...p.failedAnswers]) {
       const oldChallenge = previous.challenges.find(c => c.id === record.challengeId)!;
       const newChallenge = next.challenges.find(c => c.id === record.challengeId);
       if (!newChallenge || oldChallenge.isBase !== newChallenge.isBase || oldChallenge.kind !== newChallenge.kind || JSON.stringify(oldChallenge.questions) !== JSON.stringify(newChallenge.questions) || oldChallenge.code !== newChallenge.code || oldChallenge.answer !== newChallenge.answer) throw Error('No puedes cambiar reglas de retos que ya tienen respuestas guardadas.');

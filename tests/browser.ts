@@ -74,7 +74,7 @@ async function main() {
       }
       await dialog.waitFor({ state: 'hidden' });
     }
-    for (const c of challenges.filter(c => c.isBase)) await complete(c, c.kind === 'quiz');
+    for (const c of challenges.filter(c => c.isBase)) await complete(c);
     assert.equal(await page.locator('.challenge-card.done').count(), 5);
     await nav('Mi resumen').click();
     assert.equal(await page.getByRole('heading', { name: 'Tus insignias', exact: true }).count(), 0);
@@ -92,7 +92,7 @@ async function main() {
     assert.equal(await page.getByTestId('available-votes').innerText(), '0');
     await page.reload(); await nav('Mi resumen').click();
     assert.equal(await page.getByTestId('available-votes').innerText(), '0');
-    console.log('PASS all five base challenges, incorrect quiz rejection, ticket award, searched vote, no double spend and reload persistence');
+    console.log('PASS all five base challenges, ticket award, searched vote, no double spend and reload persistence');
 
     await nav('Retos').click(); await page.getByRole('button', { name: /^Retos extra/ }).click();
     await page.getByRole('button', { name: 'Generar más retos', exact: true }).click();

@@ -1,4 +1,5 @@
 'use client';
+import { hasIncorrectAnswer } from '@/lib/incorrect-answer';
 import { LoadingScreen } from './loading-screen';
 
 import { useEffect, useRef, useState } from 'react';
@@ -15,7 +16,7 @@ import { LocalAdmin } from './local-admin';
 import { CATALOG_KEY, restoreCatalog, validateCatalogChange } from '@/lib/local-admin';
 import campus from '@/lib/campus.json';
 import {
-  availableProjects, extraChallenges, routeChallenges, startLocal, completeLocal, saintQuestion, saintSelection, replaceFailedSaint, findUser, freshProgress, generateExtras, localDataSchema,
+  availableProjects, extraChallenges, routeChallenges, startLocal, completeLocal, saintQuestion, addExtraForWrongAnswer, findUser, freshProgress, generateExtras, localDataSchema,
   normalize, parseProgress, storageKey, summary, voteLocal,
   type Answers, type LocalChallenge, type LocalData, type LocalProgress, type LocalUser
 } from '@/lib/local-game';
@@ -48,6 +49,7 @@ function ChallengeDialog({ challenge, onClose, onComplete }: {
       const answers = Object.fromEntries(new FormData(e.currentTarget)) as Answers;
       try { onComplete(answers); } catch (e) { setError((e as Error).message); }
     }}>
+      {['quiz','code'].includes(challenge.kind) && <p className="muted">Si respondes incorrectamente, se añadirá otro reto extra y este quedará pendiente.</p>}
       {challenge.kind === 'freeform' && <>
         <label>Nombre del proyecto<input name="projectName" minLength={2} maxLength={160} required /></label>
         <label>Nivel<input name="level" maxLength={80} required placeholder="Por ejemplo: quinto grado" /></label>
@@ -231,7 +233,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
         <div className="route-progress-head"><span>Camino base</span><strong>{stats.base}<small> de {stats.baseTarget} {stats.baseTarget===1?'reto':'retos'}</small></strong></div><div className="local-route-progress"><progress value={stats.base} max={stats.baseTarget} aria-label="Retos base completados"/><span>{stats.routeComplete ? '¡Lo lograste! Sigue explorando para ganar más tiquetes.' : 'Completa tu ruta y gana tu primer tiquete.'}</span></div></section>
         <div className="filter-tabs"><button aria-pressed={filter === 'base'} onClick={() => setFilter('base')}>Retos base · {stats.base}/{stats.baseTarget}</button><button aria-pressed={filter === 'extra'} onClick={() => setFilter('extra')}>Retos extra · {stats.extra}</button></div>
         <div className="challenge-list">{displayed.map((c, index) => <ChallengeCard key={c.id} challenge={filter==='base'?{...c,isBase:true}:c} index={index} completed={done.has(c.id)} requiredExtra={filter==='base'&&!!progress.routeIds.length&&!c.projectId} specialty={data.projects.find(p => p.id === c.projectId)?.specialty} projectCategory={data.projects.find(p => p.id === c.projectId)?.category} projectLevel={data.projects.find(p=>p.id===c.projectId)?.level} projectName={progress.routeIds.length?data.projects.find(p=>p.id===c.projectId)?.name:undefined} place={names[c.buildingId]} onLocate={() => setSelected(c.buildingId)} onAnswer={() => { setSelected(c.buildingId); setActive(c); }}/>)}</div>
-        {filter === 'extra' && <section className="extras-card"><h2>{!stats.routeComplete ? 'Tu aventura apenas comienza' : remainingExtras ? 'Siempre hay algo más por descubrir' : '¡Exploraste todos los retos!'}</h2><p>{!stats.routeComplete ? 'Termina tu ruta base para desbloquear retos adicionales.' : extraPending ? 'Completa los retos de esta ronda antes de generar la siguiente.' : remainingExtras ? `Cada ${data.settings.extraEvery} retos extra te dan otro tiquete. Quedan ${remainingExtras} retos por descubrir.` : 'Completaste el catálogo de esta demo. Puedes añadir nuevos retos al archivo JSON.'}</p><button className="primary" disabled={!stats.routeComplete || extraPending || !remainingExtras} onClick={() => attempt(() => { mutate(p => generateExtras(data, p)); setMessage('Nuevos destinos añadidos a tu camino.'); })}>Generar más retos</button></section>}
+        {filter === 'extra' && <section className="extras-card"><h2>{!stats.routeComplete ? (extras.length?'Tienes retos extra asignados':'Tu aventura apenas comienza') : remainingExtras ? 'Siempre hay algo más por descubrir' : '¡Exploraste todos los retos!'}</h2><p>{!stats.routeComplete ? (extras.length?'Puedes realizar ahora los extras asignados por una respuesta incorrecta. Los retos originales siguen pendientes; termina tu ruta base para generar nuevas rondas.':'Termina tu ruta base para desbloquear retos adicionales.') : extraPending ? 'Completa los retos de esta ronda antes de generar la siguiente.' : remainingExtras ? `Cada ${data.settings.extraEvery} retos extra te dan otro tiquete. Quedan ${remainingExtras} retos por descubrir.` : 'Completaste el catálogo de esta demo. Puedes añadir nuevos retos al archivo JSON.'}</p><button className="primary" disabled={!stats.routeComplete || extraPending || !remainingExtras} onClick={() => attempt(() => { mutate(p => generateExtras(data, p)); setMessage('Nuevos destinos añadidos a tu camino.'); })}>Generar más retos</button></section>}
         {stats.routeComplete && filter === 'base' && <section className="extras-card"><h2>¡Terminaste el camino base!</h2><p>Tu primer tiquete ya está disponible. Puedes votar o seguir explorando.</p><div className="row"><button className="primary" onClick={() => setFilter('extra')}>Descubrir más retos</button><button onClick={() => changeSection('votes')}>Ir a votar</button></div></section>}
       </div></>}
 
@@ -256,10 +258,12 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." /><FullCampusMap data={data} progress={progress} selected={selected} onSelect={setSelected} onReturn={() => changeSection('route')}/></section>}
     </main>
     {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
-      if(active.kind==='saint'&&saintSelection(active,answers)!==saintQuestion(active).correctIndex) {
-        const next=mutate(current=>replaceFailedSaint(data,current,active.id,answers));
-        const replacement=data.challenges.find(c=>c.id===next.failedExtras.at(-1)!.replacementId)!;
-        setActive(replacement);setSelected(replacement.buildingId);setError('');setMessage('La respuesta no era correcta. Te asignamos otro reto extra; este intento no suma puntos.');return;
+      if(hasIncorrectAnswer(active,answers)) {
+        const next=mutate(current=>addExtraForWrongAnswer(data,current,active.id,answers));
+        const extraId=active.kind==='saint'?next.failedExtras.at(-1)!.replacementId:next.failedAnswers.at(-1)!.extraId;
+        const extra=data.challenges.find(c=>c.id===extraId)!;
+        setActive(extra);setSelected(extra.buildingId);setFilter(next.routeIds.includes(extra.id)?'base':'extra');setError('');
+        setMessage(active.kind==='saint'?'La respuesta no era correcta. Te asignamos otro reto extra; este intento no suma puntos.':'La respuesta no era correcta. Añadimos un reto extra a tu camino. El reto original sigue pendiente.');return;
       }
       const wasComplete = stats.routeComplete;
       const next = mutate(current => completeLocal(data, current, active.id, answers));
