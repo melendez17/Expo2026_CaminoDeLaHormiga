@@ -1,5 +1,6 @@
 import { localDataSchema, parseProgress, freshProgress, storageKey, summary, type LocalData, type LocalProgress } from './local-game';
 import campus from './campus.json';
+import {restoreCompatibleProgress} from './progress-storage';
 import {participantAreas} from './taxonomy';
 import { validateRuleCapacity } from './admin-assignments';
 export const CATALOG_KEY = 'camino-local-catalog-v1';
@@ -40,7 +41,7 @@ export function adminRows(data: LocalData, storage: StorageReader) {
   return data.users.filter(u => u.role !== 'admin').map(user => {
     try {
       const raw = storage.getItem(storageKey(data, user.id));
-      const progress = raw ? parseProgress(data, user.id, JSON.parse(raw)) : freshProgress(data, user.id);
+      const progress = raw ? restoreCompatibleProgress(data, user.id, JSON.parse(raw)) : freshProgress(data, user.id);
       const stats = summary(data, progress);
       return { user, progress, stats, error: null as string | null, status: stats.routeComplete ? 'Completado' : progress.startedAt ? 'En proceso' : 'Sin activar' };
     } catch {
@@ -58,8 +59,9 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
   if (JSON.stringify(next.settings) !== JSON.stringify(previous.settings)) throw Error('La edición de reglas se realiza en settings.json para una nueva versión de prueba.');
   if(JSON.stringify(previous.assignmentRules)!==JSON.stringify(next.assignmentRules))validateRuleCapacity(next,participantAreas.filter(area=>JSON.stringify(previous.assignmentRules.admission[area.value])!==JSON.stringify(next.assignmentRules.admission[area.value])));
   for (const entry of [...next.challenges, ...next.projects, ...next.agenda]) if (!Object.hasOwn(campus.names, entry.buildingId)) throw Error('La zona del mapa no existe.');
+  const onlyAdditions=(['users','projects','challenges','agenda'] as const).every(key=>previous[key].every(old=>next[key].some(current=>current.id===old.id&&JSON.stringify(current)===JSON.stringify(old))))&&JSON.stringify(previous.assignmentRules)===JSON.stringify(next.assignmentRules);
   for (const row of adminRows(previous, storage)) {
-    if (row.error || !row.progress) throw Error(`Revisa los datos guardados de ${row.user.name} antes de cambiar el catálogo.`);
+    if (row.error || !row.progress) {if(onlyAdditions)continue;throw Error(`El avance de ${row.user.name} necesita revisión. Puedes crear usuarios, proyectos y retos nuevos; para modificar registros existentes, revisa primero ese avance.`);}
     const p: LocalProgress = row.progress;
     const hasProgress = !!p.startedAt || !!p.completed.length || !!p.votes.length || !!p.manualTickets.length;
     const nextUser = next.users.find(u => u.id === row.user.id);
@@ -68,7 +70,7 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
     for (const record of [...p.completed,...p.failedExtras,...p.failedAnswers]) {
       const oldChallenge = previous.challenges.find(c => c.id === record.challengeId)!;
       const newChallenge = next.challenges.find(c => c.id === record.challengeId);
-      if (!newChallenge || oldChallenge.isBase !== newChallenge.isBase || oldChallenge.kind !== newChallenge.kind || JSON.stringify(oldChallenge.questions) !== JSON.stringify(newChallenge.questions) || oldChallenge.code !== newChallenge.code || oldChallenge.answer !== newChallenge.answer) throw Error('No puedes cambiar reglas de retos que ya tienen respuestas guardadas.');
+      if (!newChallenge || oldChallenge.isBase !== newChallenge.isBase || oldChallenge.kind !== newChallenge.kind || oldChallenge.projectId!==newChallenge.projectId || (oldChallenge.level??previous.projects.find(project=>project.id===oldChallenge.projectId)?.level)!==(newChallenge.level??next.projects.find(project=>project.id===newChallenge.projectId)?.level) || JSON.stringify(oldChallenge.questions) !== JSON.stringify(newChallenge.questions) || oldChallenge.code !== newChallenge.code || oldChallenge.answer !== newChallenge.answer) throw Error('No puedes cambiar reglas de retos que ya tienen respuestas guardadas.');
     }
     if (nextUser) parseProgress(next, nextUser.id, p);
   }

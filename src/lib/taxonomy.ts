@@ -12,7 +12,7 @@ export const specialties = [
 ] as const;
 const normalized = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 export function canonicalSpecialty(name: string) {
-  const old: Record<string,string> = { 'tics': 'Desarrollo Web', 'dibujo y modelado': 'Dibujo y Modelado de Edificaciones', 'diseno grafico': 'Diseño Gráfico Multimedia' };
+  const old: Record<string,string> = { 'ema':'Electromecánica', 'tics': 'Desarrollo Web', 'dibujo y modelado': 'Dibujo y Modelado de Edificaciones', 'diseno grafico': 'Diseño Gráfico Multimedia' };
   return old[normalized(name)] ?? specialties.find(s => normalized(s.name) === normalized(name))?.name ?? name;
 }
 export const roleLabel = (role: string) => roles.find(r => r.value === role)?.label ?? role;

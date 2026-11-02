@@ -1,0 +1,26 @@
+import {test}from'node:test';import assert from'node:assert/strict';import{readFileSync}from'node:fs';
+import{localDataSchema,freshProgress,startLocal,parseProgress,storageKey,type LocalProgress}from'../src/lib/local-game';import{validateCatalogChange}from'../src/lib/local-admin';import{prepareAssignments,replacementCandidates,changeAssignmentByCategory,replacementCategories}from'../src/lib/admin-assignments';
+const data=localDataSchema.parse(Object.fromEntries(['users','projects','challenges','agenda','settings'].map(k=>[k,JSON.parse(readFileSync(new URL(`../public/data/${k}.json`,import.meta.url),'utf8'))])));
+function store(){const v=new Map<string,string>();return{getItem:(k:string)=>v.get(k)??null,setItem:(k:string,s:string)=>{v.set(k,s);},v};}
+test('se pueden crear usuarios y retos aunque otro avance esté dañado; no se sobrescribe ese avance',()=>{
+ const s=store();s.setItem(storageKey(data,'ana'),'archivo dañado');const next=structuredClone(data);next.users.push({id:'nueva',name:'Nueva Persona Prueba',firstName:'Nueva',firstSurname:'Persona',secondSurname:'Prueba',email:'nueva@example.com',token:'N123',role:'visitor',area:'school'});next.challenges.push({id:'nuevo-extra',title:'Extra nuevo',kind:'code',code:'X123',description:'Visita el puesto',buildingId:'7',isBase:false});
+ assert.equal(validateCatalogChange(data,next,'admin',s).users.at(-1)!.token,'N123');assert.equal(s.getItem(storageKey(data,'ana')),'archivo dañado');
+ const destructive=structuredClone(next);destructive.users[0].name='Borrar contexto';assert.throws(()=>validateCatalogChange(data,destructive,'admin',s),/necesita revisión/);
+});
+test('nivel explícito del reto coincide con su proyecto y no permite mezclar décimo con undécimo',()=>{
+ const p=data.projects.find(p=>p.specialty==='Desarrollo Web'&&p.level===11)!;const c=data.challenges.find(c=>c.projectId===p.id)!;const next=structuredClone(data);Object.assign(next.challenges.find(x=>x.id===c.id)!,{level:11});assert.equal(localDataSchema.parse(next).challenges.find(x=>x.id===c.id)!.level,11);
+ next.challenges.find(x=>x.id===c.id)!.level=10;assert.throws(()=>localDataSchema.parse(next),/nivel del reto/);
+});
+test('categoría y nivel son seleccionados por admin; elección concreta es determinista y nunca sale de esa categoría',()=>{
+ const s=store();const p=prepareAssignments(data,s,'admin','sofia');const fromId=p.routeIds[0];const options=replacementCandidates(data,p,fromId,'building:17',10);assert.ok(options.length>0);for(const c of options){const project=data.projects.find(p=>p.id===c.projectId)!;assert.equal(project.buildingId,'17');assert.equal(project.level,10);}
+ const expected=options[0];const changed=changeAssignmentByCategory(data,s,'admin','sofia',{fromId,category:'building:17',level:10,reason:'Cambio a TICs de décimo',expectedToId:expected.id});assert.ok(changed.routeIds.includes(expected.id));assert.deepEqual(parseProgress(data,'sofia',changed),changed);
+ assert.ok(replacementCategories().some(c=>c.label==='Electromecánica (EMA)'));
+});
+test('un proyecto de Pasitos se sustituye por extra; un adicional también puede convertirse en proyecto con aprobación admin',()=>{
+ const catalog=structuredClone(data);catalog.users[0].role='admission';catalog.users[0].area='pasitos';const s=store();let p=prepareAssignments(catalog,s,'admin','ana');const fromId=p.routeIds.find(id=>catalog.projects.find(project=>project.id===catalog.challenges.find(c=>c.id===id)?.projectId)?.category==='pasitos')!;
+ const extra=replacementCandidates(catalog,p,fromId,'extra')[0];p=changeAssignmentByCategory(catalog,s,'admin','ana',{fromId,category:'extra',reason:'Pasitos cerró',expectedToId:extra.id});assert.ok(p.routeIds.includes(extra.id));assert.deepEqual(parseProgress(catalog,'ana',p),p);
+ const visitor=startLocal(data,freshProgress(data,'carlos'));const extraTask=data.challenges.find(c=>!c.projectId&&c.kind==='code'&&!visitor.visitorRounds.flat().includes(c.id))!;const manual:LocalProgress={...visitor,extraIds:[extraTask.id],assignmentEdits:[{id:'extra-aprobado',actorId:'admin',at:new Date().toISOString(),reason:'Visita adicional',scope:'extra',fromId:null,toId:extraTask.id,role:'visitor'}]};s.setItem(storageKey(data,'carlos'),JSON.stringify(manual));const changed=changeAssignmentByCategory(data,s,'admin','carlos',{fromId:extraTask.id,category:'specialty:Electromecánica',level:11,reason:'Cambio a EMA'});const target=data.challenges.find(c=>c.id===changed.extraIds[0])!;assert.equal(data.projects.find(p=>p.id===target.projectId)!.specialty,'Electromecánica');assert.deepEqual(parseProgress(data,'carlos',changed),changed);
+});
+test('sin opciones de la categoría solicitada no se elige otra al azar ni se altera el progreso',()=>{
+ const catalog=structuredClone(data);catalog.projects.forEach(p=>{if(p.specialty==='Ciberseguridad')p.active=false;});const s=store();const p=prepareAssignments(catalog,s,'admin','ana');const before=s.getItem(storageKey(catalog,'ana'));assert.throws(()=>changeAssignmentByCategory(catalog,s,'admin','ana',{fromId:p.visitorRounds[0][0],category:'specialty:Ciberseguridad',reason:'Categoría cerrada'}),/No hay retos disponibles/);assert.equal(s.getItem(storageKey(catalog,'ana')),before);
+});

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {loadLocalProgress} from './progress-storage';
 import { adminRows } from './local-admin';
 import { findUser, freshProgress, parseProgress, storageKey, type LocalData } from './local-game';
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
@@ -9,8 +10,7 @@ export function issueManualTicket(data: LocalData, store: Store, actorId: string
   assertAdmin(data, actorId);
   const user = findUser(data, token);
   if (!user || user.role === 'admin') throw Error('Ingresa el token de un participante válido.');
-  const raw = store.getItem(storageKey(data, user.id));
-  const progress = raw ? parseProgress(data, user.id, JSON.parse(raw)) : freshProgress(data, user.id);
+  const progress=loadLocalProgress(data,store,user.id,false);
   if (progress.manualTickets.some(t => t.id === id)) return { user, ticket: progress.manualTickets.find(t => t.id === id)! };
   const ticket = { id, actorId, at: new Date().toISOString() };
   const next = parseProgress(data, user.id, { ...progress, manualTickets: [...progress.manualTickets, ticket] });

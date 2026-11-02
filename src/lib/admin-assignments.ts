@@ -1,5 +1,6 @@
 import {allocateRoute,currentVisitorRound,extraChallenges,freshProgress,parseProgress,routeChallenges,startLocal,storageKey,summary,upgradeVisitorProgress,type LocalData,type LocalProgress} from './local-game';
-import {participantAreas} from './taxonomy';
+import {loadLocalProgress,restoreCompatibleProgress} from './progress-storage';
+import {participantAreas,specialties} from './taxonomy';
 type Store=Pick<Storage,'getItem'|'setItem'>;
 function requireAdmin(data:LocalData,actorId:string) {if(!data.users.some(u=>u.id===actorId&&u.role==='admin'))throw Error('Se necesita un administrador.');}
 export function validateRuleCapacity(data:LocalData,areas=participantAreas) {
@@ -7,15 +8,16 @@ export function validateRuleCapacity(data:LocalData,areas=participantAreas) {
 }
 export function readAssignmentProgress(data:LocalData,storage:Pick<Storage,'getItem'>,userId:string) {
  const raw=storage.getItem(storageKey(data,userId));
- return upgradeVisitorProgress(data,raw?parseProgress(data,userId,JSON.parse(raw)):freshProgress(data,userId));
+ if(raw)try{JSON.parse(raw);}catch{throw Error('El avance guardado no es JSON válido. Puedes descargarlo entrando con el token de esta persona; no se ha borrado.');}
+ return upgradeVisitorProgress(data,raw?restoreCompatibleProgress(data,userId,JSON.parse(raw)):freshProgress(data,userId));
 }
 export function prepareAssignments(data:LocalData,storage:Store,actorId:string,userId:string) {
  requireAdmin(data,actorId);const user=data.users.find(u=>u.id===userId);if(!user||user.role==='admin')throw Error('Selecciona un participante.');
- const p=readAssignmentProgress(data,storage,userId);const next=parseProgress(data,userId,startLocal(data,p));storage.setItem(storageKey(data,userId),JSON.stringify(next));return next;
+ const p=loadLocalProgress(data,storage,userId);const next=parseProgress(data,userId,startLocal(data,p));storage.setItem(storageKey(data,userId),JSON.stringify(next));return next;
 }
 export function changeAssignment(data:LocalData,storage:Store,actorId:string,userId:string,input:{fromId?:string;toId?:string;scope?:'route'|'extra'|'visitor';reason:string}) {
  requireAdmin(data,actorId);const user=data.users.find(u=>u.id===userId);if(!user||user.role==='admin')throw Error('Selecciona un participante.');
- const p=readAssignmentProgress(data,storage,userId);if(!p.startedAt)throw Error('Primero asigna los retos iniciales.');
+ const p=loadLocalProgress(data,storage,userId);if(!p.startedAt)throw Error('Primero asigna los retos iniciales.');
  const reason=input.reason.trim();if(reason.length<3||reason.length>500)throw Error('Escribe el motivo del cambio (3–500 caracteres).');
  const fromId=input.fromId??null,toId=input.toId??null;if(!fromId&&!toId)throw Error('Selecciona el reto que vas a cambiar.');if(fromId===toId)throw Error('Elige un reto diferente.');
  const assigned=[...routeChallenges(data,p).map(c=>c.id),...p.extraIds];
@@ -28,7 +30,6 @@ export function changeAssignment(data:LocalData,storage:Store,actorId:string,use
  }
  let scope=input.scope??(p.visitorRounds.length?'visitor':'route');
  if(fromId)scope=p.extraIds.includes(fromId)?'extra':p.visitorRounds.length?'visitor':'route';
- if(scope==='extra'&&toId&&!extraChallenges(data).some(c=>c.id===toId))throw Error('En extras debes elegir un reto sin proyecto.');
  if(scope==='route'&&summary(data,p).routeComplete)throw Error('La ruta ya completada se conserva; puedes asignar otro reto extra.');
  const next=structuredClone(p);
  const update=(ids:string[])=>fromId?ids.flatMap(id=>id===fromId?(toId?[toId]:[]):[id]):[...ids,toId!];
@@ -41,4 +42,27 @@ export function changeAssignment(data:LocalData,storage:Store,actorId:string,use
  }
  next.assignmentEdits.push({id:crypto.randomUUID(),actorId,at:new Date().toISOString(),reason,scope,fromId,toId,role:user.role,area:user.area,...(scope==='route'?{routeIds:[...next.routeIds]}:{})});
  const valid=parseProgress(data,userId,next);storage.setItem(storageKey(data,userId),JSON.stringify(valid));return valid;
+}
+
+export function replacementCategories(){return [{value:'extra',label:'Reto extra (puestos, photobooth o santos)'},{value:'pasitos',label:'Pasitos'},{value:'school',label:'Escuela'},{value:'third_cycle',label:'Tercer ciclo'},{value:'building:17',label:'TICs · Desarrollo Web y Ciberseguridad'},...specialties.map(s=>({value:`specialty:${s.name}`,label:s.name==='Electromecánica'?'Electromecánica (EMA)':s.name}))];}
+export function replacementCandidates(data:LocalData,p:LocalProgress,fromId:string|null,category:string,level?:10|11){
+ if(!replacementCategories().some(c=>c.value===category))return [];
+ const assigned=[...routeChallenges(data,p).map(c=>c.id),...p.extraIds];
+ return data.challenges.filter(c=>{
+  const project=data.projects.find(project=>project.id===c.projectId);
+  if(c.projectId&&c.projectId===data.challenges.find(old=>old.id===fromId)?.projectId)return false;
+  if(assigned.includes(c.id)||p.failedExtras.some(f=>f.challengeId===c.id)||p.assignmentEdits.some(edit=>edit.fromId===c.id)||project?.active===false)return false;
+  if(c.projectId&&assigned.some(id=>id!==fromId&&data.challenges.find(c=>c.id===id)?.projectId===c.projectId))return false;
+  if(category==='extra')return !c.projectId&&['code','saint'].includes(c.kind);
+  if(!project||level&&project.level!==level)return false;
+  if(category.startsWith('specialty:'))return project.category==='specialty'&&project.specialty===category.slice(10);
+  if(category.startsWith('building:'))return project.buildingId===category.slice(9);
+  return project.category===category;
+ }).sort((a,b)=>{const label=(c:typeof a)=>data.projects.find(p=>p.id===c.projectId)?.name??c.title;return label(a).localeCompare(label(b),'es')||a.id.localeCompare(b.id);});
+}
+export function changeAssignmentByCategory(data:LocalData,storage:Store,actorId:string,userId:string,input:{fromId?:string;category:string;level?:10|11;scope?:'route'|'extra'|'visitor';reason:string;expectedToId?:string}){
+ requireAdmin(data,actorId);const p=loadLocalProgress(data,storage,userId);const candidate=replacementCandidates(data,p,input.fromId??null,input.category,input.level)[0];
+ if(!candidate)throw Error('No hay retos disponibles de esa categoría y nivel. Elige otra categoría o habilita un proyecto con su reto.');
+ if(input.expectedToId&&input.expectedToId!==candidate.id)throw Error('Las asignaciones cambiaron. Revisa la opción propuesta antes de aplicar.');
+ return changeAssignment(data,storage,actorId,userId,{fromId:input.fromId,toId:candidate.id,scope:input.scope,reason:input.reason});
 }

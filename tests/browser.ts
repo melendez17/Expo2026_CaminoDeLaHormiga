@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {readExcelBackup} from '../src/lib/excel-backup';
 import type { LocalChallenge } from '../src/lib/local-game';
 const challenges: LocalChallenge[] = JSON.parse(readFileSync(new URL('../public/data/challenges.json', import.meta.url), 'utf8'));
 async function main() {
@@ -282,12 +283,13 @@ async function main() {
     await page.getByRole('heading', { name: 'Reto del administrador', exact: true }).waitFor();
     await adminNav('Respaldo').click();
     const catalogDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Exportar catálogo JSON', exact: true }).click();
+    await page.getByRole('button', { name: 'Descargar respaldo Excel', exact: true }).click();
     const catalogFile = await (await catalogDownload).path(); assert.ok(catalogFile);
-    const exportedCatalog = JSON.parse(readFileSync(catalogFile!, 'utf8'));
+    const exportedCatalog = (await readExcelBackup(new Uint8Array(readFileSync(catalogFile!)))).catalog;
     assert.ok(exportedCatalog.users.some((u: { token: string }) => u.token === valeriaToken));
-    await page.getByLabel('Importar catálogo JSON').setInputFiles(catalogFile!);
-    await page.getByRole('status').filter({ hasText: 'Catálogo importado' }).waitFor();
+    await page.getByLabel('Restaurar desde Excel').setInputFiles(catalogFile!);
+    await page.getByRole('button',{name:'Restaurar este respaldo',exact:true}).click();
+    await page.getByRole('status').filter({hasText:'Respaldo Excel restaurado'}).waitFor();
     await adminNav('Resumen').click();
     const reportDownload = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Descargar CSV', exact: true }).click();
@@ -395,8 +397,9 @@ async function main() {
     await rolePage.getByLabel('Descripción',{exact:true}).fill('Una idea de ejemplo desarrollada en la escuela.');
     await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
     await rolePage.getByRole('heading',{name:'Proyecto de escuela',exact:true}).waitFor();
+    await roleNav('Rifa').click();
+    assert.equal(await rolePage.getByRole('button',{name:'Sortear ganador',exact:true}).isDisabled(),true);
     await roleNav('Tiquetes').click();
-    assert.equal(await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).isDisabled(),true);
     await rolePage.getByLabel('Token del participante').fill('ZZZZ');
     await rolePage.getByRole('button',{name:'Crear',exact:true}).click();
     await rolePage.getByRole('alert').filter({hasText:'participante válido'}).waitFor();
@@ -405,14 +408,14 @@ async function main() {
     await rolePage.getByRole('status').filter({hasText:'creado para Admisión Pasitos'}).waitFor();
     assert.equal(await rolePage.locator('.ticket-register tbody tr').count(),1);
     const manualCode=await rolePage.locator('.ticket-register code').innerText();
-    await rolePage.getByLabel('Premio (opcional)').fill('Premio de prueba');
-    await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).click();
-    await rolePage.getByRole('heading',{name:'Admisión Pasitos Prueba',exact:true}).waitFor();
+    await roleNav('Rifa').click();
+    await rolePage.getByLabel('Premio de la rifa').fill('Premio de prueba');
+    await rolePage.getByRole('button',{name:'Sortear ganador',exact:true}).click();
+    await rolePage.locator('.raffle-winner').filter({hasText:'Admisión Pasitos Prueba'}).waitFor();
     assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
-    await rolePage.reload();await roleNav('Tiquetes').click();
+    await rolePage.reload();await roleNav('Rifa').click();
     assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
-    await rolePage.getByRole('button',{name:'Preparar otro sorteo',exact:true}).click();
-    assert.equal(await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).isDisabled(),true);
+    assert.equal(await rolePage.getByRole('button',{name:'Sortear ganador',exact:true}).isDisabled(),true);
     if(process.env.TICKETS_SCREENSHOT_PATH) {
       await rolePage.screenshot({path:process.env.TICKETS_SCREENSHOT_PATH});
       await rolePage.setViewportSize({width:390,height:844});

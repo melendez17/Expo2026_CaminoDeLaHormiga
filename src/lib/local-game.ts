@@ -9,6 +9,7 @@ const questionSchema = z.object({
 const challengeSchema = z.object({
   id: z.string().min(1), title: z.string().min(1), description: z.string(),
   buildingId: z.string(), kind: z.enum(['freeform', 'quiz', 'code', 'saint']),
+  level:z.union([z.literal(10),z.literal(11)]).optional(),
   isBase: z.boolean(), projectId: z.string().optional(), code: z.string().optional(),
   answer: z.string().optional(), badge: z.string().optional(), questions: z.array(questionSchema).optional()
 }).superRefine((c, ctx) => {
@@ -61,6 +62,7 @@ export const localDataSchema = z.object({
   }
   if (new Set(data.users.map(u => u.token)).size !== data.users.length) ctx.addIssue({ code: 'custom', message: 'Hay tokens duplicados' });
   for(const event of data.agenda)if(event.endTime&&event.endTime<=event.time)ctx.addIssue({code:'custom',message:'La hora de finalización debe ser posterior a la hora de inicio.'});
+  for(const c of data.challenges)if(c.projectId){const project=data.projects.find(p=>p.id===c.projectId);if(project&&c.level!==undefined&&c.level!==project.level)ctx.addIssue({code:'custom',message:`El nivel del reto «${c.title}» debe coincidir con el nivel del proyecto.`});}
   for (const c of data.challenges) if (c.projectId && !data.projects.some(p => p.id === c.projectId)) ctx.addIssue({ code: 'custom', message: 'El proyecto del reto no existe' });
 });
 export type LocalData = z.infer<typeof localDataSchema>;
@@ -267,7 +269,7 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   if(new Set(p.routeIds).size!==p.routeIds.length||p.routeIds.some(id=>!data.challenges.some(c=>c.id===id)))throw Error('La ruta asignada no es válida.');
   if(p.routeIds.length&&!validRoute(data,p))throw Error('La ruta no corresponde a la modalidad o especialidad asignada.');
   if (new Set(p.manualTickets.map(t => t.id)).size !== p.manualTickets.length || p.manualTickets.some(t => !data.users.some(u => u.id === t.actorId && u.role === 'admin'))) throw Error('Los tiquetes manuales tienen identificadores duplicados o un emisor no válido.');
-  if (new Set(p.extraIds).size !== p.extraIds.length || p.extraIds.some(id => !extraChallenges(data).some(c => c.id === id) || routeChallenges(data,p).some(c=>c.id===id))) throw Error('La lista de retos adicionales no es válida.');
+  if (new Set(p.extraIds).size !== p.extraIds.length || p.extraIds.some(id => (!extraChallenges(data).some(c => c.id === id)&&!p.assignmentEdits.some(edit=>edit.scope==='extra'&&edit.toId===id)) || routeChallenges(data,p).some(c=>c.id===id))) throw Error('La lista de retos adicionales no es válida.');
   if ((!p.startedAt && (p.routeIds.length || p.completed.length || p.extraIds.length || p.votes.length || p.survey)) || new Set(p.completed.map(c => c.challengeId)).size !== p.completed.length) throw Error('El progreso está duplicado o no tiene inicio.');
   const granted=grantedExtraIds(p);
   for(const edit of p.assignmentEdits)if(edit.scope==='extra'&&edit.toId)granted.add(edit.toId);
@@ -287,7 +289,7 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   }
   for (const record of p.completed) {
     const c = data.challenges.find(c => c.id === record.challengeId);
-    if (!c || (!routeChallenges(data,p).some(base=>base.id===c.id) && !p.extraIds.includes(c.id)) || validateAnswers(c, record.answers)) throw Error('El archivo contiene respuestas o retos no válidos.');
+    if (!c || (!routeChallenges(data,p).some(base=>base.id===c.id) && !p.extraIds.includes(c.id)) || validateAnswers(c, record.answers)) throw Error(`El archivo contiene respuestas o retos no válidos. Revisa ${c?`el reto «${c.title}»`:`el reto con ID «${record.challengeId}»`}.`);
   }
   if (p.votes.some(v => !data.projects.some(project => project.id === v.projectId)) || summary(data, p).votesAvailable < 0) throw Error('El archivo contiene votos no válidos.');
   if ((p.survey || (!p.visitorRounds.length&&p.extraIds.some(id=>!granted.has(id)))) && !summary(data, p).routeComplete) throw Error('Los retos base no están completos.');

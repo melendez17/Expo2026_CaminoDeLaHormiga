@@ -1,4 +1,5 @@
 'use client';
+import { loadLocalProgress } from '@/lib/progress-storage';
 import { ruleDescription } from '@/lib/assignment-rules';
 import { hasIncorrectAnswer } from '@/lib/incorrect-answer';
 import { LoadingScreen } from './loading-screen';
@@ -26,12 +27,8 @@ type Section = 'route' | 'dashboard' | 'votes' | 'agenda' | 'map';
 const names: Record<string, string> = campus.names;
 const SESSION_KEY = 'camino-local-user';
 
-function readProgress(data: LocalData, userId: string) {
-  const saved = localStorage.getItem(storageKey(data, userId));
-  const parsed=saved?parseProgress(data,userId,JSON.parse(saved)):freshProgress(data,userId);
-  const updated=upgradeVisitorProgress(data,parsed);
-  if(updated!==parsed)localStorage.setItem(storageKey(data,userId),JSON.stringify(parseProgress(data,userId,updated)));
-  return updated;
+function readProgress(data:LocalData,userId:string) {
+  return loadLocalProgress(data,localStorage,userId);
 }
 
 function ChallengeDialog({ challenge, onClose, onComplete }: {
@@ -115,8 +112,8 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       try {
         const id = sessionStorage.getItem(SESSION_KEY);
         const savedUser = parsed.users.find(u => u.id === id);
-        if (savedUser && (!adminOnly || savedUser.role === 'admin')) { setProgress(savedUser.role === 'admin' ? freshProgress(parsed, savedUser.id) : readProgress(parsed, savedUser.id)); setUser(savedUser); }
-      } catch { setError('No pudimos restaurar el progreso. Exporta o revisa los datos guardados antes de reiniciarlos.'); }
+        if (savedUser && (!adminOnly || savedUser.role === 'admin')) { setUser(savedUser);setProgress(savedUser.role === 'admin' ? freshProgress(parsed, savedUser.id) : readProgress(parsed, savedUser.id)); }
+      } catch(e) { setError((e as Error).message); }
     }
     void load().catch(() => { if (alive) setLoadError('No se pudieron leer los archivos JSON. Revisa public/data y vuelve a cargar.'); });
     setOnline(navigator.onLine);
@@ -129,7 +126,8 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   useEffect(() => {
     if (!data || !user) return;
     const update = (event: StorageEvent) => {
-      if (event.key === CATALOG_KEY) {
+      if(localStorage.getItem('camino-excel-restore-running'))return;
+      if (event.key === CATALOG_KEY || event.key==='camino-excel-restore-running'&&event.newValue===null) {
         try {
           const updated = restoreCatalog(data, localStorage);
           const activeUser = updated.users.find(u => u.id === user.id);
@@ -165,7 +163,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
     const person = findUser(data, token);
     if (!person) { setError('No encontramos ese token. Revisa los cuatro caracteres.'); return; }
     if (adminOnly && person.role !== 'admin') { setError('Este acceso es solo para administradores. Entra como participante desde el inicio.'); return; }
-    attempt(() => { const saved = person.role === 'admin' ? freshProgress(data, person.id) : readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
+    attempt(() => { setUser(person);sessionStorage.setItem(SESSION_KEY,person.id);const saved = person.role === 'admin' ? freshProgress(data, person.id) : readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
   }
   function logout() {
     sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);
@@ -181,6 +179,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
 
   const brand = <a href="/" className="brand school-brand" aria-label="CEDES Don Bosco, inicio"><img src="/brand/cedes-don-bosco-white.png" alt="CEDES Don Bosco" width="2048" height="661" /></a>;
   if (!data) return <LoadingScreen message={loadError || undefined} busy={!loadError}>{loadError && <button onClick={() => window.location.reload()}>Volver a cargar</button>}</LoadingScreen>;
+  if(user&&!progress&&user.role!=='admin')return <div className="local-login"><header className="local-header">{brand}<button onClick={logout}>Cambiar usuario</button></header><main className="welcome-screen"><h1>Hola, {user.name.split(' ')[0]}.</h1><p>Tu token es correcto. Necesitamos revisar tu avance guardado para continuar.</p><p className="form-error" role="alert">{error||'No se pudo abrir el avance guardado.'}</p><p className="muted">Tus datos se conservan. Puedes descargar el archivo para revisarlo sin reiniciar tu participación.</p><button className="primary" onClick={()=>attempt(()=>{setProgress(readProgress(data,user.id));setError('');})}>Reintentar carga del avance</button><button onClick={()=>attempt(()=>{const raw=localStorage.getItem(storageKey(data,user.id));if(!raw)throw Error('No hay un archivo guardado para esta persona.');const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`avance-guardado-${user.id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);})}>Descargar avance guardado</button></main></div>;
   if (!user || !progress) return <div className="local-login login-entry">
     <header className="local-header">{brand}<span className="local-pill">DEMO LOCAL</span></header>
     <main className="login-layout"><section className="login-story"><span className="eyebrow">FERIA TECNOLÓGICA · CEDES DON BOSCO</span><h1 className="login-event-wordmark" aria-label="ExpoTEC"><span>EXPO</span><span>TEC</span></h1><h2 className="login-journey-title">El camino de la hormiga.</h2><p>Innovación, tecnología y trabajo en equipo. Descubre el campus y construye tu propio camino, un reto a la vez.</p><div className="login-perks"><span>⌖ Descubre lugares</span><span>✦ Completa retos</span><span>♡ Vota por tus favoritos</span></div><img className="login-ant" src="/icon.svg" alt="" /></section>
@@ -191,7 +190,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
         <p className="local-footnote">Demo con personas ficticias. Tu progreso se guarda en este navegador.</p>
       </section></main>
   </div>;
-  if (user.role === 'admin') return <LocalAdmin data={data} actor={user} onLogout={logout} onSave={input => {
+  if (user.role === 'admin') return <LocalAdmin data={data} actor={user} onLogout={logout} onRestored={next=>{setData(next);setUser(next.users.find(u=>u.id===user.id)!);setProgress(freshProgress(next,user.id));}} onSave={input => {
     const next = validateCatalogChange(data, input, user.id, localStorage);
     localStorage.setItem(CATALOG_KEY, JSON.stringify(next));
     setData(next); setUser(next.users.find(u => u.id === user.id)!);

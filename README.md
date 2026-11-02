@@ -23,7 +23,7 @@ Abre la dirección que muestra la terminal (puerto 3000 por defecto). No hace fa
 
 ## Administrador de prueba
 
-Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local con métricas, usuarios, retos, proyectos, fichas de preguntas y respuestas por participante, exportación/importación del catálogo JSON y descarga de métricas CSV. Sus cambios persisten en este navegador; no modifican los archivos del repositorio ni se comparten automáticamente entre dispositivos. Es un acceso público de demostración.
+Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local con métricas, usuarios, retos, proyectos, fichas de preguntas y respuestas por participante, respaldo y restauración Excel (.xlsx), rifa aleatoria y descarga de métricas CSV. Sus cambios persisten en este navegador; no modifican los archivos del repositorio ni se comparten automáticamente entre dispositivos. Es un acceso público de demostración.
 
 ## Recorrido
 
@@ -112,7 +112,7 @@ Web y Ciberseguridad comparten el edificio TICs (`17`). Los proyectos tienen cat
 
 En Admin → **Tiquetes**, introduce el token del participante y pulsa **Crear**. Cada emisión otorga un tiquete y un voto, sin completar retos ficticios. Se conserva ID, fecha y emisor; los tiquetes manuales se incluyen en métricas y resumen.
 
-El sorteo incluye tiquetes digitales y manuales y guarda nombre del ganador, ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
+En Admin → **Rifa**, el sorteo con ruleta visual incluye tiquetes digitales y manuales y muestra nombre, correo y tiquete del ganador y guarda ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
 
 La demo incluye dos proyectos de décimo y dos de undécimo por especialidad para probar distintas asignaciones. Son ejemplos ficticios. Para probar estos cambios en un despliegue de Vercel debe seleccionarse la rama `correccion-roles-proyectos-tiquetes`.
 
@@ -146,3 +146,13 @@ Las reglas nuevas se guardan en `assignmentRules` dentro del catálogo JSON loca
 En **Proyectos** se puede desmarcar **Disponible para nuevas asignaciones** si el puesto cerró. Se excluye de rutas nuevas y de los reemplazos, manteniendo las asignaciones anteriores para que el administrador decida qué cambiar. El proyecto sigue disponible para votar. Los retos retirados de una persona no vuelven a generarse para ella.
 
 El catálogo de ejemplo incluye un segundo proyecto de Pasitos y otro de Escuela. La revisión 4 los agrega a catálogos anteriores sin sobrescribir ediciones ni recuperar otros proyectos eliminados. Se puede verificar la gestión con `npm run test:assignments-browser` y las mismas variables `BASE_URL` y `PLAYWRIGHT_CHROMIUM_EXECUTABLE` del test general.
+
+## Respaldo Excel y ajustes administrativos
+
+Admin → **Respaldo** descarga un Excel real `.xlsx` con catálogo editable (usuarios, proyectos, retos, preguntas, agenda y distribución) y hojas de consulta de participación, encuestas, preguntas pendientes, respuestas e intentos incorrectos, votos, tiquetes, rifas y cambios de asignación. El archivo incluye una copia íntegra de los datos originales del navegador para restaurar el avance. Al importarlo se muestra una revisión antes de reemplazar los datos y se guarda una copia interna del estado anterior. Las hojas de respuestas y métricas son de consulta; editarlas no altera el progreso restaurado. No combina avances de varios dispositivos.
+
+Al crear un reto de especialidad se eligen especialidad, décimo o undécimo y un proyecto compatible. En Asignación → Retos por persona, **Cambiar** permite elegir categoría (incluidos extras, TICs y Electromecánica/EMA) y opcionalmente nivel. Se muestra el próximo reto disponible de esa categoría antes de confirmar; si no hay uno, no se sustituye por otra categoría. Se excluyen proyectos cerrados y visitas ya asignadas.
+
+Crear usuarios o agregar entradas al catálogo ya no queda bloqueado por el avance dañado de otra persona. Los cambios que podrían invalidar sus respuestas siguen protegidos. Los avances antiguos compatibles se adaptan al iniciar sesión conservando una copia original. Si los datos no se pueden leer con seguridad, el token válido abre una pantalla de recuperación con descarga del archivo original y reintento; no se reinicia el progreso automáticamente.
+
+Verificación adicional: `npm run test:admin-repairs-browser` prueba creación de usuarios, nivel de retos, reemplazos por categoría, rifa, respaldo/restauración Excel y recuperación de avances. Usa las mismas variables de Chromium y puerto que los demás tests de navegador.

@@ -48,7 +48,7 @@ test('progreso existente se preserva al editar; rechaza borrar usuario o cambiar
 test('corrupción no se cuenta como cero y bloquea sobrescritura incompatible', () => {
   const reader = { getItem: (key: string) => key === storageKey(data, 'ana') ? 'not-json' : null };
   assert.equal(adminRows(data, reader).find(r => r.user.id === 'ana')?.status, 'Revisar datos');
-  assert.throws(() => validateCatalogChange(data, data, 'admin', reader), /Revisa los datos/);
+  assert.throws(() => validateCatalogChange(data, change(c=>{c.users[0].name='Cambio incompatible';}), 'admin', reader), /necesita revisión/);
 });
 
 test('catálogos anteriores incorporan los días nuevos sin reemplazar actividades ni usuarios editados', () => {
