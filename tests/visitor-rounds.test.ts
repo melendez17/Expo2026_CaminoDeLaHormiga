@@ -7,8 +7,8 @@ test('visitante gana al completar dos, recibe otra pareja distinta y conserva vo
  let p=startLocal(data,freshProgress(data,'ana'),()=>.3);assert.equal(currentVisitorRound(data,p).length,2);assert.equal(summary(data,p).baseTarget,2);assert.equal(summary(data,p).tickets,0);
  assert.throws(()=>generateVisitorRound(data,p),/pendientes/);const c=currentVisitorRound(data,p)[0];p=completeLocal(data,p,c.id,answer(c));assert.equal(summary(data,p).tickets,0);assert.throws(()=>generateVisitorRound(data,p),/pendientes/);
  p=finish(p);assert.equal(summary(data,p).tickets,1);assert.equal(summary(data,p).routeComplete,true);p=voteLocal(data,p,'agua');assert.equal(summary(data,p).votesAvailable,0);assert.equal(summary(data,p).tickets,1);
- p=generateVisitorRound(data,p,()=>.3);assert.equal(p.visitorRounds.length,2);assert.equal(new Set(p.visitorRounds.flat()).size,4);assert.equal(summary(data,p).tickets,1);assert.equal(summary(data,p).base,0);
- p=finish(p);assert.equal(summary(data,p).tickets,2);assert.equal(summary(data,p).votesAvailable,1);assert.deepEqual(parseProgress(data,'ana',JSON.parse(JSON.stringify(p))),p);
+ p=generateVisitorRound(data,p,()=>.3);assert.equal(p.visitorRounds.length,2);assert.equal(new Set(p.visitorRounds.flat()).size,4);assert.equal(summary(data,p).tickets,1);assert.equal(summary(data,p).base,2);assert.equal(summary(data,p).extra,0);
+ p=finish(p);assert.equal(summary(data,p).base,2);assert.equal(summary(data,p).extra,2);assert.equal(summary(data,p).tickets,2);assert.equal(summary(data,p).votesAvailable,1);assert.deepEqual(parseProgress(data,'ana',JSON.parse(JSON.stringify(p))),p);
  assert.throws(()=>parseProgress(data,'ana',{...p,visitorRoundIndex:0}),/rondas/);
 });
 test('rondas se agotan sin repetir proyectos ni retos y una respuesta repetida no duplica premios',()=>{
@@ -35,4 +35,14 @@ test('migración conserva intentos incorrectos y los extras asignados antes de e
  const legacy:LocalProgress={...freshProgress(data,'ana'),startedAt:new Date().toISOString()};
  const failed=addExtraForWrongAnswer(data,legacy,'photo',{code:'ZZZZ'},()=>0);
  const migrated=upgradeVisitorProgress(data,failed);assert.equal(migrated.failedAnswers.length,1);assert.ok(routeChallenges(data,migrated).some(c=>c.id===failed.failedAnswers[0].extraId));assert.deepEqual(parseProgress(data,'ana',migrated),migrated);
+});
+
+test('solo el primer reto base prioriza afinidad; adicionales no dependen del área y no repiten proyectos',()=>{
+ const catalog=structuredClone(data);catalog.users[0].area='Ciberseguridad';
+ let p=startLocal(catalog,freshProgress(catalog,'ana'),()=>.3);
+ const base=currentVisitorRound(catalog,p);assert.equal(catalog.projects.find(project=>project.id===base[0].projectId)?.specialty,'Ciberseguridad');assert.notEqual(catalog.projects.find(project=>project.id===base[1].projectId)?.specialty,'Ciberseguridad');
+ for(const c of base)p=completeLocal(catalog,p,c.id,answer(c));
+ const alternate=structuredClone(catalog);alternate.users[0].area='school';
+ const next=generateVisitorRound(catalog,p,()=>.4),same=generateVisitorRound(alternate,p,()=>.4);assert.deepEqual(next.visitorRounds,same.visitorRounds);assert.deepEqual(next.visitorRounds[0],p.visitorRounds[0]);assert.equal(summary(catalog,next).base,2);
+ const closed=structuredClone(catalog);closed.projects.filter(project=>project.specialty==='Ciberseguridad').forEach(project=>project.active=false);const fallback=startLocal(closed,freshProgress(closed,'ana'),()=>.3);assert.equal(fallback.visitorRounds[0].length,2);assert.ok(currentVisitorRound(closed,fallback).every(c=>closed.projects.find(project=>project.id===c.projectId)?.specialty!=='Ciberseguridad'));
 });

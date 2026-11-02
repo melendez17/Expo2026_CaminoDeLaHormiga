@@ -135,7 +135,7 @@ test('tiquetes digitales y manuales participan aun después de votar; ganar no c
   assert.equal(winner.winnerName,'Ana Rodríguez');assert.equal(winner.ticketCode,'D-K8P2-001');
   assert.equal(winner.poolSize,2);
   const second=drawTicket(data,store,'admin','Segundo premio',()=>0);
-  assert.equal(second.ticketCode,'M-papel');assert.equal(second.poolSize,1);
+  assert.equal(second.ticketCode,'M-K8P2-001');assert.equal(second.poolSize,1);
   assert.equal(readDraws(data,store).length,2);
   assert.throws(()=>drawTicket(data,store,'admin'),/No hay tiquetes/);
   assert.equal(summary(data,parseProgress(data,'ana',JSON.parse(store.getItem(storageKey(data,'ana'))!))).votesAvailable,1);
@@ -156,7 +156,7 @@ test('datos antiguos sin manualTickets se restauran; registros manuales inválid
   assert.throws(()=>secureIndex(0));
 });
 
-test('Visitantes reciben dos retos por afinidad y Admisión conserva cinco y sus cuotas',()=>{
+test('Visitantes reciben un reto afín y otro aleatorio y Admisión conserva cinco y sus cuotas',()=>{
   assert.equal(participantAreas.length,9);
   for(const area of participantAreas)for(const role of ['visitor','admission']) {
     const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role,area:area.value});
@@ -166,7 +166,7 @@ test('Visitantes reciben dos retos por afinidad y Admisión conserva cinco y sus
     const projects=route.filter(c=>c.projectId).map(c=>catalog.projects.find(project=>project.id===c.projectId)!);
     if(role==='visitor')assert.ok(projects.some(p=>p.category===area.value||p.specialty===area.value));
     if(!['school','pasitos','third_cycle'].includes(area.value)) {
-      const own=projects.filter(project=>project.specialty===area.value);assert.equal(own.length,role==='visitor'?2:3);
+      const own=projects.filter(project=>project.specialty===area.value);if(role==='admission')assert.equal(own.length,3);else assert.ok(own.length>=1);
       if(role==='admission'){assert.ok(own.some(p=>p.level===10));assert.ok(own.some(p=>p.level===11));assert.equal(projects.length-own.length,1);}
     }
     assert.deepEqual(parseProgress(catalog,user.id,p),p);
@@ -183,4 +183,11 @@ test('área canónica, roles anteriores migrados sin datos redundantes y permiso
   const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role:'admission',area:'Cuarto ciclo'});assert.equal(localDataSchema.safeParse(fixture).success,false);
   delete fixture.users[0].area;const pending=localDataSchema.parse(fixture);assert.throws(()=>startLocal(pending,freshProgress(pending,'ana')),/asignarte un área/);
   Object.assign(fixture.users[0],{role:'admin',area:'school'});const admin=localDataSchema.parse(fixture);assert.equal(admin.users[0].area,undefined);assert.throws(()=>startLocal(admin,freshProgress(admin,'ana')),/administrador/);
+});
+
+test('manuales usan token y secuencia persistente por persona, manteniendo el ID interno y sorteos antiguos',()=>{
+ const store=storage();const first=issueManualTicket(data,store,'admin','K8P2','uuid-original');assert.equal(first.ticket.id,'uuid-original');assert.equal(first.ticketCode,'M-K8P2-001');
+ assert.equal(issueManualTicket(data,store,'admin','K8P2','uuid-original').ticketCode,'M-K8P2-001');assert.equal(issueManualTicket(data,store,'admin','K8P2','segundo').ticketCode,'M-K8P2-002');assert.equal(issueManualTicket(data,store,'admin','M4T7','carlos').ticketCode,'M-M4T7-001');
+ assert.deepEqual(raffleTickets(data,store).tickets.filter(t=>t.token==='K8P2').map(t=>t.code),['M-K8P2-001','M-K8P2-002']);
+ const winner=drawTicket(data,store,'admin','Premio',()=>0);assert.equal(winner.ticketCode,'M-K8P2-001');const key=raffleKey(data),ledger=JSON.parse(store.getItem(key)!);ledger.draws[0].ticketCode='M-uuid-original';const raw=JSON.stringify(ledger);store.setItem(key,raw);assert.equal(readDraws(data,store)[0].ticketCode,'M-K8P2-001');assert.equal(store.getItem(key),raw);assert.equal(readDraws(data,store)[0].ticketId,'manual:uuid-original');assert.equal(drawTicket(data,store,'admin','Otro',()=>0).ticketCode,'M-K8P2-002');
 });

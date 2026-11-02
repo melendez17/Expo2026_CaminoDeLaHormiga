@@ -93,7 +93,7 @@ export function freshProgress(data: LocalData, userId: string): LocalProgress {
 }
 export function summary(data: LocalData, progress: LocalProgress) {
   if(progress.visitorRounds.length||(!progress.startedAt&&data.users.find(u=>u.id===progress.userId)?.role==='visitor')) {
-    const round=progress.visitorRounds[progress.visitorRoundIndex]??[];
+    const round=progress.visitorRounds[0]??[];
     const base=progress.completed.filter(c=>round.includes(c.challengeId)).length;
     const routeComplete=progress.completed.length>=2;
     const digitalTickets=Math.floor(progress.completed.length/2)+(routeComplete&&progress.survey?data.settings.surveyBonus:0);
@@ -136,7 +136,8 @@ export function generateVisitorRound(data:LocalData,progress:LocalProgress,rando
   const candidates=visitorCandidates(data,progress);
   if(!candidates.length)throw Error('No quedan retos sin repetir en este catálogo.');
   const matches=(c:LocalChallenge)=>{const p=data.projects.find(p=>p.id===c.projectId);return !!p&&(p.category===user.area||p.specialty===user.area);};
-  const chosen=[...shuffle(candidates.filter(matches)),...shuffle(candidates.filter(c=>!matches(c)))].slice(0,data.assignmentRules.visitorBatchSize).map(c=>c.id);
+  const affinity=progress.visitorRounds.length===0?shuffle(candidates.filter(matches))[0]:undefined;
+  const chosen=[...(affinity?[affinity]:[]),...shuffle(candidates.filter(c=>c.id!==affinity?.id))].slice(0,data.assignmentRules.visitorBatchSize).map(c=>c.id);
   return {...progress,startedAt:progress.startedAt??new Date().toISOString(),routeIds:[],visitorRounds:[...progress.visitorRounds,chosen],visitorRoundIndex:progress.visitorRounds.length};
 }
 export function upgradeVisitorProgress(data:LocalData,progress:LocalProgress):LocalProgress {

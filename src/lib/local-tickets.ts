@@ -3,6 +3,7 @@ import {loadLocalProgress} from './progress-storage';
 import { adminRows } from './local-admin';
 import { findUser, freshProgress, parseProgress, storageKey, type LocalData } from './local-game';
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
+const manualCode=(token:string,sequence:number)=>`M-${token}-${String(sequence).padStart(3,'0')}`;
 function assertAdmin(data: LocalData, actorId: string) {
   if (!data.users.some(u => u.id === actorId && u.role === 'admin')) throw Error('Solo un administrador puede emitir tiquetes o realizar rifas.');
 }
@@ -11,11 +12,12 @@ export function issueManualTicket(data: LocalData, store: Store, actorId: string
   const user = findUser(data, token);
   if (!user || user.role === 'admin') throw Error('Ingresa el token de un participante válido.');
   const progress=loadLocalProgress(data,store,user.id,false);
-  if (progress.manualTickets.some(t => t.id === id)) return { user, ticket: progress.manualTickets.find(t => t.id === id)! };
+  const existing=progress.manualTickets.findIndex(t=>t.id===id);
+  if(existing>=0)return {user,ticket:progress.manualTickets[existing],ticketCode:manualCode(user.token,existing+1)};
   const ticket = { id, actorId, at: new Date().toISOString() };
   const next = parseProgress(data, user.id, { ...progress, manualTickets: [...progress.manualTickets, ticket] });
   store.setItem(storageKey(data, user.id), JSON.stringify(next));
-  return { user, ticket };
+  return { user, ticket, ticketCode:manualCode(user.token,next.manualTickets.length) };
 }
 export function raffleTickets(data: LocalData, store: Pick<Storage,'getItem'>) {
   const rows = adminRows(data, store);
@@ -24,7 +26,7 @@ export function raffleTickets(data: LocalData, store: Pick<Storage,'getItem'>) {
     const owner = { userId: row.user.id, name: row.user.name, token: row.user.token };
     return [
       ...Array.from({length: row.stats.digitalTickets}, (_,i) => ({ ...owner, id: `digital:${row.user.id}:${i+1}`, code: `D-${row.user.token}-${String(i+1).padStart(3,'0')}`, source: 'digital' as const, issuedAt: null, issuedBy: null })),
-      ...row.progress.manualTickets.map(t => ({ ...owner, id: `manual:${t.id}`, code: `M-${t.id}`, source: 'manual' as const, issuedAt: t.at, issuedBy: data.users.find(u=>u.id===t.actorId)?.name??'Admin' }))
+      ...row.progress.manualTickets.map((t,index) => ({ ...owner, id: `manual:${t.id}`, code: manualCode(row.user.token,index+1), source: 'manual' as const, issuedAt: t.at, issuedBy: data.users.find(u=>u.id===t.actorId)?.name??'Admin' }))
     ];
   });
   if (new Set(tickets.map(t => t.id)).size !== tickets.length) throw Error('Hay identificadores de tiquetes duplicados. Revisa los registros antes de sortear.');
@@ -41,7 +43,10 @@ export function readDraws(data:LocalData,store:Pick<Storage,'getItem'>): RaffleD
   if (!parsed.success || parsed.data.dataVersion!==data.settings.dataVersion) throw Error('El registro de sorteos no es válido. No se sobrescribió el historial.');
   const draws=parsed.data.draws;
   if (new Set(draws.map(d=>d.id)).size!==draws.length || new Set(draws.map(d=>d.ticketId)).size!==draws.length) throw Error('El historial contiene sorteos o tiquetes ganadores duplicados.');
-  return draws;
+  const legacy=draws.some(draw=>draw.source==='manual'&&draw.ticketCode===`M-${draw.ticketId.slice('manual:'.length)}`);
+  if(!legacy)return draws;
+  const codes=new Map(raffleTickets(data,store).tickets.map(ticket=>[ticket.id,ticket.code]));
+  return draws.map(draw=>draw.source==='manual'?{...draw,ticketCode:codes.get(draw.ticketId)??draw.ticketCode}:draw);
 }
 export function secureIndex(length:number) {
   if (!Number.isSafeInteger(length)||length<1||length>4294967296) throw Error('Cantidad de tiquetes no válida.');

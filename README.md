@@ -110,7 +110,7 @@ Web y Ciberseguridad comparten el edificio TICs (`17`). Los proyectos tienen cat
 
 ## Tiquetes manuales y rifa local
 
-En Admin → **Tiquetes**, introduce el token del participante y pulsa **Crear**. Cada emisión otorga un tiquete y un voto, sin completar retos ficticios. Se conserva ID, fecha y emisor; los tiquetes manuales se incluyen en métricas y resumen.
+En Admin → **Tiquetes**, introduce el token del participante y pulsa **Crear**. Cada emisión otorga un tiquete y un voto, sin completar retos ficticios. El código visible usa `M-TOKEN-001`, `M-TOKEN-002`, etc., con secuencia por participante. Se conserva un ID interno único, fecha y emisor; los tiquetes manuales se incluyen en métricas y resumen.
 
 En Admin → **Tiquetes**, debajo del registro y antes del historial, el sorteo con ruleta visual incluye tiquetes digitales y manuales y muestra nombre, correo y tiquete del ganador y guarda ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
 
@@ -130,7 +130,7 @@ El panel incluye Agenda para crear, editar y eliminar actividades de viernes 13,
 
 ## Visitantes: rondas de dos
 
-Al iniciar reciben dos retos, priorizando proyectos de su área de afinidad y completando la pareja con otros retos disponibles si falta catálogo afín. Cada dos retos completados otorgan un tiquete y un voto, sin exigir cinco base. La siguiente ronda se solicita con **Recibir otros 2 retos** y no repite retos ni proyectos. Se termina la ronda y los extras pendientes por fallos antes de pedir otra. Si solo queda un reto en el catálogo, la última ronda contiene ese reto; los premios siguen contando parejas completas. La encuesta de experiencia y su bono se habilitan tras los dos primeros completados. Admisión mantiene sus cinco retos iniciales y sus reglas anteriores.
+Al iniciar reciben dos retos base: uno de su área de afinidad si hay disponibilidad y el otro al azar entre los retos restantes. Las rondas adicionales se eligen al azar entre todas las áreas, sin priorizar la afinidad. Cada dos retos completados otorgan un tiquete y un voto, sin exigir cinco base. Los primeros dos se conservan en **Retos base**. Desde **Retos adicionales** se solicita la siguiente ronda con **Recibir otros 2 retos**, sin repetir retos ni proyectos; las rondas anteriores permanecen visibles con su estado de completado. Se termina la ronda y los extras pendientes por fallos antes de pedir otra. Si solo queda un reto en el catálogo, la última ronda contiene ese reto; los premios siguen contando parejas completas. La encuesta de experiencia y su bono se habilitan tras los dos primeros completados. Admisión mantiene sus cinco retos iniciales y sus reglas anteriores.
 
 El progreso guarda `visitorRounds` y `visitorRoundIndex`. Los visitantes anteriores se adaptan al entrar sin borrar respuestas, votos, encuesta ni tiquetes manuales; sus asignaciones previas se presentan en parejas sucesivas. Los nuevos tiquetes digitales se calculan por parejas completadas, por lo que un visitante antiguo puede recibir tiquetes adicionales al migrar.
 
@@ -164,3 +164,5 @@ Tiquetes reúne el formulario manual, registro paginado, rifa visual y un único
 Mapa completo muestra los proyectos del edificio seleccionado, independientemente de los retos asignados al usuario, con su especialidad/área y nivel. TICs reúne Desarrollo Web y Ciberseguridad. Las altas y los cambios de edificio hechos desde Proyectos se reflejan en otras pestañas del mismo navegador, igual que la agenda. Los puestos cerrados se identifican como no disponibles para nuevas visitas. La lista puede desplazarse si hay muchos proyectos.
 
 `npm run test:map-projects-browser` verifica los nuevos accesos, proyectos por edificio, movimientos entre edificios, actualización entre pestañas y tamaños móviles.
+
+En **Votar**, todos los participantes ven el top 3 y el total de votos de cada proyecto. Se usan los votos válidos de todos los usuarios guardados en este navegador, incluidos los votos repetidos a un mismo proyecto; los empates comparten posición. No se asigna posición a proyectos sin votos. El ranking se actualiza al votar y al recibir cambios de otras pestañas del mismo navegador. Aún no hay un conteo central entre dispositivos. Prueba dedicada: `npm run test:visitor-votes-browser`.

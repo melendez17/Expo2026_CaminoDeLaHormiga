@@ -1,0 +1,32 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {localDataSchema,freshProgress,startLocal,storageKey,currentVisitorRound,completeLocal,generateVisitorRound,saintQuestion,type Answers} from '../src/lib/local-game';
+const data=localDataSchema.parse(Object.fromEntries(['users','projects','challenges','agenda','settings'].map(k=>[k,JSON.parse(readFileSync(new URL(`../public/data/${k}.json`,import.meta.url),'utf8'))])));
+async function main(){
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?['--no-sandbox']:[]});
+ try{
+  const context=await browser.newContext({viewport:{width:1440,height:1000}}),base=process.env.BASE_URL??'http://127.0.0.1:3000';
+  const seeds=Object.fromEntries([['ana','agua',3],['carlos','energia',2],['diego','casa',1]].map(([id,projectId,count])=>{const p=startLocal(data,freshProgress(data,String(id)),()=>.3);p.manualTickets=Array.from({length:Number(count)+1},(_,i)=>({id:`${id}-ticket-${i}`,actorId:'admin',at:'2026-11-02T12:00:00.000Z'}));p.votes=Array.from({length:Number(count)},()=>({projectId:String(projectId),at:'2026-11-02T12:00:00.000Z'}));return[storageKey(data,String(id)),JSON.stringify(p)];}));
+  await context.addInitScript(({catalog,seeds})=>{if(!localStorage.getItem('leaderboard-seeded')){localStorage.setItem('camino-local-catalog-v1',JSON.stringify(catalog));for(const [key,value]of Object.entries(seeds))localStorage.setItem(key,value);localStorage.setItem('leaderboard-seeded','1');}},{catalog:data,seeds});
+  const ana=await context.newPage(),carlos=await context.newPage();
+  async function login(page:typeof ana,token:string){await page.goto(base);await page.getByLabel('Token de acceso').fill(token);await page.getByRole('button',{name:'Ingresar →'}).click();await page.getByRole('navigation',{name:'Navegación principal'}).getByRole('button',{name:'Votar',exact:true}).click();}
+  await login(ana,'K8P2');const ranking=ana.getByRole('region',{name:'Top 3 de proyectos'});assert.equal(await ranking.locator('li').count(),3);assert.deepEqual(await ranking.locator('li').evaluateAll(els=>els.map(e=>e.getAttribute('data-project-id'))),['agua','energia','casa']);await ana.getByLabel('AquaSmart: 3 votos en total',{exact:true}).waitFor();
+  if(process.env.VISITOR_SCREENSHOTS)await ana.screenshot({path:process.env.VISITOR_SCREENSHOTS+'-voting-desktop.png',animations:'disabled'});
+  const energia=ana.locator('.local-project').filter({has:ana.getByRole('heading',{name:'Energía en movimiento',exact:true})});await energia.getByRole('button',{name:'Dar 1 voto',exact:true}).click();await energia.getByRole('button',{name:'Confirmar voto',exact:true}).click();await ana.getByLabel('Energía en movimiento: 3 votos en total',{exact:true}).waitFor();assert.equal(await ranking.getByText('Empate',{exact:true}).count(),2);
+  await login(carlos,'M4T7');const other=carlos.locator('.local-project').filter({has:carlos.getByRole('heading',{name:'Energía en movimiento',exact:true})});await other.getByRole('button',{name:'Dar 1 voto',exact:true}).click();await other.getByRole('button',{name:'Confirmar voto',exact:true}).click();await ana.getByLabel('Energía en movimiento: 4 votos en total',{exact:true}).waitFor();assert.equal(await ranking.locator('li').first().getAttribute('data-project-id'),'energia');
+  await ana.reload();await ana.getByRole('navigation',{name:'Navegación principal'}).getByRole('button',{name:'Votar',exact:true}).click();await ana.getByLabel('Energía en movimiento: 4 votos en total',{exact:true}).waitFor();await ana.setViewportSize({width:390,height:844});if(process.env.VISITOR_SCREENSHOTS)await ana.screenshot({path:process.env.VISITOR_SCREENSHOTS+'-voting-mobile.png',animations:'disabled'});assert.equal(await ana.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await ana.setViewportSize({width:320,height:844});assert.equal(await ana.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await context.close();
+  let progress=startLocal(data,freshProgress(data,'ana'),()=>.3);
+  for(let round=0;round<2;round++){
+    for(const c of currentVisitorRound(data,progress)){
+      const answers:Answers=c.kind==='freeform'?{projectName:'Proyecto visitado',level:'Décimo',description:'Descubrí cómo trabajar juntos para mejorar nuestra comunidad.'}:c.kind==='saint'?{saintChoice:String(saintQuestion(c).correctIndex)}:{code:c.code!,...Object.fromEntries((c.questions??[]).map(q=>[q.id,String(q.correctIndex)]))};
+      progress=completeLocal(data,progress,c.id,answers);
+    }
+    progress=generateVisitorRound(data,progress,()=>.3);
+  }
+  const history=await browser.newContext({viewport:{width:390,height:844}});await history.addInitScript(({catalog,progress,key})=>{localStorage.setItem('camino-local-catalog-v1',JSON.stringify(catalog));localStorage.setItem(key,JSON.stringify(progress));},{catalog:data,progress,key:storageKey(data,'ana')});const page=await history.newPage();await page.goto(base);await page.getByLabel('Token de acceso').fill('K8P2');await page.getByRole('button',{name:'Ingresar →'}).click();await page.getByRole('button',{name:'Retos base · 2/2',exact:true}).waitFor();assert.equal(await page.locator('.challenge-card.done').count(),2);if(process.env.VISITOR_SCREENSHOTS)await page.screenshot({path:process.env.VISITOR_SCREENSHOTS+'-base-mobile.png',animations:'disabled'});await page.getByRole('button',{name:'Retos adicionales · 2',exact:true}).click();assert.equal(await page.locator('.challenge-card').count(),4);assert.equal(await page.locator('.challenge-card.done').count(),2);assert.equal(await page.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).isDisabled(),true);if(process.env.VISITOR_SCREENSHOTS)await page.screenshot({path:process.env.VISITOR_SCREENSHOTS+'-additional-mobile.png',animations:'disabled'});await page.setViewportSize({width:1440,height:1000});if(process.env.VISITOR_SCREENSHOTS)await page.screenshot({path:process.env.VISITOR_SCREENSHOTS+'-additional-desktop.png',animations:'disabled'});await history.close();
+  console.log('PASS visitor base retained, additional history accumulated; participant top 3, per-project totals, repeated votes, ties, live cross-tab ranking, reload and mobile widths');
+ }finally{await browser.close();}
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

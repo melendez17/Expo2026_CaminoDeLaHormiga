@@ -477,7 +477,7 @@ async function main() {
     await pairsContext.addInitScript(catalog=>{if(!localStorage.getItem('camino-local-catalog-v1'))localStorage.setItem('camino-local-catalog-v1',JSON.stringify(catalog));},pairsCatalog);
     const pairs=await pairsContext.newPage();await pairs.goto(base);
     await pairs.getByLabel('Token de acceso').fill('K8P2');await pairs.getByRole('button',{name:'Ingresar →'}).click();
-    await pairs.getByRole('heading',{name:'Bienvenido, Ana.'}).waitFor();await pairs.getByText(/Recibirás 2 retos por ronda/).waitFor();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();
+    await pairs.getByRole('heading',{name:'Bienvenido, Ana.'}).waitFor();await pairs.getByText(/Recibirás 2 retos base/).waitFor();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();
     const pairsNav=(name:string)=>pairs.getByRole('navigation',{name:'Navegación principal'}).getByRole('button',{name,exact:true});
     const readPair=()=>pairs.evaluate(()=>{const p=JSON.parse(localStorage.getItem('camino-local:demo-2026-v1:ana')!);return p.visitorRounds[p.visitorRoundIndex] as string[];});
     async function finishPairChallenge(id:string){
@@ -489,14 +489,15 @@ async function main() {
       await d.getByRole('button',{name:'Completar reto',exact:true}).click();await d.waitFor({state:'hidden'});
     }
     const first=await readPair();assert.equal(first.length,2);assert.equal(await pairs.locator('.challenge-card').count(),2);
-    for(const id of first)assert.equal(pairsCatalog.projects.find((p:{id:string})=>p.id===challenges.find(c=>c.id===id)!.projectId).specialty,'Ciberseguridad');
+    assert.equal(pairsCatalog.projects.find((p:{id:string})=>p.id===challenges.find(c=>c.id===first[0])!.projectId).specialty,'Ciberseguridad');
+    await pairs.getByRole('button',{name:/^Retos adicionales/}).click();
     assert.equal(await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).isDisabled(),true);
-    await finishPairChallenge(first[0]);await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'0');await pairsNav('Retos').click();await finishPairChallenge(first[1]);await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'1');await pairs.getByRole('heading',{name:'Cuéntanos tu experiencia',exact:true}).waitFor();
+    await pairs.getByRole('button',{name:/^Retos base/}).click();await finishPairChallenge(first[0]);await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'0');await pairsNav('Retos').click();await finishPairChallenge(first[1]);await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'1');await pairs.getByRole('heading',{name:'Cuéntanos tu experiencia',exact:true}).waitFor();
     await pairsNav('Votar').click();await pairs.getByRole('button',{name:'Dar 1 voto',exact:true}).first().click();await pairs.getByRole('button',{name:'Confirmar voto',exact:true}).click();await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('available-votes').innerText(),'0');assert.equal(await pairs.getByTestId('ticket-count').innerText(),'1');await pairsNav('Retos').click();
-    await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).click();const second=await readPair();assert.equal(new Set([...first,...second]).size,4);assert.equal(await pairs.locator('.challenge-card').count(),2);for(const id of second)await finishPairChallenge(id);
-    await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'2');assert.equal(await pairs.getByTestId('available-votes').innerText(),'1');await pairs.reload();await pairsNav('Retos').click();assert.equal(await pairs.locator('.challenge-card.done').count(),2);assert.equal(await pairs.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await pairs.getByRole('button',{name:/^Retos adicionales/}).click();await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).click();const second=await readPair();assert.equal(new Set([...first,...second]).size,4);assert.equal(await pairs.locator('.challenge-card').count(),2);for(const id of second)await finishPairChallenge(id);
+    await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'2');assert.equal(await pairs.getByTestId('available-votes').innerText(),'1');await pairs.reload();await pairsNav('Retos').click();assert.equal(await pairs.locator('.challenge-card.done').count(),2);await pairs.getByRole('button',{name:/^Retos adicionales/}).click();assert.equal(await pairs.locator('.challenge-card.done').count(),2);assert.equal(await pairs.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await pairs.getByRole('button',{name:'Salir',exact:true}).click();await pairs.getByLabel('Token de acceso').fill('S6F3');await pairs.getByRole('button',{name:'Ingresar →'}).click();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();assert.equal(await pairs.locator('.challenge-card').count(),5);assert.equal(await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).count(),0);
-    await pairsContext.close();console.log('PASS visitor pairs: affinity, two visible, one ticket per pair, next round without repeats, vote, reload and admission still five');
+    await pairsContext.close();console.log('PASS visitor base/additional tabs: one affinity base, random additional rounds, two visible, one ticket per pair, next round without repeats, vote, reload and admission still five');
 
   } finally { await browser.close(); }
 }

@@ -194,3 +194,7 @@ Los visitantes usan `visitorRounds` y `visitorRoundIndex`: ven una pareja a la v
 Admin → Asignación permite guardar distribuciones para rutas nuevas. Usuarios → Asignación permite gestionar los pendientes de esa persona. Las rutas iniciadas conservan un snapshot de su regla; los cambios manuales se auditan y protegen los completados. Consulta las cantidades predeterminadas y el funcionamiento en README.md.
 
 La navegación administrativa agrupa la rifa y su historial dentro de Tiquetes. Cada participante en Usuarios tiene acceso directo a su asignación y sus respuestas, sin pestañas separadas de Respuestas o Retos por persona. En Mapa completo, la ficha del edificio añade todos sus proyectos con área y nivel; se actualiza al cambiar el catálogo local, incluido el edificio compartido de TICs.
+
+Visitante conserva su primera ronda en Retos base (dos por defecto): un proyecto afín si hay disponibilidad y los demás al azar. Las rondas siguientes se acumulan en Retos adicionales y se sortean entre todo el catálogo sin priorizar afinidad. No se reordenan ni reemplazan los retos ya asignados por esta actualización. Los premios siguen contando un tiquete por cada dos completados.
+
+Votar muestra un top 3 y el número de votos por proyecto del mismo navegador, con empates y actualización entre pestañas. Los proyectos sin votos no reciben puesto. No se agregan votos de otros dispositivos automáticamente.
