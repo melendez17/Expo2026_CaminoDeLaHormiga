@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { adminRows, CATALOG_KEY, restoreCatalog, validateCatalogChange } from '../src/lib/local-admin';
+import { generateUserToken, adminRows, CATALOG_KEY, restoreCatalog, validateCatalogChange } from '../src/lib/local-admin';
 import { localDataSchema, freshProgress, storageKey, completeLocal, summary, type LocalData, type LocalProgress } from '../src/lib/local-game';
 const keys = ['users', 'projects', 'challenges', 'agenda', 'settings'];
 const data = localDataSchema.parse(Object.fromEntries(keys.map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))])));
@@ -78,4 +78,15 @@ test('el catálogo anterior recibe los proyectos y retos necesarios de admisión
   assert.equal(migrated.projects[0].name,'Proyecto editado anteriormente');
   assert.equal(migrated.projects.filter(p=>p.category==='third_cycle').length,2);
   assert.ok(migrated.challenges.some(c=>c.projectId==='ciber'));
+});
+
+test('tokens automáticos de cuatro caracteres evitan colisiones y recorren el espacio completo', () => {
+  const users = [...data.users, {...data.users[0],id:'zero',token:'0000'}, {...data.users[0],id:'one',token:'0001'}];
+  assert.equal(generateUserToken(users,()=>0),'0002');
+  assert.equal(generateUserToken([...users,{...users[0],token:'ZZZZ'}],()=>36**4-1),'0002');
+  for(let i=0;i<20;i++) {
+    const token=generateUserToken(users);
+    assert.match(token,/^[A-Z0-9]{4}$/);
+    assert.ok(!users.some(user=>user.token===token));
+  }
 });

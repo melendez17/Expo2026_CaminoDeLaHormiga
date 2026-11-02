@@ -2,6 +2,16 @@ import { localDataSchema, parseProgress, freshProgress, storageKey, summary, typ
 import campus from './campus.json';
 export const CATALOG_KEY = 'camino-local-catalog-v1';
 export type StorageReader = Pick<Storage, 'getItem'>;
+export function generateUserToken(users: LocalData['users'], randomValue = () => crypto.getRandomValues(new Uint32Array(1))[0]) {
+  const used = new Set(users.map(user => user.token.toUpperCase()));
+  const capacity = 36 ** 4;
+  const start = randomValue() % capacity;
+  for (let offset = 0; offset < capacity; offset++) {
+    const token = ((start + offset) % capacity).toString(36).toUpperCase().padStart(4, '0');
+    if (!used.has(token)) return token;
+  }
+  throw Error('No quedan tokens disponibles para crear otro usuario.');
+}
 export function restoreCatalog(base: LocalData, storage: StorageReader): LocalData {
   const raw = storage.getItem(CATALOG_KEY);
   if (!raw) return base;

@@ -239,12 +239,15 @@ async function main() {
 
     await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
     await page.getByLabel('Nombre completo').fill('Valeria Prueba');
-    await page.getByLabel('Token de cuatro caracteres').fill('ADM1');
+    assert.equal(await page.locator('input[name="token"]').count(),0);
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
-    await page.getByRole('alert').filter({ hasText: 'tokens duplicados' }).waitFor();
-    await page.getByLabel('Token de cuatro caracteres').fill('V123');
-    await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
+    const valeriaToken=await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba').token as string);
+    assert.match(valeriaToken,/^[A-Z0-9]{4}$/);
     await page.getByRole('heading', { name: 'Valeria Prueba', exact: true }).waitFor();
+    await page.getByRole('button',{name:'Editar: Valeria Prueba',exact:true}).click();
+    assert.equal(await page.locator('input[name="token"]').count(),0);
+    await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba').token),valeriaToken);
     await adminNav('Proyectos').click(); await page.getByRole('button', { name: 'Nuevo proyecto', exact: true }).click();
     await page.getByLabel('Nombre del proyecto', { exact: true }).fill('Proyecto del administrador');
     await page.getByLabel('Especialidad', { exact: true }).selectOption('Desarrollo Web');
@@ -271,7 +274,7 @@ async function main() {
     await page.getByRole('button', { name: 'Exportar catálogo JSON', exact: true }).click();
     const catalogFile = await (await catalogDownload).path(); assert.ok(catalogFile);
     const exportedCatalog = JSON.parse(readFileSync(catalogFile!, 'utf8'));
-    assert.ok(exportedCatalog.users.some((u: { token: string }) => u.token === 'V123'));
+    assert.ok(exportedCatalog.users.some((u: { token: string }) => u.token === valeriaToken));
     await page.getByLabel('Importar catálogo JSON').setInputFiles(catalogFile!);
     await page.getByRole('status').filter({ hasText: 'Catálogo importado' }).waitFor();
     await adminNav('Resumen').click();
@@ -281,11 +284,11 @@ async function main() {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
     await page.getByRole('button', { name: 'Salir', exact: true }).click();
     await page.goto(base);
-    await page.getByLabel('Token de acceso').fill('V123');
+    await page.getByLabel('Token de acceso').fill(valeriaToken);
     await page.getByRole('button', { name: 'Ingresar →' }).click();
     await page.getByRole('heading', { name: 'Bienvenido, Valeria.' }).waitFor();
     assert.deepEqual(apiCalls, []); assert.deepEqual(errors, []);
-    console.log('PASS local admin access, participant denial, duplicate token, CRUD, persistence, catalog import/export, CSV and new-user login');
+    console.log('PASS local admin access, participant denial, automatic token creation, token preserved on edit, CRUD, persistence, catalog import/export, CSV and generated-token login');
     await context.close();
     // Catálogo grande aislado: nunca modifica los JSON ni el navegador anterior.
     const large = Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))]));
@@ -348,14 +351,16 @@ async function main() {
     const roleNav = (name: string) => rolePage.getByRole('navigation', { name: 'Administración local' }).getByRole('button', { name, exact:true });
     const variants = [['pasitos','Pasitos','E001'],['school','Escuela','E002'],['third_cycle','Tercer ciclo','E003'],['fourth_cycle','Cuarto ciclo','E004']];
     await roleNav('Usuarios').click();
-    for (const [role,label,token] of variants) {
+    for (const [role,label] of variants) {
       await rolePage.getByRole('button',{name:'Nuevo usuario',exact:true}).click();
       await rolePage.getByLabel('Nombre completo').fill(`Admisión ${label}`);
-      await rolePage.getByLabel('Token de cuatro caracteres').fill(token);
+      assert.equal(await rolePage.locator('input[name="token"]').count(),0);
       assert.equal(await rolePage.getByLabel('Rol',{exact:true}).locator('option').count(),6);
       await rolePage.getByLabel('Rol',{exact:true}).selectOption(role);
       if(role==='fourth_cycle')await rolePage.getByLabel('Especialidad asignada',{exact:true}).selectOption('Ciberseguridad');
       await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+      const generatedToken=await rolePage.evaluate(name=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name===name).token as string,`Admisión ${label}`);
+      variants.find(v=>v[0]===role)![2]=generatedToken;
       await rolePage.getByRole('heading',{name:`Admisión ${label}`,exact:true}).waitFor();
     }
     await roleNav('Proyectos').click();
@@ -368,7 +373,7 @@ async function main() {
     const savedCatalog = await rolePage.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!));
     const cyber = savedCatalog.projects.find((p:{name:string})=>p.name==='Ciberseguridad de prueba');
     assert.equal(cyber.buildingId,'17');assert.equal(cyber.category,'specialty');assert.equal(cyber.level,11);
-    assert.equal(savedCatalog.users.find((u:{token:string})=>u.token==='E004').assignedSpecialty,'Ciberseguridad');
+    assert.equal(savedCatalog.users.find((u:{token:string})=>u.token===variants[3][2]).assignedSpecialty,'Ciberseguridad');
     for (const [role,,token] of variants) { const u=savedCatalog.users.find((u:{token:string})=>u.token===token);assert.equal(u.role,role);assert.equal(u.kind,'applicant'); }
     await rolePage.getByRole('button',{name:'Nuevo proyecto',exact:true}).click();
     await rolePage.getByLabel('Nombre del proyecto',{exact:true}).fill('Proyecto de escuela');
@@ -381,7 +386,7 @@ async function main() {
     await rolePage.getByLabel('Token del participante').fill('ZZZZ');
     await rolePage.getByRole('button',{name:'Crear',exact:true}).click();
     await rolePage.getByRole('alert').filter({hasText:'participante válido'}).waitFor();
-    await rolePage.getByLabel('Token del participante').fill('E001');
+    await rolePage.getByLabel('Token del participante').fill(variants[0][2]);
     await rolePage.getByRole('button',{name:'Crear',exact:true}).click();
     await rolePage.getByRole('status').filter({hasText:'creado para Admisión Pasitos'}).waitFor();
     assert.equal(await rolePage.locator('.ticket-register tbody tr').count(),1);

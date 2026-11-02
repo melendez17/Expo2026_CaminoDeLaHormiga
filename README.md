@@ -110,3 +110,5 @@ En Admin → **Tiquetes**, introduce el token del participante y pulsa **Crear**
 El sorteo incluye tiquetes digitales y manuales y guarda nombre del ganador, ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
 
 La demo incluye dos proyectos de décimo y dos de undécimo por especialidad para probar distintas asignaciones. Son ejemplos ficticios. Para probar estos cambios en un despliegue de Vercel debe seleccionarse la rama `correccion-roles-proyectos-tiquetes`.
+
+Los usuarios nuevos creados desde el administrador reciben automáticamente un token único de cuatro caracteres al guardar. El formulario no solicita token; al editar una persona se conserva su código de acceso.
