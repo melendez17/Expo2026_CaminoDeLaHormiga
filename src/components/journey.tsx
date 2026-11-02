@@ -1,4 +1,5 @@
 'use client';
+import { LoadingScreen } from './loading-screen';
 
 import { useEffect, useRef, useState } from 'react';
 import { FullCampusMap } from './full-campus-map';
@@ -173,7 +174,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   }
 
   const brand = <a href="/" className="brand school-brand" aria-label="CEDES Don Bosco, inicio"><img src="/brand/cedes-don-bosco-white.png" alt="CEDES Don Bosco" width="2048" height="661" /></a>;
-  if (!data) return <main className="local-loading"><img src="/icon.svg" alt="" /><h1>El camino de la hormiga</h1><p role="status">{loadError || 'Preparando tu próximo descubrimiento…'}</p>{loadError && <button onClick={() => window.location.reload()}>Volver a cargar</button>}</main>;
+  if (!data) return <LoadingScreen message={loadError || undefined}>{loadError && <button onClick={() => window.location.reload()}>Volver a cargar</button>}</LoadingScreen>;
   if (!user || !progress) return <div className="local-login login-entry">
     <header className="local-header">{brand}<span className="local-pill">DEMO LOCAL</span></header>
     <main className="login-layout"><section className="login-story"><span className="eyebrow">FERIA TECNOLÓGICA · CEDES DON BOSCO</span><h1 className="login-event-wordmark" aria-label="ExpoTEC"><span>EXPO</span><span>TEC</span></h1><h2 className="login-journey-title">El camino de la hormiga.</h2><p>Innovación, tecnología y trabajo en equipo. Descubre el campus y construye tu propio camino, un reto a la vez.</p><div className="login-perks"><span>⌖ Descubre lugares</span><span>✦ Completa retos</span><span>♡ Vota por tus favoritos</span></div><img className="login-ant" src="/icon.svg" alt="" /></section>
