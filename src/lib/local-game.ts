@@ -95,10 +95,12 @@ export function startLocal(data:LocalData,progress:LocalProgress,random=Math.ran
       if(!candidates.length)throw Error(`Faltan proyectos con retos de ${user.assignedSpecialty} de ${level===10?'décimo':'undécimo'}.`);
       ids.push(shuffle(candidates)[0].id);
     }
+    const remaining=data.projects.filter(p=>p.category==='specialty'&&p.specialty===user.assignedSpecialty).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c&&!ids.includes(c.id));
+    if(!remaining.length)throw Error('Falta un tercer proyecto distinto de tu especialidad con un reto.');
+    ids.push(shuffle(remaining)[0].id);
     const others=data.projects.filter(p=>p.category==='specialty'&&p.specialty!==user.assignedSpecialty).map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
-    const names=[...new Set(others.map(c=>data.projects.find(p=>p.id===c.projectId)!.specialty))];
-    if(names.length<2)throw Error('Faltan dos especialidades diferentes a la asignada con proyectos y retos.');
-    for(const name of shuffle(names).slice(0,2))ids.push(shuffle(others.filter(c=>data.projects.find(p=>p.id===c.projectId)!.specialty===name))[0].id);
+    if(!others.length)throw Error('Falta un proyecto de otra especialidad con un reto.');
+    ids.push(shuffle(others)[0].id);
   }
 
   for(const [category,count] of plans[user.role]) {
@@ -175,7 +177,7 @@ function validRoute(data:LocalData,p:LocalProgress) {
  if(user.role==='fourth_cycle') {
    const own=projects.filter(project=>project.specialty===user.assignedSpecialty&&project.category==='specialty');
    const others=projects.filter(project=>project.specialty!==user.assignedSpecialty&&project.category==='specialty');
-   return own.length===2&&own.some(p=>p.level===10)&&own.some(p=>p.level===11)&&others.length===2&&new Set(others.map(p=>p.specialty)).size===2;
+   return own.length===3&&own.some(p=>p.level===10)&&own.some(p=>p.level===11)&&others.length===1;
  }
  const count=(category:string)=>projects.filter(project=>project.category===category).length;
  return new Set(projects.filter(p=>p.category==='specialty').map(p=>p.specialty)).size===2&&count('specialty')===2&&(user.role==='pasitos'?count('pasitos')===1&&count('school')===1:user.role==='school'?count('school')===1&&count('third_cycle')===1:count('third_cycle')===2);

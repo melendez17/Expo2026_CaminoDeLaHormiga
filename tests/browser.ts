@@ -419,7 +419,8 @@ async function main() {
       assert.equal(assigned.length,5);
       if(label==='Cuarto ciclo') {
         const ownProjects=assigned.map(id=>challenges.find(c=>c.id===id)!).filter(c=>c.projectId).map(c=>savedCatalog.projects.find((p:{id:string})=>p.id===c.projectId)).filter((p:{specialty:string})=>p.specialty==='Ciberseguridad');
-        assert.deepEqual(ownProjects.map((p:{level:number})=>p.level).sort(),[10,11]);
+        assert.equal(ownProjects.length,3);
+        assert.ok(ownProjects.some((p:{level:number})=>p.level===10));assert.ok(ownProjects.some((p:{level:number})=>p.level===11));
       }
 
       await participantNav('Retos').click();

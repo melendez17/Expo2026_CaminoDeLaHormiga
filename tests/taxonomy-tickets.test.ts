@@ -51,7 +51,7 @@ test('rutas por modalidad cumplen las cantidades y categorías, sin proyectos re
     assert.deepEqual(startLocal(catalog,started),started);
   }
 });
-test('Cuarto ciclo combina décimo y undécimo de su especialidad, otras dos y un extra',()=>{
+test('Cuarto ciclo combina décimo y undécimo de su especialidad, un tercero propio, otro externo y un extra',()=>{
   const fixture=structuredClone(raw);fixture.users[0].role='fourth_cycle';delete fixture.users[0].assignedSpecialty;
   assert.throws(()=>startLocal(localDataSchema.parse(fixture),freshProgress(data,'ana')),/asignarte una especialidad/);
   fixture.users[0].assignedSpecialty='Ciberseguridad';
@@ -60,9 +60,10 @@ test('Cuarto ciclo combina décimo y undécimo de su especialidad, otras dos y u
   assert.equal(p.routeIds.length,5);
   const route=routeChallenges(catalog,p),projects=route.filter(c=>c.projectId).map(c=>catalog.projects.find(p=>p.id===c.projectId)!);
   const own=projects.filter(p=>p.specialty==='Ciberseguridad');
-  assert.equal(own.length,2);assert.deepEqual(own.map(p=>p.level).sort(),[10,11]);
+  assert.equal(own.length,3);assert.ok(own.some(p=>p.level===10));assert.ok(own.some(p=>p.level===11));
+  assert.equal(new Set(projects.map(p=>p.id)).size,4);
   const others=projects.filter(p=>p.specialty!=='Ciberseguridad');
-  assert.equal(others.length,2);assert.equal(new Set(others.map(p=>p.specialty)).size,2);
+  assert.equal(others.length,1);
   assert.equal(route.filter(c=>!c.projectId&&(c.kind==='code'||c.kind==='saint')).length,1);
   for(const c of route) {
     const answers:Record<string,string>=c.kind==='freeform'?{projectName:'Proyecto',level:'Décimo',description:'Aprendí sobre tecnología para ayudar a la comunidad.'}:c.kind==='saint'?{saint:c.answer!}:{code:c.code!,...Object.fromEntries((c.questions??[]).map(q=>[q.id,String(q.correctIndex)]))};
@@ -70,9 +71,27 @@ test('Cuarto ciclo combina décimo y undécimo de su especialidad, otras dos y u
   }
   assert.equal(summary(catalog,p).routeComplete,true);assert.equal(summary(catalog,p).baseTarget,5);assert.equal(summary(catalog,p).tickets,1);
   assert.deepEqual(parseProgress(catalog,'ana',p),p);
-  const own11=route.find(c=>catalog.projects.find(p=>p.id===c.projectId)?.specialty==='Ciberseguridad'&&catalog.projects.find(p=>p.id===c.projectId)?.level===11)!;
-  const replacement=catalog.challenges.find(c=>!p.routeIds.includes(c.id)&&catalog.projects.find(p=>p.id===c.projectId)?.specialty==='Ciberseguridad'&&catalog.projects.find(p=>p.id===c.projectId)?.level===10)!;
-  assert.throws(()=>parseProgress(catalog,'ana',{...p,routeIds:p.routeIds.map(id=>id===own11.id?replacement.id:id)}),/especialidad asignada/);
+  const other=route.find(c=>catalog.projects.find(p=>p.id===c.projectId)?.specialty!=='Ciberseguridad'&&c.projectId)!;
+  const replacement=catalog.challenges.find(c=>!p.routeIds.includes(c.id)&&catalog.projects.find(p=>p.id===c.projectId)?.specialty==='Ciberseguridad')!;
+  assert.throws(()=>parseProgress(catalog,'ana',{...p,routeIds:p.routeIds.map(id=>id===other.id?replacement.id:id)}),/especialidad asignada/);
+});
+test('Cuarto ciclo sortea un tercer proyecto distinto de décimo o undécimo y exige tres propios',()=>{
+  const fixture=structuredClone(raw);fixture.users[0].role='fourth_cycle';fixture.users[0].assignedSpecialty='Desarrollo Web';
+  const catalog=localDataSchema.parse(fixture);
+  const thirdLevels=new Set<number|string>();
+  for(const random of [()=>0,()=>0.999]) {
+    const p=startLocal(catalog,freshProgress(catalog,'ana'),random);
+    assert.equal(new Set(p.routeIds).size,5);
+    const third=catalog.projects.find(project=>project.id===catalog.challenges.find(c=>c.id===p.routeIds[2])?.projectId)!;
+    assert.equal(third.specialty,'Desarrollo Web');thirdLevels.add(third.level);
+    assert.deepEqual(parseProgress(catalog,'ana',p),p);
+  }
+  assert.deepEqual([...thirdLevels].sort(),[10,11]);
+  const keep=new Set([10,11].map(level=>fixture.projects.find((p:{specialty:string;level:number})=>p.specialty==='Desarrollo Web'&&p.level===level)!.id));
+  fixture.projects=fixture.projects.filter((p:{id:string;specialty:string})=>p.specialty!=='Desarrollo Web'||keep.has(p.id));
+  fixture.challenges=fixture.challenges.filter((c:{projectId?:string})=>!c.projectId||fixture.projects.some((p:{id:string})=>p.id===c.projectId));
+  const scarce=localDataSchema.parse(fixture);
+  assert.throws(()=>startLocal(scarce,freshProgress(scarce,'ana')),/tercer proyecto distinto/);
 });
 test('ningún extra posterior es una visita a proyecto y falta de undécimo bloquea una ruta incompleta',()=>{
   const p=baseProgress();

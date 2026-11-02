@@ -99,7 +99,7 @@ La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Los roles dispo
 | Pasitos | 1 proyecto de Pasitos + 1 de Escuela + 2 de especialidad + 1 extra |
 | Escuela | 1 de Escuela + 1 de Tercer ciclo + 2 de especialidad + 1 extra |
 | Tercer ciclo | 2 de Tercer ciclo + 2 de especialidad + 1 extra |
-| Cuarto ciclo | 1 de décimo y 1 de undécimo de su especialidad + 2 de otras especialidades + 1 extra |
+| Cuarto ciclo | 1 de décimo y 1 de undécimo de su especialidad + otro distinto de su especialidad (décimo o undécimo) + 1 de otra especialidad + 1 extra |
 
 El campo `kind` se deriva del rol; ya no se edita por separado. Cuarto ciclo necesita `assignedSpecialty` para iniciar una ruta nueva. Web y Ciberseguridad son especialidades independientes con el mismo edificio `17` (TICs). Cada proyecto tiene nivel: Preescolar para Pasitos, primero a sexto para Escuela, séptimo a noveno para Tercer ciclo y décimo u undécimo para Especialidad. Los proyectos se clasifican como Pasitos, Escuela, Tercer ciclo o Especialidad; sus retos se relacionan mediante `projectId`. Los extras son actividades sin proyecto (photobooth, CDC, puestos o santos); las visitas a proyectos no se generan como extras. Si faltan proyectos con retos de una categoría, nivel o especialidad, se informa al usuario sin asignar una ruta parcial. Los progresos anteriores conservan su recorrido y sus respuestas.
 
