@@ -238,18 +238,20 @@ async function main() {
     console.log('PASS admin participant detail: question text, selected quiz options, freeform, codes, survey, pending and per-user isolation');
 
     await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
-    await page.getByLabel('Nombre completo').fill('Valeria Prueba');
+    await page.getByLabel('Nombre',{exact:true}).fill('Valeria');
+    await page.getByLabel('Apellido 1',{exact:true}).fill('Prueba');
+    await page.getByLabel('Apellido 2',{exact:true}).fill('Registro');
     await page.getByLabel('Correo electrónico',{exact:true}).fill('valeria@example.com');
     assert.equal(await page.locator('input[name="token"]').count(),0);
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
-    const valeriaToken=await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba').token as string);
+    const valeriaToken=await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba Registro').token as string);
     assert.match(valeriaToken,/^[A-Z0-9]{4}$/);
-    await page.getByRole('heading', { name: 'Valeria Prueba', exact: true }).waitFor();
-    await page.getByRole('button',{name:'Editar: Valeria Prueba',exact:true}).click();
+    await page.getByRole('heading', { name: 'Valeria Prueba Registro', exact: true }).waitFor();
+    await page.getByRole('button',{name:'Editar: Valeria Prueba Registro',exact:true}).click();
     assert.equal(await page.locator('input[name="token"]').count(),0);
     assert.equal(await page.getByLabel('Correo electrónico',{exact:true}).inputValue(),'valeria@example.com');
     await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
-    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba').token),valeriaToken);
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name==='Valeria Prueba Registro').token),valeriaToken);
     await adminNav('Proyectos').click(); await page.getByRole('button', { name: 'Nuevo proyecto', exact: true }).click();
     await page.getByLabel('Nombre del proyecto', { exact: true }).fill('Proyecto del administrador');
     await page.getByLabel('Especialidad', { exact: true }).selectOption('Desarrollo Web');
@@ -355,16 +357,18 @@ async function main() {
     await roleNav('Usuarios').click();
     for (const [role,label] of variants) {
       await rolePage.getByRole('button',{name:'Nuevo usuario',exact:true}).click();
-      await rolePage.getByLabel('Nombre completo').fill(`Admisión ${label}`);
+      await rolePage.getByLabel('Nombre',{exact:true}).fill('Admisión');
+      await rolePage.getByLabel('Apellido 1',{exact:true}).fill(label);
+      await rolePage.getByLabel('Apellido 2',{exact:true}).fill('Prueba');
       await rolePage.getByLabel('Correo electrónico',{exact:true}).fill(`${role}@example.com`);
       assert.equal(await rolePage.locator('input[name="token"]').count(),0);
       assert.equal(await rolePage.getByLabel('Rol',{exact:true}).locator('option').count(),6);
       await rolePage.getByLabel('Rol',{exact:true}).selectOption(role);
       if(role==='fourth_cycle')await rolePage.getByLabel('Especialidad asignada',{exact:true}).selectOption('Ciberseguridad');
       await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
-      const generatedToken=await rolePage.evaluate(name=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name===name).token as string,`Admisión ${label}`);
+      const generatedToken=await rolePage.evaluate(name=>JSON.parse(localStorage.getItem('camino-local-catalog-v1')!).users.find((u:{name:string})=>u.name===name).token as string,`Admisión ${label} Prueba`);
       variants.find(v=>v[0]===role)![2]=generatedToken;
-      await rolePage.getByRole('heading',{name:`Admisión ${label}`,exact:true}).waitFor();
+      await rolePage.getByRole('heading',{name:`Admisión ${label} Prueba`,exact:true}).waitFor();
     }
     await roleNav('Proyectos').click();
     await rolePage.getByRole('button',{name:'Nuevo proyecto',exact:true}).click();
@@ -396,7 +400,7 @@ async function main() {
     const manualCode=await rolePage.locator('.ticket-register code').innerText();
     await rolePage.getByLabel('Premio (opcional)').fill('Premio de prueba');
     await rolePage.getByRole('button',{name:'Sortear un tiquete',exact:true}).click();
-    await rolePage.getByRole('heading',{name:'Admisión Pasitos',exact:true}).waitFor();
+    await rolePage.getByRole('heading',{name:'Admisión Pasitos Prueba',exact:true}).waitFor();
     assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
     await rolePage.reload();await roleNav('Tiquetes').click();
     assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);

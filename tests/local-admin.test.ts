@@ -99,3 +99,15 @@ test('correo se valida, se normaliza y los usuarios anteriores siguen siendo com
   const legacy=structuredClone(data);delete legacy.users[0].email;
   assert.equal(localDataSchema.parse(legacy).users[0].email,undefined);
 });
+
+test('nombre y dos apellidos se guardan separados y componen el nombre completo', () => {
+  const input=change(c=>{Object.assign(c.users[0],{firstName:'  Ana María  ',firstSurname:'Rodríguez',secondSurname:'Vargas'});});
+  const user=localDataSchema.parse(input).users[0];
+  assert.equal(user.firstName,'Ana María');assert.equal(user.firstSurname,'Rodríguez');assert.equal(user.secondSurname,'Vargas');
+  assert.equal(user.name,'Ana María Rodríguez Vargas');
+  delete input.users[0].secondSurname;
+  assert.throws(()=>localDataSchema.parse(input),/ambos apellidos/);
+  input.users[0].secondSurname='   ';
+  assert.throws(()=>localDataSchema.parse(input));
+  assert.equal(localDataSchema.parse(data).users[0].name,data.users[0].name);
+});

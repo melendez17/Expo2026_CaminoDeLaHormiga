@@ -114,3 +114,5 @@ La demo incluye dos proyectos de décimo y dos de undécimo por especialidad par
 Los usuarios nuevos creados desde el administrador reciben automáticamente un token único de cuatro caracteres al guardar. El formulario no solicita token; al editar una persona se conserva su código de acceso.
 
 El registro solicita un correo electrónico válido y obligatorio; se guarda en el catálogo y se incluye en el CSV administrativo. Los usuarios de catálogos anteriores sin correo siguen siendo compatibles; al editarlos se solicita completarlo. El acceso continúa mediante token.
+
+El formulario de usuarios pide Nombre, Apellido 1 y Apellido 2 por separado, todos obligatorios. Se guardan como `firstName`, `firstSurname` y `secondSurname`; `name` conserva el nombre completo para el resto de la aplicación. Los registros anteriores siguen funcionando y deben completar los apellidos al editarse; no se deducen automáticamente del nombre anterior.
