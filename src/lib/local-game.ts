@@ -14,7 +14,9 @@ const challengeSchema = z.object({
   if (c.questions && new Set(c.questions.map(q => q.id)).size !== c.questions.length) ctx.addIssue({ code: 'custom', message: 'Las preguntas deben tener identificadores diferentes' });
   if (c.kind === 'quiz' && c.questions?.length !== 2) ctx.addIssue({ code: 'custom', message: 'Cada especialidad necesita dos preguntas' });
   if (['quiz', 'code'].includes(c.kind) && !/^[A-Z0-9]{4}$/.test(c.code ?? '')) ctx.addIssue({ code: 'custom', message: 'Falta un código de cuatro caracteres' });
-  if (c.kind === 'saint' && !c.answer) ctx.addIssue({ code: 'custom', message: 'Falta la respuesta del santo' });
+  if (c.kind === 'saint' && (c.isBase||c.projectId)) ctx.addIssue({code:'custom',message:'El santo debe ser un reto extra sin proyecto.'});
+  if (c.kind === 'saint' && c.questions && (c.questions.length!==1||new Set(c.questions[0].options.map(o=>o.trim().toLowerCase())).size!==c.questions[0].options.length)) ctx.addIssue({code:'custom',message:'El santo necesita una pregunta con opciones distintas.'});
+  if (c.kind === 'saint' && !c.answer && !c.questions?.length) ctx.addIssue({ code: 'custom', message: 'Falta la respuesta del santo' });
 });
 export const localDataSchema = z.object({
   schemaRevision: z.number().int().min(1).default(3),
@@ -52,6 +54,7 @@ export type Answers = Record<string, string>;
 export const progressSchema = z.object({
   version: z.literal(1), dataVersion: z.string(), userId: z.string(), startedAt: z.string().nullable(),
   completed: z.array(z.object({ challengeId: z.string(), answers: z.record(z.string(), z.string()), at: z.string() })),
+  failedExtras: z.array(z.object({challengeId:z.string(),answers:z.record(z.string(),z.string()),at:z.iso.datetime(),replacementId:z.string()})).default([]),
   routeIds: z.array(z.string()).default([]),
   manualTickets: z.array(z.object({ id: z.string().min(1), actorId: z.string().min(1), at: z.iso.datetime() })).default([]),
   extraIds: z.array(z.string()), votes: z.array(z.object({ projectId: z.string(), at: z.string() })),
@@ -63,7 +66,7 @@ export function findUser(data: LocalData, token: string) {
   return data.users.find(u => u.token === token.trim().toUpperCase()) ?? null;
 }
 export function freshProgress(data: LocalData, userId: string): LocalProgress {
-  return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], routeIds: [], manualTickets: [], extraIds: [], votes: [], survey: null };
+  return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], failedExtras: [], routeIds: [], manualTickets: [], extraIds: [], votes: [], survey: null };
 }
 export function summary(data: LocalData, progress: LocalProgress) {
   const ids = new Set(routeChallenges(data,progress).map(c=>c.id));
@@ -119,6 +122,27 @@ export function startLocal(data:LocalData,progress:LocalProgress,random=Math.ran
   }
   return {...progress,startedAt:new Date().toISOString(),routeIds:ids};
 }
+export function saintQuestion(challenge: LocalChallenge) {
+  return challenge.questions?.[0] ?? {id:'saint',prompt:'Nombre del santo',options:[challenge.answer??'San Juan Bosco',...['San Juan Bosco','Santo Domingo Savio','San Francisco de Asís','San José'].filter(name=>normalize(name)!==normalize(challenge.answer??'San Juan Bosco')).slice(0,3)],correctIndex:0};
+}
+export function saintSelection(challenge:LocalChallenge,answers:Answers): number | null {
+  const value=answers.saintChoice;
+  if(value!==undefined)return /^\d+$/.test(value)&&Number(value)<saintQuestion(challenge).options.length?Number(value):null;
+  const index=saintQuestion(challenge).options.findIndex(option=>normalize(option)===normalize(answers.saint??''));
+  return index<0?null:index;
+}
+export function replaceFailedSaint(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
+  const challenge=data.challenges.find(c=>c.id===id);
+  if(!progress.startedAt||!challenge||challenge.kind!=='saint'||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
+  const selected=saintSelection(challenge,answers);
+  if(selected===null)throw Error('Marca una opción para responder.');
+  if(selected===saintQuestion(challenge).correctIndex)throw Error('La respuesta es correcta; completa el reto.');
+  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId)]);
+  const candidates=extraChallenges(data).filter(c=>!used.has(c.id));
+  if(!candidates.length)throw Error('No quedan retos extra para reemplazar este intento. Solicita al administrador que añada otro reto extra.');
+  const replacementId=candidates[Math.floor(random()*candidates.length)].id;
+  return {...progress,routeIds:progress.routeIds.map(c=>c===id?replacementId:c),extraIds:progress.extraIds.map(c=>c===id?replacementId:c),failedExtras:[...progress.failedExtras,{challengeId:id,answers,at:new Date().toISOString(),replacementId}]};
+}
 export function validateAnswers(challenge: LocalChallenge, answers: Answers): string | null {
   if (challenge.kind === 'freeform') {
     if ((answers.projectName?.trim().length ?? 0) < 2 || !answers.level?.trim() || (answers.description?.trim().length ?? 0) < 10) return 'Completa el nombre, el nivel y una descripción de al menos 10 caracteres.';
@@ -127,7 +151,7 @@ export function validateAnswers(challenge: LocalChallenge, answers: Answers): st
     for (const q of challenge.questions ?? []) if (answers[q.id] !== String(q.correctIndex)) return 'Hay una respuesta por revisar. Observa el proyecto y vuelve a intentarlo.';
   }
   if (['quiz', 'code'].includes(challenge.kind) && answers.code?.trim().toUpperCase() !== challenge.code) return 'El código del stand no es correcto. Revisa los cuatro caracteres.';
-  if (challenge.kind === 'saint' && normalize(answers.saint ?? '') !== normalize(challenge.answer ?? '')) return 'Revisa el nombre del santo y vuelve a intentarlo.';
+  if (challenge.kind === 'saint' && saintSelection(challenge,answers)!==saintQuestion(challenge).correctIndex) return 'La opción seleccionada no es correcta.';
   return null;
 }
 export function completeLocal(data: LocalData, progress: LocalProgress, id: string, answers: Answers): LocalProgress {
@@ -142,7 +166,7 @@ export function generateExtras(data: LocalData, progress: LocalProgress, random 
   if (!summary(data, progress).routeComplete) throw Error('Completa los cinco retos base o la ruta asignada para descubrir más.');
   if (progress.extraIds.some(id => !progress.completed.some(c => c.challengeId === id))) throw Error('Termina los retos adicionales disponibles antes de generar otros.');
   const assigned = new Set(routeChallenges(data,progress).map(c=>c.id));
-  const candidates = extraChallenges(data).filter(c => !progress.extraIds.includes(c.id) && !assigned.has(c.id));
+  const candidates = extraChallenges(data).filter(c => !progress.extraIds.includes(c.id) && !assigned.has(c.id) && !progress.failedExtras.some(f=>f.challengeId===c.id));
   for (let i = candidates.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [candidates[i], candidates[j]] = [candidates[j], candidates[i]]; }
   return { ...progress, extraIds: [...progress.extraIds, ...candidates.slice(0, data.settings.extraBatchSize).map(c => c.id)] };
 }
@@ -161,6 +185,15 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   if (new Set(p.manualTickets.map(t => t.id)).size !== p.manualTickets.length || p.manualTickets.some(t => !data.users.some(u => u.id === t.actorId && u.role === 'admin'))) throw Error('Los tiquetes manuales tienen identificadores duplicados o un emisor no válido.');
   if (new Set(p.extraIds).size !== p.extraIds.length || p.extraIds.some(id => !extraChallenges(data).some(c => c.id === id) || routeChallenges(data,p).some(c=>c.id===id))) throw Error('La lista de retos adicionales no es válida.');
   if ((!p.startedAt && (p.routeIds.length || p.completed.length || p.extraIds.length || p.votes.length || p.survey)) || new Set(p.completed.map(c => c.challengeId)).size !== p.completed.length) throw Error('El progreso está duplicado o no tiene inicio.');
+  const failedIds=new Set(p.failedExtras.map(f=>f.challengeId));
+  if(failedIds.size!==p.failedExtras.length||(!p.startedAt&&p.failedExtras.length))throw Error('Los intentos de retos extra no son válidos.');
+  for(const [index,record] of p.failedExtras.entries()) {
+    const challenge=data.challenges.find(c=>c.id===record.challengeId);
+    const selected=challenge?saintSelection(challenge,record.answers):null;
+    const active=[...routeChallenges(data,p).map(c=>c.id),...p.extraIds];
+    const nextFailure=p.failedExtras.findIndex(f=>f.challengeId===record.replacementId);
+    if(!challenge||challenge.kind!=='saint'||selected===null||selected===saintQuestion(challenge).correctIndex||active.includes(record.challengeId)||p.completed.some(c=>c.challengeId===record.challengeId)||!extraChallenges(data).some(c=>c.id===record.replacementId)||(!active.includes(record.replacementId)&&nextFailure<=index))throw Error('El historial de reemplazos no es válido.');
+  }
   for (const record of p.completed) {
     const c = data.challenges.find(c => c.id === record.challengeId);
     if (!c || (!routeChallenges(data,p).some(base=>base.id===c.id) && !p.extraIds.includes(c.id)) || validateAnswers(c, record.answers)) throw Error('El archivo contiene respuestas o retos no válidos.');

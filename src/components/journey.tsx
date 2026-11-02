@@ -15,7 +15,7 @@ import { LocalAdmin } from './local-admin';
 import { CATALOG_KEY, restoreCatalog, validateCatalogChange } from '@/lib/local-admin';
 import campus from '@/lib/campus.json';
 import {
-  availableProjects, extraChallenges, routeChallenges, startLocal, completeLocal, findUser, freshProgress, generateExtras, localDataSchema,
+  availableProjects, extraChallenges, routeChallenges, startLocal, completeLocal, saintQuestion, saintSelection, replaceFailedSaint, findUser, freshProgress, generateExtras, localDataSchema,
   normalize, parseProgress, storageKey, summary, voteLocal,
   type Answers, type LocalChallenge, type LocalData, type LocalProgress, type LocalUser
 } from '@/lib/local-game';
@@ -60,7 +60,7 @@ function ChallengeDialog({ challenge, onClose, onComplete }: {
         </label>)}
       </fieldset>)}
       {['quiz', 'code'].includes(challenge.kind) && <label>Código del stand<input name="code" maxLength={4} pattern="[A-Za-z0-9]{4}" required autoComplete="off" placeholder="4 caracteres" /></label>}
-      {challenge.kind === 'saint' && <label>Nombre del santo<input name="saint" required maxLength={120} /></label>}
+      {challenge.kind === 'saint' && <fieldset><legend>{saintQuestion(challenge).prompt}</legend><p className="muted">Marca con X una opción. Si fallas, recibirás otro reto extra.</p>{saintQuestion(challenge).options.map((option,i)=><label className="radio-option quiz-option" key={i}><input type="radio" name="saintChoice" value={i} required /><span className="answer-cross" aria-hidden="true"><AppIcon name="close" width="15" height="15"/></span><span>{option}</span></label>)}</fieldset>}
       {challenge.kind !== 'freeform' && <details className="demo-help"><summary>Ayuda para probar este reto</summary>
         <p>Estos datos son ficticios y están en <code>challenges.json</code>.</p>
         {challenge.questions?.map(q => <p key={q.id}>{q.prompt}<br /><b>{q.options[q.correctIndex]}</b></p>)}
@@ -201,7 +201,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const assignedProjects = availableProjects(data,user.id);
   const route = routeChallenges(data,progress);
   const routeIds = new Set(route.map(c=>c.id));
-  const remainingExtras = extraChallenges(data).filter(c => !routeIds.has(c.id) && !progress.extraIds.includes(c.id)).length;
+  const remainingExtras = extraChallenges(data).filter(c => !routeIds.has(c.id) && !progress.extraIds.includes(c.id) && !progress.failedExtras.some(f=>f.challengeId===c.id)).length;
   const extraPending = extras.some(c => !done.has(c.id));
   const displayed = filter === 'base' ? route : extras;
   const projects = assignedProjects.filter(p => (!projectArea || p.specialty === projectArea) && normalize(p.name + ' ' + p.specialty).includes(normalize(search))).sort((a, b) => a.name.localeCompare(b.name, 'es'));
@@ -256,6 +256,11 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." /><FullCampusMap data={data} progress={progress} selected={selected} onSelect={setSelected} onReturn={() => changeSection('route')}/></section>}
     </main>
     {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
+      if(active.kind==='saint'&&saintSelection(active,answers)!==saintQuestion(active).correctIndex) {
+        const next=mutate(current=>replaceFailedSaint(data,current,active.id,answers));
+        const replacement=data.challenges.find(c=>c.id===next.failedExtras.at(-1)!.replacementId)!;
+        setActive(replacement);setSelected(replacement.buildingId);setError('');setMessage('La respuesta no era correcta. Te asignamos otro reto extra; este intento no suma puntos.');return;
+      }
       const wasComplete = stats.routeComplete;
       const next = mutate(current => completeLocal(data, current, active.id, answers));
       setActive(null); setError(''); setMessage(!wasComplete && summary(data, next).routeComplete ? '¡Completaste el camino base! Ganaste tu primer tiquete y un voto.' : '¡Reto completado! Tu avance quedó guardado.');

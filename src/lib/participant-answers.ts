@@ -1,4 +1,4 @@
-import { normalize, type Answers, type LocalChallenge } from './local-game';
+import { saintQuestion, saintSelection, type Answers, type LocalChallenge } from './local-game';
 export type AnswerDetail = { question: string; answer: string | null; correct?: boolean };
 export function challengeAnswers(challenge: LocalChallenge, answers?: Answers): AnswerDetail[] {
   const result: AnswerDetail[] = [];
@@ -19,8 +19,9 @@ export function challengeAnswers(challenge: LocalChallenge, answers?: Answers): 
     result.push({ question: 'Código del stand', answer: code ?? null, ...(code === undefined ? {} : { correct: code.trim().toUpperCase() === challenge.code }) });
   }
   if (challenge.kind === 'saint') {
-    const saint = answers?.saint;
-    result.push({ question: 'Nombre del santo', answer: saint ?? null, ...(saint === undefined ? {} : { correct: normalize(saint) === normalize(challenge.answer ?? '') }) });
+    const selected=answers?saintSelection(challenge,answers):null;
+    const q=saintQuestion(challenge);
+    result.push({question:q.prompt,answer:answers?.saint??(selected===null?null:q.options[selected]),...(selected===null?{}:{correct:selected===q.correctIndex})});
   }
   return result;
 }

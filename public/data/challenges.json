@@ -209,8 +209,21 @@
     "buildingId": "11",
     "kind": "saint",
     "isBase": false,
-    "description": "Busca el santo escrito en el edificio. Nombre de ejemplo para esta demo.",
-    "answer": "San Juan Bosco"
+    "description": "Visita el edificio, identifica su santo y marca con X la opción correcta.",
+    "answer": "San Juan Bosco",
+    "questions": [
+      {
+        "id": "saint",
+        "prompt": "¿Qué santo da nombre a este edificio?",
+        "options": [
+          "San Juan Bosco",
+          "Santo Domingo Savio",
+          "San Francisco de Asís",
+          "San José"
+        ],
+        "correctIndex": 0
+      }
+    ]
   },
   {
     "id": "santo-c",
@@ -218,8 +231,21 @@
     "buildingId": "12",
     "kind": "saint",
     "isBase": false,
-    "description": "Descubre a quién está dedicado el edificio. Nombre de ejemplo para esta demo.",
-    "answer": "Santo Domingo Savio"
+    "description": "Visita el edificio, identifica su santo y marca con X la opción correcta.",
+    "answer": "Santo Domingo Savio",
+    "questions": [
+      {
+        "id": "saint",
+        "prompt": "¿Qué santo da nombre a este edificio?",
+        "options": [
+          "San Juan Bosco",
+          "Santo Domingo Savio",
+          "San Francisco de Asís",
+          "San José"
+        ],
+        "correctIndex": 1
+      }
+    ]
   },
   {
     "id": "reto-adm-pasitos",

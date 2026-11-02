@@ -64,7 +64,7 @@ async function main() {
       if (c.kind === 'quiz') {
         for (const q of c.questions!) await dialog.getByRole('radio', { name: q.options[testWrong ? (q.correctIndex + 1) % q.options.length : q.correctIndex], exact: true }).check();
       }
-      if (c.kind === 'saint') await dialog.getByLabel('Nombre del santo').fill(c.answer!);
+      if (c.kind === 'saint') await dialog.getByRole('radio',{name:c.questions![0].options[c.questions![0].correctIndex],exact:true}).check();
       if (c.code) await dialog.getByLabel('Código del stand').fill(c.code);
       await dialog.getByRole('button', { name: 'Completar reto', exact: true }).click();
       if (testWrong) {
@@ -447,7 +447,7 @@ async function main() {
         }
         if(c.kind==='quiz')for(const q of c.questions!)await dialog.getByRole('radio',{name:q.options[q.correctIndex],exact:true}).check();
         if(c.code)await dialog.getByLabel('Código del stand').fill(c.code);
-        if(c.kind==='saint')await dialog.getByLabel('Nombre del santo').fill(c.answer!);
+        if(c.kind==='saint')await dialog.getByRole('radio',{name:c.questions![0].options[c.questions![0].correctIndex],exact:true}).check();
         await dialog.getByRole('button',{name:'Completar reto',exact:true}).click();
         await dialog.waitFor({state:'hidden'});
       }
