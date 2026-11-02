@@ -230,13 +230,13 @@ async function main() {
     assert.equal(await quizCard.locator('.question-answer').count(), 3);
     await page.locator('.survey-answers').getByText('Conocer nuevos proyectos', { exact: true }).waitFor();
     await page.locator('.survey-answers').getByText('TICs', { exact: true }).waitFor();
-    await page.getByLabel('Seleccionar participante').selectOption('carlos');
+    await page.getByRole('button',{name:'Volver a usuarios',exact:true}).click(); await page.getByRole('button',{name:'Ver respuestas: Carlos Méndez',exact:true}).click();
     await page.getByText('Esta persona todavía no tiene respuestas guardadas.', { exact: true }).waitFor();
     assert.equal(await page.locator('.participant-answer-list .answer-pending').count(), 11);
-    await page.getByLabel('Seleccionar participante').selectOption('diego');
+    await page.getByRole('button',{name:'Volver a usuarios',exact:true}).click(); await page.getByRole('button',{name:'Ver respuestas: Diego Castro',exact:true}).click();
     await page.getByText('Descubrí cómo cuidar el agua con sensores.', { exact: true }).waitFor();
     await page.reload();
-    await adminNav('Respuestas').click(); await page.getByLabel('Seleccionar participante').selectOption('ana');
+    await adminNav('Usuarios').click(); await page.getByRole('button',{name:'Ver respuestas: Ana Rodríguez',exact:true}).click();
     await page.locator('.participant-answer-header').getByRole('heading', { name: 'Ana Rodríguez', exact: true }).waitFor();
     await adminNav('Usuarios').click();
     await page.getByRole('button', { name: 'Ver respuestas: Ana Rodríguez', exact: true }).click();
@@ -301,7 +301,7 @@ async function main() {
     await page.getByRole('button', { name: 'Ingresar →' }).click();
     await page.getByRole('heading', { name: 'Bienvenido, Valeria.' }).waitFor();
     assert.deepEqual(apiCalls, []); assert.deepEqual(errors, []);
-    console.log('PASS local admin access, participant denial, automatic token creation, token preserved on edit, CRUD, persistence, catalog import/export, CSV and generated-token login');
+    console.log('PASS local admin access, participant denial, automatic token creation, token preserved on edit, CRUD, persistence, Excel backup/restore, CSV and generated-token login');
     await context.close();
     // Catálogo grande aislado: nunca modifica los JSON ni el navegador anterior.
     const large = Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key => [key, JSON.parse(readFileSync(new URL(`../public/data/${key}.json`, import.meta.url), 'utf8'))]));
@@ -397,7 +397,7 @@ async function main() {
     await rolePage.getByLabel('Descripción',{exact:true}).fill('Una idea de ejemplo desarrollada en la escuela.');
     await rolePage.getByRole('button',{name:'Guardar cambios',exact:true}).click();
     await rolePage.getByRole('heading',{name:'Proyecto de escuela',exact:true}).waitFor();
-    await roleNav('Rifa').click();
+    await roleNav('Tiquetes').click();
     assert.equal(await rolePage.getByRole('button',{name:'Sortear ganador',exact:true}).isDisabled(),true);
     await roleNav('Tiquetes').click();
     await rolePage.getByLabel('Token del participante').fill('ZZZZ');
@@ -408,12 +408,12 @@ async function main() {
     await rolePage.getByRole('status').filter({hasText:'creado para Admisión Pasitos'}).waitFor();
     assert.equal(await rolePage.locator('.ticket-register tbody tr').count(),1);
     const manualCode=await rolePage.locator('.ticket-register code').innerText();
-    await roleNav('Rifa').click();
+    await roleNav('Tiquetes').click();
     await rolePage.getByLabel('Premio de la rifa').fill('Premio de prueba');
     await rolePage.getByRole('button',{name:'Sortear ganador',exact:true}).click();
     await rolePage.locator('.raffle-winner').filter({hasText:'Admisión Pasitos Prueba'}).waitFor();
     assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
-    await rolePage.reload();await roleNav('Rifa').click();
+    await rolePage.reload();await roleNav('Tiquetes').click();
     assert.equal(await rolePage.locator('.raffle-winner code').innerText(),manualCode);
     assert.equal(await rolePage.getByRole('button',{name:'Sortear ganador',exact:true}).isDisabled(),true);
     if(process.env.TICKETS_SCREENSHOT_PATH) {

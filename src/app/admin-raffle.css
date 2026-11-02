@@ -35,4 +35,3 @@
 .admin-raffle .raffle-table td { font-size:12px; }
 .admin-raffle .raffle-draw label { margin-bottom:0; }
 .ticket-actions-grid.tickets-only { grid-template-columns:minmax(0,1fr); }
-@media(min-width:1320px){.admin-local .admin-navigation button{padding-left:4px;padding-right:4px;min-width:44px;}}

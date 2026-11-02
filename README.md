@@ -112,7 +112,7 @@ Web y Ciberseguridad comparten el edificio TICs (`17`). Los proyectos tienen cat
 
 En Admin → **Tiquetes**, introduce el token del participante y pulsa **Crear**. Cada emisión otorga un tiquete y un voto, sin completar retos ficticios. Se conserva ID, fecha y emisor; los tiquetes manuales se incluyen en métricas y resumen.
 
-En Admin → **Rifa**, el sorteo con ruleta visual incluye tiquetes digitales y manuales y muestra nombre, correo y tiquete del ganador y guarda ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
+En Admin → **Tiquetes**, debajo del registro y antes del historial, el sorteo con ruleta visual incluye tiquetes digitales y manuales y muestra nombre, correo y tiquete del ganador y guarda ID ganador, premio opcional, fecha y administrador. Usa `crypto.getRandomValues` con selección uniforme. Un tiquete ganador no participa de nuevo, pero una persona puede ganar con otro tiquete. Todo permanece en este navegador: aún no hay sincronización entre dispositivos.
 
 La demo incluye dos proyectos de décimo y dos de undécimo por especialidad para probar distintas asignaciones. Son ejemplos ficticios. Para probar estos cambios en un despliegue de Vercel debe seleccionarse la rama `correccion-roles-proyectos-tiquetes`.
 
@@ -136,10 +136,10 @@ El progreso guarda `visitorRounds` y `visitorRoundIndex`. Los visitantes anterio
 
 ## Asignación desde el administrador
 
-Admin → **Asignación** tiene dos apartados:
+Admin → **Asignación** contiene la distribución general; las excepciones individuales se gestionan desde **Usuarios**:
 
 - **Distribución por área:** tamaño de ronda para visitantes (2 por defecto) y cantidades para cada área de admisión. Pasitos inicia con 2 Pasitos, 1 Escuela, 1 especialidad y 1 extra; Escuela con 2 Escuela, 1 Tercer ciclo, 1 especialidad y 1 extra; Tercer ciclo con 2 propios, 2 especialidades y 1 extra. Cada especialidad conserva 1 propio de décimo, 1 de undécimo, otro propio de cualquier nivel, 1 de otra especialidad y 1 extra. Las cantidades son editables y se valida disponibilidad antes de guardarlas. El premio del visitante sigue siendo un tiquete por dos completados, independientemente del tamaño de la ronda.
-- **Retos por persona:** buscar por nombre o token, preparar una ruta si aún no empezó, reemplazar o quitar un pendiente y añadir otro reto. Las excepciones manuales pueden cambiar la distribución y la meta de esa persona, con motivo e historial de administrador y fecha. Los completados están protegidos. Una ruta completada no recibe nuevos obligatorios que puedan revocar sus premios: se añaden extras.
+- **Usuarios → Asignación:** buscar por nombre o token, preparar una ruta si aún no empezó, reemplazar o quitar un pendiente y añadir otro reto. Las excepciones manuales pueden cambiar la distribución y la meta de esa persona, con motivo e historial de administrador y fecha. Los completados están protegidos. Una ruta completada no recibe nuevos obligatorios que puedan revocar sus premios: se añaden extras.
 
 Las reglas nuevas se guardan en `assignmentRules` dentro del catálogo JSON local y afectan solo asignaciones nuevas. Cada ruta de admisión guarda `routeRule`; los cambios individuales quedan en `assignmentEdits`. Las respuestas, votos, tiquetes y sorteos existentes se conservan. Los usuarios ven las actualizaciones entre pestañas del mismo navegador; todavía no hay sincronización entre dispositivos.
 
@@ -151,8 +151,16 @@ El catálogo de ejemplo incluye un segundo proyecto de Pasitos y otro de Escuela
 
 Admin → **Respaldo** descarga un Excel real `.xlsx` con catálogo editable (usuarios, proyectos, retos, preguntas, agenda y distribución) y hojas de consulta de participación, encuestas, preguntas pendientes, respuestas e intentos incorrectos, votos, tiquetes, rifas y cambios de asignación. El archivo incluye una copia íntegra de los datos originales del navegador para restaurar el avance. Al importarlo se muestra una revisión antes de reemplazar los datos y se guarda una copia interna del estado anterior. Las hojas de respuestas y métricas son de consulta; editarlas no altera el progreso restaurado. No combina avances de varios dispositivos.
 
-Al crear un reto de especialidad se eligen especialidad, décimo o undécimo y un proyecto compatible. En Asignación → Retos por persona, **Cambiar** permite elegir categoría (incluidos extras, TICs y Electromecánica/EMA) y opcionalmente nivel. Se muestra el próximo reto disponible de esa categoría antes de confirmar; si no hay uno, no se sustituye por otra categoría. Se excluyen proyectos cerrados y visitas ya asignadas.
+Al crear un reto de especialidad se eligen especialidad, décimo o undécimo y un proyecto compatible. En Usuarios → Asignación, **Cambiar** permite elegir categoría (incluidos extras, TICs y Electromecánica/EMA) y opcionalmente nivel. Se muestra el próximo reto disponible de esa categoría antes de confirmar; si no hay uno, no se sustituye por otra categoría. Se excluyen proyectos cerrados y visitas ya asignadas.
 
 Crear usuarios o agregar entradas al catálogo ya no queda bloqueado por el avance dañado de otra persona. Los cambios que podrían invalidar sus respuestas siguen protegidos. Los avances antiguos compatibles se adaptan al iniciar sesión conservando una copia original. Si los datos no se pueden leer con seguridad, el token válido abre una pantalla de recuperación con descarga del archivo original y reintento; no se reinicia el progreso automáticamente.
 
 Verificación adicional: `npm run test:admin-repairs-browser` prueba creación de usuarios, nivel de retos, reemplazos por categoría, rifa, respaldo/restauración Excel y recuperación de avances. Usa las mismas variables de Chromium y puerto que los demás tests de navegador.
+
+## Navegación administrativa y proyectos del mapa
+
+Tiquetes reúne el formulario manual, registro paginado, rifa visual y un único historial de sorteos. No hay una pestaña independiente de Rifa. Usuarios ofrece Asignación, Ver respuestas, Editar y Eliminar en cada participante; las dos primeras abren directamente su ficha y permiten volver a la lista. Los administradores solo tienen acciones de catálogo, ya que no realizan retos. Respuestas deja de ser una sección de navegación; el acceso de Ver respuestas desde Resumen también abre la ficha dentro de Usuarios.
+
+Mapa completo muestra los proyectos del edificio seleccionado, independientemente de los retos asignados al usuario, con su especialidad/área y nivel. TICs reúne Desarrollo Web y Ciberseguridad. Las altas y los cambios de edificio hechos desde Proyectos se reflejan en otras pestañas del mismo navegador, igual que la agenda. Los puestos cerrados se identifican como no disponibles para nuevas visitas. La lista puede desplazarse si hay muchos proyectos.
+
+`npm run test:map-projects-browser` verifica los nuevos accesos, proyectos por edificio, movimientos entre edificios, actualización entre pestañas y tamaños móviles.

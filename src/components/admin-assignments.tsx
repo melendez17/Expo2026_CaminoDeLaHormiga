@@ -1,19 +1,19 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { LocalData, LocalUser } from '@/lib/local-game';
-import { normalize, routeChallenges } from '@/lib/local-game';
-import { areaLabel, participantAreas, projectLabel, roleLabel } from '@/lib/taxonomy';
+import { routeChallenges } from '@/lib/local-game';
+import { areaLabel, participantAreas, projectLabel } from '@/lib/taxonomy';
 import { ruleDescription, ruleTotal, type RouteRule } from '@/lib/assignment-rules';
 import { changeAssignment, changeAssignmentByCategory, replacementCandidates, replacementCategories, prepareAssignments, readAssignmentProgress } from '@/lib/admin-assignments';
 import campus from '@/lib/campus.json';
 const names:Record<string,string>=campus.names;
 const generalFields:[keyof RouteRule,string][]=[['pasitos','Pasitos'],['school','Escuela'],['third_cycle','Tercer ciclo'],['specialty','Especialidades'],['extra','Extras']];
 const specialtyFields:[keyof RouteRule,string][]=[['own10','Propia · Décimo'],['own11','Propia · Undécimo'],['ownAny','Propia · Cualquier nivel'],['other','Otras especialidades'],['extra','Extras']];
-export function AdminAssignments({data,actor,onSave,onChanged}:{data:LocalData;actor:LocalUser;onSave:(next:LocalData)=>void;onChanged:()=>void}) {
- const [tab,setTab]=useState<'rules'|'person'>('rules');
+export function AdminAssignments({data,actor,onSave,onChanged,participantId}:{data:LocalData;actor:LocalUser;onSave:(next:LocalData)=>void;onChanged:()=>void;participantId?:string}) {
+ const tab=participantId?'person':'rules';
+ const userId=participantId??'';
  const [draft,setDraft]=useState(()=>structuredClone(data.assignmentRules));
  const [error,setError]=useState(''),[message,setMessage]=useState('');
- const [search,setSearch]=useState(''),[userId,setUserId]=useState('');
  const [edit,setEdit]=useState<{fromId:string|null;mode:'replace'|'remove'|'add'}|null>(null);
  const [category,setCategory]=useState(''),[level,setLevel]=useState<''|'10'|'11'>(''),[scope,setScope]=useState<'route'|'extra'|'visitor'>('route'),[reason,setReason]=useState('Proyecto no disponible');
  useEffect(()=>{if(edit)document.querySelector('.assignment-edit')?.scrollIntoView({block:'start'});},[edit?.fromId,edit?.mode]);
@@ -29,7 +29,6 @@ export function AdminAssignments({data,actor,onSave,onChanged}:{data:LocalData;a
  const open=(fromId:string|null)=>{setEdit({fromId,mode:fromId?'replace':'add'});setCategory('');setLevel('');setScope(progress?.visitorRounds.length?'visitor':'route');setReason(fromId?'Proyecto no disponible':'Asignación manual');setError('');setMessage('');};
  const field=(area:string,key:keyof RouteRule,label:string)=><label key={key}>{label}<input aria-label={`${areaLabel(area)}: ${label}`} type="number" min={0} max={20} value={draft.admission[area][key]} onChange={e=>setDraft(old=>({...old,admission:{...old.admission,[area]:{...old.admission[area],[key]:Number(e.target.value)}}}))} required /></label>;
  return <section className="admin-assignment-section">
-  <div className="filter-tabs"><button aria-pressed={tab==='rules'} onClick={()=>{setTab('rules');setError('');setMessage('');}}>Distribución por área</button><button aria-pressed={tab==='person'} onClick={()=>{setTab('person');setError('');setMessage('');}}>Retos por persona</button></div>
   {error&&<p className="form-error" role="alert">{error}</p>}{message&&<p className="feedback" role="status">{message}</p>}
   {tab==='rules'?<form onSubmit={e=>{e.preventDefault();attempt(()=>{onSave({...data,assignmentRules:draft});setMessage('Distribución guardada. Se aplicará a las rutas nuevas; las que ya iniciaron conservan sus retos.');});}}>
    <h2>Visitantes</h2><div className="assignment-visitor-rule"><label>Retos por ronda<input aria-label="Retos por ronda de visitantes" type="number" min={1} max={20} value={draft.visitorBatchSize} required onChange={e=>setDraft(old=>({...old,visitorBatchSize:Number(e.target.value)}))}/></label><p>Se prioriza el área de afinidad. Cada dos retos completados siguen dando un tiquete, aunque cambies el tamaño de la ronda.</p></div>
@@ -37,10 +36,9 @@ export function AdminAssignments({data,actor,onSave,onChanged}:{data:LocalData;a
    <div className="assignment-rule-grid">{participantAreas.slice(0,3).map(area=><fieldset key={area.value}><legend>{area.label} <span>{ruleTotal(draft.admission[area.value])} retos</span></legend><div className="assignment-counts">{generalFields.map(([key,label])=>field(area.value,key,label))}</div><p>{ruleDescription(draft.admission[area.value],area.label)}</p></fieldset>)}</div>
    <h3>Especialidades</h3><p>Cada especialidad tiene su propia distribución. “Propia” se refiere al área elegida por la persona.</p>
    <div className="assignment-specialties">{participantAreas.slice(3).map(area=><details key={area.value}><summary>{area.label}<span>{ruleTotal(draft.admission[area.value])} retos</span></summary><div className="assignment-counts">{specialtyFields.map(([key,label])=>field(area.value,key,label))}</div><p>{ruleDescription(draft.admission[area.value],area.label)}</p></details>)}</div>
-   <p className="assignment-note">Se comprueba que haya suficientes proyectos disponibles con retos. Esta configuración no cambia rutas iniciadas ni elimina respuestas. Para una excepción, usa “Retos por persona”.</p><button className="primary" type="submit">Guardar distribución</button>
+   <p className="assignment-note">Se comprueba que haya suficientes proyectos disponibles con retos. Esta configuración no cambia rutas iniciadas ni elimina respuestas. Para una excepción, abre Usuarios y pulsa Asignación en la persona correspondiente.</p><button className="primary" type="submit">Guardar distribución</button>
   </form>:<div className="assignment-person">
-   <h2>Ajustar el camino de una persona</h2><label>Buscar persona por nombre o token<input type="search" value={search} onChange={e=>setSearch(e.target.value)}/></label>
-   <label>Participante<select aria-label="Participante para asignar retos" value={userId} onChange={e=>{setUserId(e.target.value);setEdit(null);setError('');setMessage('');}}><option value="">Selecciona una persona</option>{data.users.filter(u=>u.role!=='admin'&&(u.id===userId||normalize(`${u.name} ${u.token}`).includes(normalize(search)))).map(u=><option key={u.id} value={u.id}>{u.name} · {u.token} · {roleLabel(u.role)} · {areaLabel(u.area)}</option>)}</select></label>
+   <h2>Asignación de retos</h2>
    {readError&&<p role="alert" className="form-error">{readError}</p>}
    {user&&progress&&<><p className="assignment-note">Los completados están protegidos. Puedes reemplazar o quitar pendientes y añadir una asignación manual. Son excepciones a la distribución del área y se guardan con tu nombre y el motivo.</p>
     {!progress.startedAt?<button className="primary" onClick={()=>attempt(()=>{prepareAssignments(data,localStorage,actor.id,user.id);onChanged();setMessage('Retos iniciales asignados.');})}>Asignar retos iniciales</button>:<>

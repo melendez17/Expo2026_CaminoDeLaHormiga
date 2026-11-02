@@ -74,3 +74,10 @@
 .journey-app .explorer-map-panel .campus-map { max-height: none; }
 .journey-app .full-map .page-intro { margin-bottom: 24px; }
 .journey-app .full-map .page-intro h1 { margin-top: 12px; margin-bottom: 16px; }
+
+.campus-selection .campus-building-projects { max-height: 288px; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #7db58a #163726; padding-right: 8px; }
+.campus-building-projects li { padding-block: 9px; border-bottom: 1px solid #2c513a; }
+.campus-building-projects li:last-child { border-bottom: 0; }
+.campus-building-projects strong, .campus-building-projects span { display: block; }
+.campus-building-projects span { color: #bddbc5; font-size: 11px; }
+.campus-building-projects .campus-project-closed { color: #e6d6a0; }

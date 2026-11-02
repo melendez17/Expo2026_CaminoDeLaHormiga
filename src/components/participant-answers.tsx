@@ -11,8 +11,8 @@ function formatDate(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 'Fecha no disponible' : new Intl.DateTimeFormat('es-CR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Costa_Rica' }).format(date);
 }
-export function ParticipantAnswers({ data, rows, selectedId, onSelect }: {
-  data: LocalData; rows: Row[]; selectedId: string | null; onSelect: (id: string | null) => void;
+export function ParticipantAnswers({ data, rows, selectedId }: {
+  data: LocalData; rows: Row[]; selectedId: string;
 }) {
   const row = rows.find(r => r.user.id === selectedId);
   const progress = row?.progress;
@@ -20,7 +20,7 @@ export function ParticipantAnswers({ data, rows, selectedId, onSelect }: {
   const challenges = data.challenges.filter(c => baseIds.has(c.id) || progress?.extraIds.includes(c.id));
   return <section className="participant-answers">
     <div className="admin-section-top"><h2>Respuestas por participante</h2></div>
-    <label className="answer-user-select">Seleccionar participante<select value={selectedId ?? ''} onChange={e => onSelect(e.target.value || null)}><option value="">Selecciona una persona</option>{rows.map(r => <option key={r.user.id} value={r.user.id}>{r.user.name} · {r.user.token}</option>)}</select></label>
+
     {!row ? <p className="empty">Selecciona un participante para consultar sus preguntas y respuestas.</p> : <>
       <header className="participant-answer-header"><div><span className="eyebrow">FICHA DEL PARTICIPANTE</span><h3>{row.user.name}</h3><p>{roleLabel(row.user.role)}{row.user.area&&` · ${areaLabel(row.user.area)}`} · Token {row.user.token}</p></div><span className="place-tag">{row.status}</span></header>
       {row.error || !progress ? <p className="form-error" role="alert">Los datos de esta persona no son válidos. No podemos presentar sus respuestas hasta revisar el progreso guardado.</p> : <>

@@ -51,7 +51,7 @@ En `projects.json`:
 }
 ```
 
-La búsqueda compara nombre y especialidad, ignorando mayúsculas y tildes. El voto tiene una confirmación antes de consumir saldo. Se permite más de un voto al mismo proyecto si hay tiquetes disponibles. Los tiquetes permanecen para la rifa; Admin → Rifa permite sortear los tiquetes locales; no hay un recuento central entre dispositivos.
+La búsqueda compara nombre y especialidad, ignorando mayúsculas y tildes. El voto tiene una confirmación antes de consumir saldo. Se permite más de un voto al mismo proyecto si hay tiquetes disponibles. Los tiquetes permanecen para la rifa; Admin → Tiquetes permite sortear los tiquetes locales; no hay un recuento central entre dispositivos.
 
 ## Agregar una especialidad como reto extra
 
@@ -123,7 +123,7 @@ Token **ADM1**, nombre «Administrador ExpoTEC». Se define en `public/data/user
 El panel abre directamente, sin iniciar el juego. Incluye:
 
 - Resumen de participantes, sin activar/en proceso/completados, tiquetes, votos y admisión de prueba; los administradores no cuentan como participantes.
-- Ficha de respuestas por persona desde «Respuestas» o «Ver respuestas» en Resumen/Usuarios. Muestra cada pregunta, textos libres, opciones elegidas en los quizzes (por su texto, no por índice), códigos, santo, fecha del envío y encuesta. Los retos base y extras asignados sin completar se identifican como pendientes. Se muestran respuestas de completaciones guardadas; los intentos incorrectos y sus reemplazos también se conservan.
+- Ficha de respuestas por persona desde «Ver respuestas» en Resumen/Usuarios. Muestra cada pregunta, textos libres, opciones elegidas en los quizzes (por su texto, no por índice), códigos, santo, fecha del envío y encuesta. Los retos base y extras asignados sin completar se identifican como pendientes. Se muestran respuestas de completaciones guardadas; los intentos incorrectos y sus reemplazos también se conservan.
 - Estado por persona y votos por proyecto, calculados solo con los progresos válidos guardados en este navegador. Las filas con errores se identifican y no se convierten silenciosamente en ceros.
 - Crear, editar y eliminar usuarios de prueba y proyectos. Los tokens deben ser únicos; no se puede eliminar el acceso del administrador activo.
 - Crear retos extra y editar retos existentes: formulario libre, código, santo o especialidad con dos preguntas y opciones. Los cinco retos base se mantienen; si ya empezó una prueba, se protege su configuración. No se eliminan usuarios con avance ni proyectos/retos referenciados por respuestas o votos.
@@ -191,4 +191,6 @@ Al iniciar admisión se sortean proyectos distintos de las categorías indicadas
 
 Los visitantes usan `visitorRounds` y `visitorRoundIndex`: ven una pareja a la vez, reciben un tiquete por cada dos completados y pueden pedir otra pareja sin repetir. Admisión mantiene los cinco retos de su área. La migración de visitantes conserva el historial y presenta las asignaciones anteriores por parejas.
 
-Admin → Asignación permite guardar distribuciones para rutas nuevas y gestionar los pendientes de una persona. Las rutas iniciadas conservan un snapshot de su regla; los cambios manuales se auditan y protegen los completados. Consulta las cantidades predeterminadas y el funcionamiento en README.md.
+Admin → Asignación permite guardar distribuciones para rutas nuevas. Usuarios → Asignación permite gestionar los pendientes de esa persona. Las rutas iniciadas conservan un snapshot de su regla; los cambios manuales se auditan y protegen los completados. Consulta las cantidades predeterminadas y el funcionamiento en README.md.
+
+La navegación administrativa agrupa la rifa y su historial dentro de Tiquetes. Cada participante en Usuarios tiene acceso directo a su asignación y sus respuestas, sin pestañas separadas de Respuestas o Retos por persona. En Mapa completo, la ficha del edificio añade todos sus proyectos con área y nivel; se actualiza al cambiar el catálogo local, incluido el edificio compartido de TICs.
