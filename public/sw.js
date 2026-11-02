@@ -1,11 +1,11 @@
 /* Demo JSON: solo recursos públicos; el progreso vive en localStorage.
    No hay sincronización de API ni peticiones a Supabase. */
-const CACHE = 'camino-shell-json-v30';
+const CACHE = 'camino-shell-json-v31';
 const DATA = ['users', 'projects', 'challenges', 'agenda', 'settings'].map(name => `/data/${name}.json`);
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(['/icon.svg', '/brand/cedes-don-bosco-white.png', '/brand/Copia%20de%20Hormiga.webp', '/manifest.webmanifest', '/campus/map-2d.jpg', '/campus/map-3d.jpg', ...DATA]);
+    await cache.addAll(['/icon.svg', '/icon.svg?v=2', '/brand/cedes-don-bosco-white.png', '/brand/Copia%20de%20Hormiga.webp', '/manifest.webmanifest', '/campus/map-2d.jpg', '/campus/map-3d.jpg', ...DATA]);
     const response = await fetch('/', { cache: 'reload' });
     if (!response.ok) throw Error('No se pudo preparar la pantalla inicial');
     const html = await response.clone().text();
