@@ -8,6 +8,16 @@ async function main() {
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE, args: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? ['--no-sandbox'] : [] });
   try {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
+    // Regresión de rutas generales antiguas de admisión: los visitantes nuevos
+    // se verifican aparte con sus rondas de dos retos.
+    const legacyCatalog=Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key=>[key,JSON.parse(readFileSync(new URL(`../public/data/${key}.json`,import.meta.url),'utf8'))]));
+    for(const user of legacyCatalog.users)if(['ana','carlos','diego'].includes(user.id)){user.role='admission';delete user.area;}
+    await context.addInitScript(catalog=>{
+      if(!localStorage.getItem('camino-local-catalog-v1')) {
+        localStorage.setItem('camino-local-catalog-v1',JSON.stringify(catalog));
+        for(const id of ['ana','carlos','diego'])localStorage.setItem(`camino-local:demo-2026-v1:${id}`,JSON.stringify({version:1,dataVersion:'demo-2026-v1',userId:id,startedAt:new Date().toISOString(),completed:[],routeIds:[],extraIds:[],votes:[],survey:null}));
+      }
+    },legacyCatalog);
     const page = await context.newPage();
     const errors: string[] = [], apiCalls: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -19,9 +29,6 @@ async function main() {
     await page.getByLabel('Token de acceso').fill('ZZZZ'); await page.getByRole('button', { name: 'Ingresar →' }).click();
     await page.getByRole('alert').filter({ hasText: 'No encontramos ese token' }).waitFor();
     await page.getByLabel('Token de acceso').fill('k8p2'); await page.getByRole('button', { name: 'Ingresar →' }).click();
-    await page.getByRole('heading', { name: 'Bienvenido, Ana.' }).waitFor();
-    assert.equal(await page.locator('.challenge-card').count(), 0);
-    await page.getByRole('button', { name: 'Iniciar el camino →' }).click();
     await page.getByRole('heading', { name: 'Tu camino, Ana.' }).waitFor();
     assert.equal(await page.locator('.challenge-card').count(), 5);
     const ratio = await page.evaluate(() => document.querySelector('.compact-map')!.getBoundingClientRect().height / document.querySelector('.route-workspace')!.getBoundingClientRect().height);
@@ -51,7 +58,7 @@ async function main() {
     await page.getByRole('button', { name: '2D', exact: true }).click();
     assert.equal(await page.locator('.campus-map').getAttribute('viewBox'), '0 0 1500 1064');
     await page.waitForFunction(() => document.querySelector('.campus-map image')?.getAttribute('href') === '/campus/map-2d.jpg');
-    console.log('PASS JSON login, invalid token, personalized welcome, explicit start, mobile map ratio and highlight');
+    console.log('PASS JSON login, invalid token, legacy admission route, mobile map ratio and highlight');
 
     async function complete(c: LocalChallenge, testWrong = false) {
       await page.getByRole('button', { name: `Responder: ${c.title}`, exact: true }).click();
@@ -179,8 +186,8 @@ async function main() {
     console.log('PASS map explorer: searched selection, challenge counts, completion, empty search, all places and 2D');
     await page.getByRole('button', { name: 'Salir', exact: true }).click();
     await page.getByLabel('Token de acceso').fill('M4T7'); await page.getByRole('button', { name: 'Ingresar →' }).click();
-    await page.getByRole('heading', { name: 'Bienvenido, Carlos.' }).waitFor();
-    await page.getByRole('button', { name: 'Iniciar el camino →' }).click(); await nav('Mi resumen').click();
+    await page.getByRole('heading', { name: 'Tu camino, Carlos.' }).waitFor();
+    await nav('Mi resumen').click();
     assert.equal(await page.getByTestId('ticket-count').innerText(), '0');
     await page.getByRole('button', { name: 'Salir', exact: true }).click();
     await page.getByLabel('Token de acceso').fill('K8P2'); await page.getByRole('button', { name: 'Ingresar →' }).click();
@@ -195,11 +202,10 @@ async function main() {
     await nav('Mi resumen').click(); assert.equal(await page.getByTestId('ticket-count').innerText(), '3');
     await page.getByRole('button', { name: 'Salir', exact: true }).click();
     await page.getByLabel('Token de acceso').fill('D9C5'); await page.getByRole('button', { name: 'Ingresar →' }).click();
-    await page.getByRole('heading', { name: 'Bienvenido, Diego.' }).waitFor();
-    await page.getByRole('button', { name: 'Iniciar el camino →' }).click();
+    await page.getByRole('heading', { name: 'Tu camino, Diego.' }).waitFor();
     await complete(challenges[0]);
     assert.deepEqual(apiCalls, []); assert.deepEqual(errors, []);
-    console.log('PASS offline reload, offline new-user login and challenge completion; zero API calls and no page errors');
+    console.log('PASS offline reload, offline legacy-user login and challenge completion; zero API calls and no page errors');
     if (process.env.SCREENSHOT_PATH) await page.screenshot({ path: process.env.SCREENSHOT_PATH, fullPage: true });
     await context.setOffline(false);
     await page.goto(base + '/admin');
@@ -461,6 +467,33 @@ async function main() {
     }
     await roleContext.close();
     console.log('PASS three roles, admission affinity areas, project categories, Cyber in TICs, role-specific routes, token-only manual ticket, raffle, persistence and admission surveys');
+
+    const pairsContext=await browser.newContext({viewport:{width:390,height:844}});
+    const pairsCatalog=Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key=>[key,JSON.parse(readFileSync(new URL(`../public/data/${key}.json`,import.meta.url),'utf8'))]));
+    pairsCatalog.users.find((u:{id:string})=>u.id==='ana').area='Ciberseguridad';
+    await pairsContext.addInitScript(catalog=>{if(!localStorage.getItem('camino-local-catalog-v1'))localStorage.setItem('camino-local-catalog-v1',JSON.stringify(catalog));},pairsCatalog);
+    const pairs=await pairsContext.newPage();await pairs.goto(base);
+    await pairs.getByLabel('Token de acceso').fill('K8P2');await pairs.getByRole('button',{name:'Ingresar →'}).click();
+    await pairs.getByRole('heading',{name:'Bienvenido, Ana.'}).waitFor();await pairs.getByText(/Recibirás dos retos a la vez/).waitFor();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();
+    const pairsNav=(name:string)=>pairs.getByRole('navigation',{name:'Navegación principal'}).getByRole('button',{name,exact:true});
+    const readPair=()=>pairs.evaluate(()=>{const p=JSON.parse(localStorage.getItem('camino-local:demo-2026-v1:ana')!);return p.visitorRounds[p.visitorRoundIndex] as string[];});
+    async function finishPairChallenge(id:string){
+      const c=challenges.find(c=>c.id===id)!;await pairs.getByRole('button',{name:`Responder: ${c.title}`,exact:true}).click();const d=pairs.getByRole('dialog');
+      if(c.kind==='freeform'){await d.getByLabel('Nombre del proyecto',{exact:true}).fill('Proyecto visitado');await d.getByLabel('Nivel',{exact:true}).fill('Décimo');await d.getByLabel('¿Qué descubriste?').fill('Descubrí nuevas aplicaciones de la tecnología.');}
+      if(c.kind==='quiz')for(const q of c.questions!)await d.getByRole('radio',{name:q.options[q.correctIndex],exact:true}).check();
+      if(c.code)await d.getByLabel('Código del stand').fill(c.code);
+      if(c.kind==='saint')await d.getByRole('radio',{name:c.questions![0].options[c.questions![0].correctIndex],exact:true}).check();
+      await d.getByRole('button',{name:'Completar reto',exact:true}).click();await d.waitFor({state:'hidden'});
+    }
+    const first=await readPair();assert.equal(first.length,2);assert.equal(await pairs.locator('.challenge-card').count(),2);
+    for(const id of first)assert.equal(pairsCatalog.projects.find((p:{id:string})=>p.id===challenges.find(c=>c.id===id)!.projectId).specialty,'Ciberseguridad');
+    assert.equal(await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).isDisabled(),true);
+    await finishPairChallenge(first[0]);await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'0');await pairsNav('Retos').click();await finishPairChallenge(first[1]);await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'1');await pairs.getByRole('heading',{name:'Cuéntanos tu experiencia',exact:true}).waitFor();
+    await pairsNav('Votar').click();await pairs.getByRole('button',{name:'Dar 1 voto',exact:true}).first().click();await pairs.getByRole('button',{name:'Confirmar voto',exact:true}).click();await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('available-votes').innerText(),'0');assert.equal(await pairs.getByTestId('ticket-count').innerText(),'1');await pairsNav('Retos').click();
+    await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).click();const second=await readPair();assert.equal(new Set([...first,...second]).size,4);assert.equal(await pairs.locator('.challenge-card').count(),2);for(const id of second)await finishPairChallenge(id);
+    await pairsNav('Mi resumen').click();assert.equal(await pairs.getByTestId('ticket-count').innerText(),'2');assert.equal(await pairs.getByTestId('available-votes').innerText(),'1');await pairs.reload();await pairsNav('Retos').click();assert.equal(await pairs.locator('.challenge-card.done').count(),2);assert.equal(await pairs.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await pairs.getByRole('button',{name:'Salir',exact:true}).click();await pairs.getByLabel('Token de acceso').fill('S6F3');await pairs.getByRole('button',{name:'Ingresar →'}).click();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();assert.equal(await pairs.locator('.challenge-card').count(),5);assert.equal(await pairs.getByRole('button',{name:'Recibir otros 2 retos',exact:true}).count(),0);
+    await pairsContext.close();console.log('PASS visitor pairs: affinity, two visible, one ticket per pair, next round without repeats, vote, reload and admission still five');
 
   } finally { await browser.close(); }
 }

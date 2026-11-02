@@ -102,11 +102,11 @@ test('ningún extra posterior es una visita a proyecto y falta de undécimo bloq
   const catalog=localDataSchema.parse(fixture);
   assert.throws(()=>startLocal(catalog,freshProgress(catalog,'ana')),/undécimo/);
 });
-test('rutas insuficientes no se asignan parcialmente y los visitantes conservan cinco retos',()=>{
+test('rutas insuficientes no se asignan parcialmente y los visitantes comienzan con dos retos',()=>{
   const fixture=structuredClone(raw);fixture.users[0].role='third_cycle';fixture.projects=fixture.projects.filter((p:{category:string})=>p.category!=='third_cycle');fixture.challenges=fixture.challenges.filter((c:{projectId?:string})=>!c.projectId?.startsWith('adm-tercer'));
   const catalog=localDataSchema.parse(fixture);assert.throws(()=>startLocal(catalog,freshProgress(catalog,'ana')),/Faltan proyectos/);
   const visitor=startLocal(data,freshProgress(data,'carlos'));
-  assert.equal(routeChallenges(data,visitor).length,5);assert.equal(availableProjects(data,'carlos').length,data.projects.length);
+  assert.equal(routeChallenges(data,visitor).length,2);assert.equal(availableProjects(data,'carlos').length,data.projects.length);
 });
 test('emisión por token crea un tiquete y un voto sin fabricar respuestas ni activar el recorrido',()=>{
   const store=storage();const result=issueManualTicket(data,store,'admin',' k8p2 ','manual-1');
@@ -156,24 +156,20 @@ test('datos antiguos sin manualTickets se restauran; registros manuales inválid
   assert.throws(()=>secureIndex(0));
 });
 
-test('Visitante y Admisión reciben las mismas cuotas por área, incluidas todas las especialidades',()=>{
+test('Visitantes reciben dos retos por afinidad y Admisión conserva cinco y sus cuotas',()=>{
   assert.equal(participantAreas.length,9);
-  for(const area of participantAreas) {
-    const paths=[];
-    for(const role of ['visitor','admission']) {
-      const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role,area:area.value});
-      const catalog=localDataSchema.parse(fixture),user=catalog.users[0];
-      const p=startLocal(catalog,freshProgress(catalog,user.id),()=>.3);
-      paths.push(p.routeIds);assert.equal(p.routeIds.length,5);
-      assert.equal(user.area,area.value);assert.equal(user.role,role);assert.equal(isAdmissionRole(role),role==='admission');
-      assert.equal(Object.hasOwn(user,'kind'),false);assert.equal(Object.hasOwn(user,'assignedSpecialty'),false);
-      const projects=routeChallenges(catalog,p).filter(c=>c.projectId).map(c=>catalog.projects.find(project=>project.id===c.projectId)!);
-      if(!['school','pasitos','third_cycle'].includes(area.value)) {
-        const own=projects.filter(project=>project.specialty===area.value);assert.equal(own.length,3);assert.ok(own.some(p=>p.level===10));assert.ok(own.some(p=>p.level===11));assert.equal(projects.length-own.length,1);
-      }
-      assert.deepEqual(parseProgress(catalog,user.id,p),p);
+  for(const area of participantAreas)for(const role of ['visitor','admission']) {
+    const fixture=structuredClone(raw);Object.assign(fixture.users[0],{role,area:area.value});
+    const catalog=localDataSchema.parse(fixture),user=catalog.users[0],p=startLocal(catalog,freshProgress(catalog,user.id),()=>.3);
+    const route=routeChallenges(catalog,p);assert.equal(route.length,role==='visitor'?2:5);
+    assert.equal(user.area,area.value);assert.equal(user.role,role);assert.equal(Object.hasOwn(user,'kind'),false);
+    const projects=route.filter(c=>c.projectId).map(c=>catalog.projects.find(project=>project.id===c.projectId)!);
+    if(role==='visitor')assert.ok(projects.some(p=>p.category===area.value||p.specialty===area.value));
+    if(!['school','pasitos','third_cycle'].includes(area.value)) {
+      const own=projects.filter(project=>project.specialty===area.value);assert.equal(own.length,role==='visitor'?2:3);
+      if(role==='admission'){assert.ok(own.some(p=>p.level===10));assert.ok(own.some(p=>p.level===11));assert.equal(projects.length-own.length,1);}
     }
-    assert.deepEqual(paths[0],paths[1]);
+    assert.deepEqual(parseProgress(catalog,user.id,p),p);
   }
 });
 test('área canónica, roles anteriores migrados sin datos redundantes y permisos independientes',()=>{

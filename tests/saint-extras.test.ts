@@ -1,12 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {localDataSchema,freshProgress,startLocal,completeLocal,summary,parseProgress,generateExtras,saintQuestion,replaceFailedSaint,extraChallenges,routeChallenges} from '../src/lib/local-game';
+import {localDataSchema,freshProgress,startLocal,completeLocal,summary,parseProgress,generateExtras,saintQuestion,replaceFailedSaint,extraChallenges,routeChallenges,type LocalProgress} from '../src/lib/local-game';
 import {challengeAnswers} from '../src/lib/participant-answers';
 import {validateCatalogChange} from '../src/lib/local-admin';
 const raw=Object.fromEntries(['users','projects','challenges','agenda','settings'].map(k=>[k,JSON.parse(readFileSync(new URL(`../public/data/${k}.json`,import.meta.url),'utf8'))]));
 const data=localDataSchema.parse(raw);
-function base(){let p=startLocal(data,freshProgress(data,'ana'));for(const c of routeChallenges(data,p)){p=completeLocal(data,p,c.id,c.kind==='freeform'?{projectName:'Proyecto',level:'Décimo',description:'Descubrí nuevas ideas en este proyecto.'}:{code:c.code!,...Object.fromEntries((c.questions??[]).map(q=>[q.id,String(q.correctIndex)]))});}return p;}
+function base(){let p:LocalProgress={...freshProgress(data,'ana'),startedAt:new Date().toISOString()};for(const c of data.challenges.filter(c=>c.isBase)){p=completeLocal(data,p,c.id,c.kind==='freeform'?{projectName:'Proyecto',level:'Décimo',description:'Descubrí nuevas ideas en este proyecto.'}:{code:c.code!,...Object.fromEntries((c.questions??[]).map(q=>[q.id,String(q.correctIndex)]))});}return p;}
 test('santo acepta opción correcta, rechaza opción inválida y conserva respuestas antiguas',()=>{
  const c=data.challenges.find(c=>c.id==='santo-b')!,q=saintQuestion(c),p={...base(),extraIds:[c.id]};
  assert.equal(completeLocal(data,p,c.id,{saintChoice:String(q.correctIndex)}).completed.length,6);

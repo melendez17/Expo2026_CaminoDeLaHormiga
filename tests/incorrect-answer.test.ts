@@ -19,10 +19,10 @@ test('detecta respuestas incorrectas en quiz, código y santo; campos incompleto
 });
 
 import {readFileSync} from 'node:fs';
-import {localDataSchema,freshProgress,startLocal,addExtraForWrongAnswer,parseProgress,completeLocal,summary,generateExtras,saintQuestion,routeChallenges,extraChallenges} from '../src/lib/local-game';
+import {localDataSchema,freshProgress,startLocal,addExtraForWrongAnswer,parseProgress,completeLocal,summary,generateExtras,saintQuestion,routeChallenges,extraChallenges,type LocalProgress} from '../src/lib/local-game';
 const data=localDataSchema.parse(Object.fromEntries(['users','projects','challenges','agenda','settings'].map(key=>[key,JSON.parse(readFileSync(new URL(`../public/data/${key}.json`,import.meta.url),'utf8'))])));
 test('fallo de quiz genera extra antes de terminar la base, conserva ruta y no da premio',()=>{
- const initial=startLocal(data,freshProgress(data,'ana'));
+ const initial=({...freshProgress(data,'ana'),startedAt:new Date().toISOString()});
  const c=data.challenges.find(c=>c.id==='tics')!;
  const wrong={code:c.code!,...Object.fromEntries(c.questions!.map((q,i)=>[q.id,String(i===0?(q.correctIndex+1)%q.options.length:q.correctIndex)]))};
  const next=addExtraForWrongAnswer(data,initial,c.id,wrong,()=>0);
@@ -35,7 +35,7 @@ test('fallo de quiz genera extra antes de terminar la base, conserva ruta y no d
  assert.throws(()=>parseProgress(data,'ana',{...next,failedAnswers:[{...next.failedAnswers[0],answers:{...wrong,code:c.code!,...Object.fromEntries(c.questions!.map(q=>[q.id,String(q.correctIndex)]))}}]}),/historial/);
 });
 test('fallo de código genera extra; completar después no borra el intento y no duplica premios',()=>{
- let p=startLocal(data,freshProgress(data,'ana'));const c=data.challenges.find(c=>c.id==='photo')!;
+ let p:LocalProgress=({...freshProgress(data,'ana'),startedAt:new Date().toISOString()});const c=data.challenges.find(c=>c.id==='photo')!;
  const failed=addExtraForWrongAnswer(data,p,c.id,{code:'ZZZZ'},()=>0);
  p=completeLocal(data,failed,c.id,{code:c.code!});assert.equal(p.failedAnswers.length,1);assert.equal(p.completed.length,1);assert.equal(summary(data,p).tickets,0);assert.deepEqual(parseProgress(data,'ana',p),p);
  assert.throws(()=>addExtraForWrongAnswer(data,p,c.id,{code:'ZZZZ'}),/pendiente/);
@@ -43,7 +43,7 @@ test('fallo de código genera extra; completar después no borra el intento y no
  assert.throws(()=>addExtraForWrongAnswer(data,failed,'pasitos',{}),/incorrecta válida/);
 });
 test('extra de santo obtenido por fallo puede reemplazarse sin bloquear el progreso inicial',()=>{
- const p=startLocal(data,freshProgress(data,'ana'));
+ const p=({...freshProgress(data,'ana'),startedAt:new Date().toISOString()});
  const c=data.challenges.find(c=>c.id==='photo')!;
  const next=addExtraForWrongAnswer(data,p,c.id,{code:'ZZZZ'},()=>0);
  const saint=data.challenges.find(c=>c.id===next.extraIds[0])!;assert.equal(saint.kind,'saint');
@@ -52,6 +52,6 @@ test('extra de santo obtenido por fallo puede reemplazarse sin bloquear el progr
  assert.equal(replaced.failedExtras.length,1);assert.deepEqual(parseProgress(data,'ana',replaced),replaced);
 });
 test('catálogo agotado informa y no cambia el avance',()=>{
- const p=startLocal(data,freshProgress(data,'ana'));p.extraIds=extraChallenges(data).filter(c=>!c.isBase).map(c=>c.id);
+ const p=({...freshProgress(data,'ana'),startedAt:new Date().toISOString()});p.extraIds=extraChallenges(data).filter(c=>!c.isBase).map(c=>c.id);
  const saved=JSON.stringify(p);assert.throws(()=>addExtraForWrongAnswer(data,p,'photo',{code:'ZZZZ'}),/No quedan retos extra/);assert.equal(JSON.stringify(p),saved);
 });

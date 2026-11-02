@@ -15,15 +15,15 @@ function category(challenge: LocalChallenge, place: string, specialty?: string, 
   return { name: challenge.kind === 'saint' ? 'Descubre el campus' : 'Explora un proyecto', tone: 'campus' };
 }
 
-export function ChallengeCard({ challenge, index, completed, specialty, projectCategory, projectName, projectLevel, requiredExtra=false, place, onLocate, onAnswer }: {
-  challenge: LocalChallenge; index: number; completed: boolean; specialty?: string; projectCategory?: ProjectCategory; projectName?: string; projectLevel?: ProjectLevel; requiredExtra?: boolean; place: string;
+export function ChallengeCard({ challenge, index, completed, specialty, projectCategory, projectName, projectLevel, requiredExtra=false, visitorRound=false, place, onLocate, onAnswer }: {
+  challenge: LocalChallenge; index: number; completed: boolean; specialty?: string; projectCategory?: ProjectCategory; projectName?: string; projectLevel?: ProjectLevel; requiredExtra?: boolean; visitorRound?:boolean; place: string;
   onLocate: () => void; onAnswer: () => void;
 }) {
   const group = category(challenge, place, specialty, projectCategory);
   return <article className={`challenge-card compact-challenge ${completed ? 'done' : ''}`}>
     <span className={`challenge-type-icon theme-${group.tone}`}><AppIcon name="quiz"/><small className="route-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</small></span>
     <div className="challenge-content">
-      <span className="challenge-category">{requiredExtra?'Reto extra de tu ruta':`${group.name}${projectLevel===undefined?'':` · ${levelLabel(projectLevel)}`}`}<span className="sr-only"> · Reto {index + 1} · {challenge.isBase ? 'Camino base' : 'Extra'}</span></span>
+      <span className="challenge-category">{requiredExtra?'Reto extra de tu ruta':`${group.name}${projectLevel===undefined?'':` · ${levelLabel(projectLevel)}`}`}<span className="sr-only"> · Reto {index + 1} · {visitorRound?'Ronda de visitante':challenge.isBase ? 'Camino base' : 'Extra'}</span></span>
       <h2>{projectName??challenge.title}</h2>
       <PlaceTag>{place}</PlaceTag>
       {completed && <span className="challenge-status is-complete"><AppIcon name="check" width="13" height="13"/>Completado</span>}

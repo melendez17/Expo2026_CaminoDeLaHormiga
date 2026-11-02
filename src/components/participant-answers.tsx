@@ -30,7 +30,7 @@ export function ParticipantAnswers({ data, rows, selectedId, onSelect }: {
         <div className="participant-answer-list">{challenges.map(challenge => {
           const record = progress.completed.find(c => c.challengeId === challenge.id);
           return <article key={challenge.id} className={`participant-answer-card ${record ? 'answered' : 'unanswered'}`}>
-            <div className="answer-card-top"><div><span className="eyebrow">{baseIds.has(challenge.id) ? 'RETO BASE' : 'RETO EXTRA'} · {record ? 'COMPLETADO' : 'PENDIENTE'}</span><h4>{challenge.title}</h4></div><PlaceTag>{names[challenge.buildingId]}</PlaceTag></div>
+            <div className="answer-card-top"><div><span className="eyebrow">{baseIds.has(challenge.id) ? (progress.visitorRounds.length?'RETO DE RONDA':'RETO BASE') : 'RETO EXTRA'} · {record ? 'COMPLETADO' : 'PENDIENTE'}</span><h4>{challenge.title}</h4></div><PlaceTag>{names[challenge.buildingId]}</PlaceTag></div>
             {record && <p className="answer-date">Respondido: {formatDate(record.at)}</p>}
             <dl>{challengeAnswers(challenge, record?.answers).map((detail, i) => <div key={i} className="question-answer"><dt>{detail.question}</dt><dd>{detail.answer === null ? <span className="answer-pending">Sin respuesta</span> : <><span className="answer-text">{detail.answer}</span>{detail.correct !== undefined && <span className={`answer-result ${detail.correct ? 'correct' : 'incorrect'}`}>{detail.correct ? 'Correcta' : 'Incorrecta'}</span>}</>}</dd></div>)}</dl>
           </article>;

@@ -30,13 +30,13 @@ Entra con **`ADM1`** desde el login principal o `/admin`. Abre un panel local co
 1. **Login:** ingresa un token de `public/data/users.json`.
 2. **Bienvenida:** aparece el nombre de la persona y el botón «Iniciar el camino».
 3. **Retos:** en móvil el mapa ocupa aproximadamente un tercio del espacio disponible arriba y los retos se desplazan abajo; en escritorio el mapa aparece junto a la lista. «Ubicación» resalta el edificio y «Hacer reto» abre el formulario.
-4. **Especialidades:** dos preguntas de selección única, visualmente «marca con X», más código de stand. Las respuestas incorrectas permiten volver a intentar sin otorgar premios.
-5. **Más retos:** tras completar la ruta base, genera rondas de dos extras sin repetir. Completa la ronda antes de pedir otra. Al agotarse el catálogo, añade más entradas al JSON.
+4. **Especialidades:** dos preguntas de selección única, visualmente «marca con X», más código de stand. Una respuesta incorrecta añade un reto extra y conserva el proyecto pendiente, sin otorgar premios por el fallo.
+5. **Más retos:** Visitante recibe retos de dos en dos desde el inicio. Admisión puede generar rondas de dos extras tras completar su ruta base. Completa la ronda antes de pedir otra. Al agotarse el catálogo, añade más entradas al JSON.
 6. **Mi resumen:** tiquetes, votos disponibles, retos, votos emitidos y encuesta con bono.
 7. **Votar:** busca por nombre de proyecto o especialidad y confirma a cuál entregar un voto. Puedes repartir votos o apoyar varias veces un proyecto si tienes saldo.
 8. **Agenda y mapa completo:** accesos independientes desde la navegación principal.
 
-Ruta base completa → **1 tiquete y 1 voto**. Cada dos retos extra → **otro tiquete y voto**. Votar consume el voto, pero conserva el tiquete para la rifa. La encuesta entrega un bono inicial de 1, configurable.
+Visitante: cada dos retos completados → **1 tiquete y 1 voto**. Admisión: ruta base completa → **1 tiquete y 1 voto**; cada dos retos extra → **otro tiquete y voto**. Votar consume el voto, pero conserva el tiquete para la rifa. La encuesta entrega un bono inicial de 1, configurable.
 
 Los usuarios, proyectos, horarios, respuestas y ubicaciones de actividades son ejemplos para pruebas; los polígonos y mapas vienen del HTML adjunto. Cada diálogo tiene «Ayuda para probar este reto» con sus respuestas/código de ejemplo. Esos datos son públicos deliberadamente en esta demo; no es autenticación ni validación antifraude de producción.
 
@@ -91,20 +91,20 @@ La demo puede publicarse sin variables de entorno usando la rama `implementacion
 
 ## Roles y áreas de afinidad
 
-La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Solo existen tres roles: Admin (`admin`), Visitante (`visitor`) y Admisión (`admission`). El rol controla el acceso y la encuesta; el área controla la asignación de retos para Visitante y Admisión por igual.
+La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Solo existen tres roles: Admin (`admin`), Visitante (`visitor`) y Admisión (`admission`). El rol controla el acceso, la encuesta y el tamaño del recorrido. El área orienta la asignación de retos. Admisión conserva cinco retos obligatorios; Visitante recibe rondas de dos.
 
 El formulario exige **Área de afinidad** para los participantes. Ofrece Escuela (`school`), Pasitos (`pasitos`), Tercer ciclo (`third_cycle`) y las seis especialidades: Desarrollo Web, Ciberseguridad, Dibujo y Modelado de Edificaciones, Diseño Gráfico Multimedia, Electromecánica y Mecánica de Precisión. No hay opción Cuarto ciclo ni segundo campo de especialidad: se elige la especialidad directamente como `area`.
 
-| Área | Ruta obligatoria |
+| Área | Ruta obligatoria de Admisión |
 |---|---|
 | Pasitos | 1 proyecto de Pasitos + 1 de Escuela + 2 de especialidad + 1 extra |
 | Escuela | 1 de Escuela + 1 de Tercer ciclo + 2 de especialidad + 1 extra |
 | Tercer ciclo | 2 de Tercer ciclo + 2 de especialidad + 1 extra |
 | Una especialidad | 1 de décimo + 1 de undécimo de esa especialidad + otro distinto de ella (décimo o undécimo) + 1 de otra especialidad + 1 extra |
 
-Ejemplo: `{"role":"visitor","area":"Desarrollo Web"}`. `{"role":"admission","area":"Desarrollo Web"}` recibe las mismas cuotas, con encuesta de admisión. Los visitantes conservan su encuesta de experiencia. Admin no necesita área y los participantes no pueden acceder al panel.
+Ejemplo: `{"role":"visitor","area":"Desarrollo Web"}`. `{"role":"admission","area":"Desarrollo Web"}` recibe la ruta completa de cinco, con encuesta de admisión. Los visitantes conservan su encuesta de experiencia. Admin no necesita área y los participantes no pueden acceder al panel.
 
-Los catálogos anteriores se normalizan al leer: los roles de nivel pasan a `admission` con su área, `assignedSpecialty` se traslada a `area` y `kind` desaparece del usuario normalizado y de los respaldos nuevos. Los visitantes antiguos sin área conservan la ruta general de cinco retos; al crearlos o editarlos desde el panel se exige elegir área. Las rutas ya iniciadas, respuestas y tokens se conservan, y cambiar de área se bloquea si invalida una ruta asignada.
+Los catálogos anteriores se normalizan al leer: los roles de nivel pasan a `admission` con su área, `assignedSpecialty` se traslada a `area` y `kind` desaparece del usuario normalizado y de los respaldos nuevos. Los visitantes antiguos se convierten a rondas de dos al volver a entrar, conservando su historial y las asignaciones existentes; al crearlos o editarlos desde el panel se exige elegir área. Las rutas ya iniciadas, respuestas y tokens se conservan, y cambiar de área se bloquea si invalida una ruta asignada.
 
 Web y Ciberseguridad comparten el edificio TICs (`17`). Los proyectos tienen categoría, especialidad y nivel; los extras son actividades sin proyecto. Si falta catálogo suficiente para preparar una ruta completa, se informa antes de asignarla.
 
@@ -127,3 +127,9 @@ Los retos de santo usan una pregunta de marque con X (2–6 opciones y opción c
 Una respuesta incorrecta en un quiz o un código válido pero equivocado añade otro reto extra sin repetir. El reto original queda pendiente para conservar las cuotas de proyectos; los errores de formato o campos vacíos no generan extras. Los extras asignados por fallo pueden completarse antes de terminar la base, y siguen las reglas habituales de premios; el fallo no concede tiquetes ni votos. Se guardan el intento y el extra generado en Respuestas del administrador. Los santos conservan su sustitución por otro extra.
 
 El panel incluye Agenda para crear, editar y eliminar actividades de viernes 13, sábado 14 y domingo 15 de noviembre, con inicio, fin opcional, categoría, edificio y descripción. Los cambios aparecen automáticamente en la agenda y el mapa del usuario en otras pestañas del mismo navegador; no se sincronizan entre dispositivos. Se incluyen en el respaldo del catálogo. Las eliminaciones de una agenda administrada se conservan al recargar.
+
+## Visitantes: rondas de dos
+
+Al iniciar reciben dos retos, priorizando proyectos de su área de afinidad y completando la pareja con otros retos disponibles si falta catálogo afín. Cada dos retos completados otorgan un tiquete y un voto, sin exigir cinco base. La siguiente ronda se solicita con **Recibir otros 2 retos** y no repite retos ni proyectos. Se termina la ronda y los extras pendientes por fallos antes de pedir otra. Si solo queda un reto en el catálogo, la última ronda contiene ese reto; los premios siguen contando parejas completas. La encuesta de experiencia y su bono se habilitan tras los dos primeros completados. Admisión mantiene sus cinco retos iniciales y sus reglas anteriores.
+
+El progreso guarda `visitorRounds` y `visitorRoundIndex`. Los visitantes anteriores se adaptan al entrar sin borrar respuestas, votos, encuesta ni tiquetes manuales; sus asignaciones previas se presentan en parejas sucesivas. Los nuevos tiquetes digitales se calculan por parejas completadas, por lo que un visitante antiguo puede recibir tiquetes adicionales al migrar.

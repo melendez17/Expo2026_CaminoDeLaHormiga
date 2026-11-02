@@ -68,6 +68,8 @@ export type Answers = Record<string, string>;
 export const progressSchema = z.object({
   version: z.literal(1), dataVersion: z.string(), userId: z.string(), startedAt: z.string().nullable(),
   completed: z.array(z.object({ challengeId: z.string(), answers: z.record(z.string(), z.string()), at: z.string() })),
+  visitorRounds:z.array(z.array(z.string()).min(1).max(2)).default([]),
+  visitorRoundIndex:z.number().int().nonnegative().default(0),
   failedAnswers: z.array(z.object({challengeId:z.string(),answers:z.record(z.string(),z.string()),at:z.iso.datetime(),extraId:z.string()})).default([]),
   failedExtras: z.array(z.object({challengeId:z.string(),answers:z.record(z.string(),z.string()),at:z.iso.datetime(),replacementId:z.string()})).default([]),
   routeIds: z.array(z.string()).default([]),
@@ -81,9 +83,17 @@ export function findUser(data: LocalData, token: string) {
   return data.users.find(u => u.token === token.trim().toUpperCase()) ?? null;
 }
 export function freshProgress(data: LocalData, userId: string): LocalProgress {
-  return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], failedAnswers: [], failedExtras: [], routeIds: [], manualTickets: [], extraIds: [], votes: [], survey: null };
+  return { version: 1, dataVersion: data.settings.dataVersion, userId, startedAt: null, completed: [], visitorRounds: [], visitorRoundIndex:0, failedAnswers: [], failedExtras: [], routeIds: [], manualTickets: [], extraIds: [], votes: [], survey: null };
 }
 export function summary(data: LocalData, progress: LocalProgress) {
+  if(progress.visitorRounds.length||(!progress.startedAt&&data.users.find(u=>u.id===progress.userId)?.role==='visitor')) {
+    const round=progress.visitorRounds[progress.visitorRoundIndex]??[];
+    const base=progress.completed.filter(c=>round.includes(c.challengeId)).length;
+    const routeComplete=progress.completed.length>=2;
+    const digitalTickets=Math.floor(progress.completed.length/2)+(routeComplete&&progress.survey?data.settings.surveyBonus:0);
+    const tickets=digitalTickets+progress.manualTickets.length;
+    return {base,baseTarget:round.length||2,extra:progress.completed.length-base,routeComplete,digitalTickets,manualTickets:progress.manualTickets.length,tickets,votesAvailable:tickets-progress.votes.length};
+  }
   const ids = new Set(routeChallenges(data,progress).map(c=>c.id));
   const baseTarget=ids.size;
   const base = progress.completed.filter(r => ids.has(r.challengeId)).length;
@@ -95,13 +105,46 @@ export function summary(data: LocalData, progress: LocalProgress) {
 }
 export function availableProjects(data: LocalData, _userId: string) { return data.projects; }
 export function routeChallenges(data:LocalData,progress:LocalProgress) {
+  if(progress.visitorRounds.length)return progress.visitorRounds.flat().map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean);
   return progress.routeIds.length ? progress.routeIds.map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean) : data.challenges.filter(c=>c.isBase);
 }
 export function extraChallenges(data:LocalData) { return data.challenges.filter(c=>!c.projectId&&(c.kind==='code'||c.kind==='saint')); }
+export function visitorCandidates(data:LocalData,progress:LocalProgress) {
+  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId)]);
+  // Before starting, routeChallenges refers to the legacy base; there is no assignment yet.
+  if(!progress.startedAt)used.clear();
+  const usedProjects=new Set(data.challenges.filter(c=>used.has(c.id)&&c.projectId).map(c=>c.projectId));
+  const projectTasks=data.projects.map(p=>data.challenges.find(c=>c.projectId===p.id)).filter((c):c is LocalChallenge=>!!c);
+  return [...projectTasks,...extraChallenges(data)].filter(c=>!used.has(c.id)&&(!c.projectId||!usedProjects.has(c.projectId)));
+}
+export function currentVisitorRound(data:LocalData,progress:LocalProgress) {
+  return (progress.visitorRounds[progress.visitorRoundIndex]??[]).map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean);
+}
+export function generateVisitorRound(data:LocalData,progress:LocalProgress,random=Math.random):LocalProgress {
+  const upgraded=upgradeVisitorProgress(data,progress);if(upgraded!==progress)return generateVisitorRound(data,upgraded,random);
+  const user=data.users.find(u=>u.id===progress.userId);
+  if(!user||user.role!=='visitor')throw Error('Las rondas de dos retos son para visitantes.');
+  if(progress.visitorRounds.length&&(currentVisitorRound(data,progress).some(c=>!progress.completed.some(done=>done.challengeId===c.id))||progress.extraIds.some(id=>!progress.completed.some(done=>done.challengeId===id))))throw Error('Completa los retos pendientes antes de recibir otra pareja.');
+  if(progress.visitorRoundIndex<progress.visitorRounds.length-1)return {...progress,visitorRoundIndex:progress.visitorRoundIndex+1};
+  const shuffle=<T,>(list:T[])=>{const result=[...list];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;};
+  const candidates=visitorCandidates(data,progress);
+  if(!candidates.length)throw Error('No quedan retos sin repetir en este catálogo.');
+  const matches=(c:LocalChallenge)=>{const p=data.projects.find(p=>p.id===c.projectId);return !!p&&(p.category===user.area||p.specialty===user.area);};
+  const chosen=[...shuffle(candidates.filter(matches)),...shuffle(candidates.filter(c=>!matches(c)))].slice(0,2).map(c=>c.id);
+  return {...progress,startedAt:progress.startedAt??new Date().toISOString(),routeIds:[],visitorRounds:[...progress.visitorRounds,chosen],visitorRoundIndex:progress.visitorRounds.length};
+}
+export function upgradeVisitorProgress(data:LocalData,progress:LocalProgress):LocalProgress {
+  if(!progress.startedAt||progress.visitorRounds.length||data.users.find(u=>u.id===progress.userId)?.role!=='visitor')return progress;
+  const assigned=[...new Set([...progress.completed.map(c=>c.challengeId),...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds])];
+  const rounds:string[][]=[];for(let i=0;i<assigned.length;i+=2)rounds.push(assigned.slice(i,i+2));
+  const pending=rounds.findIndex(round=>round.some(id=>!progress.completed.some(c=>c.challengeId===id)));
+  return {...progress,routeIds:[],extraIds:[],visitorRounds:rounds,visitorRoundIndex:pending<0?Math.max(0,rounds.length-1):pending};
+}
 export function startLocal(data:LocalData,progress:LocalProgress,random=Math.random): LocalProgress {
   if(progress.startedAt)return progress;
   const user=data.users.find(u=>u.id===progress.userId);
   if(!user)throw Error('El participante no existe.');
+  if(user.role==='visitor')return generateVisitorRound(data,progress,random);
   const affinity=routeArea(user);
   if(user.role==='admin')throw Error('El administrador no tiene ruta de participante.');
   if(!affinity){if(user.role==='admission')throw Error('El administrador debe asignarte un área antes de iniciar.');return {...progress,startedAt:new Date().toISOString()};}
@@ -150,6 +193,7 @@ export function saintSelection(challenge:LocalChallenge,answers:Answers): number
 export function replaceFailedSaint(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
   const challenge=data.challenges.find(c=>c.id===id);
   if(!progress.startedAt||!challenge||challenge.kind!=='saint'||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
+  if(progress.visitorRounds.length&&!progress.visitorRounds[progress.visitorRoundIndex].includes(id)&&!progress.extraIds.includes(id))throw Error('Este reto pertenece a otra ronda.');
   const selected=saintSelection(challenge,answers);
   if(selected===null)throw Error('Marca una opción para responder.');
   if(selected===saintQuestion(challenge).correctIndex)throw Error('La respuesta es correcta; completa el reto.');
@@ -157,11 +201,12 @@ export function replaceFailedSaint(data:LocalData,progress:LocalProgress,id:stri
   const candidates=extraChallenges(data).filter(c=>!used.has(c.id));
   if(!candidates.length)throw Error('No quedan retos extra para reemplazar este intento. Solicita al administrador que añada otro reto extra.');
   const replacementId=candidates[Math.floor(random()*candidates.length)].id;
-  return {...progress,routeIds:progress.routeIds.map(c=>c===id?replacementId:c),extraIds:progress.extraIds.map(c=>c===id?replacementId:c),failedExtras:[...progress.failedExtras,{challengeId:id,answers,at:new Date().toISOString(),replacementId}]};
+  return {...progress,routeIds:progress.routeIds.map(c=>c===id?replacementId:c),visitorRounds:progress.visitorRounds.map(round=>round.map(c=>c===id?replacementId:c)),extraIds:progress.extraIds.map(c=>c===id?replacementId:c),failedExtras:[...progress.failedExtras,{challengeId:id,answers,at:new Date().toISOString(),replacementId}]};
 }
 export function addExtraForWrongAnswer(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
   const challenge=data.challenges.find(c=>c.id===id);
   if(!progress.startedAt||!challenge||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
+  if(progress.visitorRounds.length&&!progress.visitorRounds[progress.visitorRoundIndex].includes(id)&&!progress.extraIds.includes(id))throw Error('Este reto pertenece a otra ronda.');
   if(!hasIncorrectAnswer(challenge,answers))throw Error('El intento no contiene una respuesta incorrecta válida.');
   if(challenge.kind==='saint')return replaceFailedSaint(data,progress,id,answers,random);
   const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId)]);
@@ -191,10 +236,12 @@ export function completeLocal(data: LocalData, progress: LocalProgress, id: stri
   const challenge = data.challenges.find(c => c.id === id);
   if (!challenge || (!routeChallenges(data,progress).some(c=>c.id===id) && !progress.extraIds.includes(id))) throw Error('Este reto todavía no está en tu camino.');
   if (progress.completed.some(c => c.challengeId === id)) return progress;
+  if(progress.visitorRounds.length&&!progress.visitorRounds[progress.visitorRoundIndex].includes(id)&&!progress.extraIds.includes(id))throw Error('Este reto pertenece a otra ronda.');
   const error = validateAnswers(challenge, answers); if (error) throw Error(error);
   return { ...progress, completed: [...progress.completed, { challengeId: id, answers, at: new Date().toISOString() }] };
 }
 export function generateExtras(data: LocalData, progress: LocalProgress, random = Math.random): LocalProgress {
+  if(progress.visitorRounds.length)return generateVisitorRound(data,progress,random);
   if (!summary(data, progress).routeComplete) throw Error('Completa los cinco retos base o la ruta asignada para descubrir más.');
   if (progress.extraIds.some(id => !progress.completed.some(c => c.challengeId === id))) throw Error('Termina los retos adicionales disponibles antes de generar otros.');
   const assigned = new Set(routeChallenges(data,progress).map(c=>c.id));
@@ -212,6 +259,10 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   if (!parsed.success) throw Error('El formato del progreso no es válido. Revisa los campos del archivo.');
   const p = parsed.data;
   if (p.userId !== userId || p.dataVersion !== data.settings.dataVersion) throw Error('El archivo pertenece a otra persona o versión de la demo.');
+  if(p.visitorRounds.length) {
+    const ids=p.visitorRounds.flat();
+    if(data.users.find(u=>u.id===userId)?.role!=='visitor'||!p.startedAt||p.routeIds.length||p.visitorRoundIndex>=p.visitorRounds.length||new Set(ids).size!==ids.length||ids.some(id=>!data.challenges.some(c=>c.id===id))||p.visitorRounds.slice(0,p.visitorRoundIndex).flat().some(id=>!p.completed.some(c=>c.challengeId===id))||p.visitorRounds.slice(p.visitorRoundIndex+1).flat().some(id=>p.completed.some(c=>c.challengeId===id)))throw Error('Las rondas del visitante no son válidas.');
+  } else if(p.visitorRoundIndex)throw Error('La ronda del visitante no existe.');
   if(new Set(p.routeIds).size!==p.routeIds.length||p.routeIds.some(id=>!data.challenges.some(c=>c.id===id)))throw Error('La ruta asignada no es válida.');
   if(p.routeIds.length&&!validRoute(data,p))throw Error('La ruta no corresponde a la modalidad o especialidad asignada.');
   if (new Set(p.manualTickets.map(t => t.id)).size !== p.manualTickets.length || p.manualTickets.some(t => !data.users.some(u => u.id === t.actorId && u.role === 'admin'))) throw Error('Los tiquetes manuales tienen identificadores duplicados o un emisor no válido.');
@@ -221,7 +272,7 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   if(new Set(p.failedAnswers.map(f=>f.extraId)).size!==p.failedAnswers.length||(!p.startedAt&&p.failedAnswers.length))throw Error('Los retos extra por respuesta incorrecta no son válidos.');
   for(const record of p.failedAnswers) {
     const c=data.challenges.find(c=>c.id===record.challengeId);
-    if(!c||!['quiz','code'].includes(c.kind)||!hasIncorrectAnswer(c,record.answers)||(!routeChallenges(data,p).some(c=>c.id===record.challengeId)&&!p.extraIds.includes(record.challengeId))||!extraChallenges(data).some(c=>c.id===record.extraId)||(!p.extraIds.includes(record.extraId)&&!p.failedExtras.some(f=>f.challengeId===record.extraId)))throw Error('El historial de respuestas incorrectas no es válido.');
+    if(!c||!['quiz','code'].includes(c.kind)||!hasIncorrectAnswer(c,record.answers)||(!routeChallenges(data,p).some(c=>c.id===record.challengeId)&&!p.extraIds.includes(record.challengeId))||!extraChallenges(data).some(c=>c.id===record.extraId)||(!p.extraIds.includes(record.extraId)&&!routeChallenges(data,p).some(c=>c.id===record.extraId)&&!p.failedExtras.some(f=>f.challengeId===record.extraId)))throw Error('El historial de respuestas incorrectas no es válido.');
   }
   const failedIds=new Set(p.failedExtras.map(f=>f.challengeId));
   if(failedIds.size!==p.failedExtras.length||(!p.startedAt&&p.failedExtras.length))throw Error('Los intentos de retos extra no son válidos.');
@@ -237,7 +288,7 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
     if (!c || (!routeChallenges(data,p).some(base=>base.id===c.id) && !p.extraIds.includes(c.id)) || validateAnswers(c, record.answers)) throw Error('El archivo contiene respuestas o retos no válidos.');
   }
   if (p.votes.some(v => !data.projects.some(project => project.id === v.projectId)) || summary(data, p).votesAvailable < 0) throw Error('El archivo contiene votos no válidos.');
-  if ((p.survey || p.extraIds.some(id=>!granted.has(id))) && !summary(data, p).routeComplete) throw Error('Los retos base no están completos.');
+  if ((p.survey || (!p.visitorRounds.length&&p.extraIds.some(id=>!granted.has(id)))) && !summary(data, p).routeComplete) throw Error('Los retos base no están completos.');
   return p;
 }
 function validRoute(data:LocalData,p:LocalProgress) {
