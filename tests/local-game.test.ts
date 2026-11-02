@@ -22,7 +22,7 @@ test('datos JSON coherentes, tokens únicos y login normalizado', () => {
 test('no completar antes de iniciar ni generar extras antes de cinco base', () => {
   const p = freshProgress(data, 'ana');
   assert.throws(() => completeLocal(data, p, 'pasitos', {}), /inicia/);
-  assert.throws(() => generateExtras(data, p), /cinco retos/);
+  assert.throws(() => generateExtras(data, p), /ruta asignada/);
 });
 test('especialidad exige ambas respuestas correctas y código', () => {
   const c = data.challenges.find(c => c.id === 'tics')!;

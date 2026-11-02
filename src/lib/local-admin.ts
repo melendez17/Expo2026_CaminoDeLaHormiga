@@ -1,5 +1,7 @@
 import { localDataSchema, parseProgress, freshProgress, storageKey, summary, type LocalData, type LocalProgress } from './local-game';
 import campus from './campus.json';
+import {participantAreas} from './taxonomy';
+import { validateRuleCapacity } from './admin-assignments';
 export const CATALOG_KEY = 'camino-local-catalog-v1';
 export type StorageReader = Pick<Storage, 'getItem'>;
 export function generateUserToken(users: LocalData['users'], randomValue = () => crypto.getRandomValues(new Uint32Array(1))[0]) {
@@ -26,7 +28,11 @@ export function restoreCatalog(base: LocalData, storage: StorageReader): LocalDa
   if ((input.schemaRevision ?? 1) < 3) {
     const projects = base.projects.filter(p => !result.projects.some(old=>old.id===p.id));
     const challenges = base.challenges.filter(c => !result.challenges.some(old=>old.id===c.id));
-    return {...result,schemaRevision:3,projects:[...result.projects,...projects],challenges:[...result.challenges,...challenges]};
+    return {...result,schemaRevision:4,projects:[...result.projects,...projects],challenges:[...result.challenges,...challenges]};
+  }
+  if((input.schemaRevision??1)<4) {
+    const projectIds=['adm-pasitos-2','adm-escuela-2'];
+    return {...result,schemaRevision:4,projects:[...result.projects,...base.projects.filter(p=>projectIds.includes(p.id)&&!result.projects.some(old=>old.id===p.id))],challenges:[...result.challenges,...base.challenges.filter(c=>c.projectId&&projectIds.includes(c.projectId)&&!result.challenges.some(old=>old.id===c.id))]};
   }
   return result;
 }
@@ -50,6 +56,7 @@ export function validateCatalogChange(previous: LocalData, input: unknown, actor
   if (next.users.find(u => u.id === actorId)?.role !== 'admin') throw Error('No puedes eliminar tu propio acceso de administrador.');
   if (next.settings.dataVersion !== previous.settings.dataVersion) throw Error('La versión del catálogo debe mantenerse al editar desde el panel.');
   if (JSON.stringify(next.settings) !== JSON.stringify(previous.settings)) throw Error('La edición de reglas se realiza en settings.json para una nueva versión de prueba.');
+  if(JSON.stringify(previous.assignmentRules)!==JSON.stringify(next.assignmentRules))validateRuleCapacity(next,participantAreas.filter(area=>JSON.stringify(previous.assignmentRules.admission[area.value])!==JSON.stringify(next.assignmentRules.admission[area.value])));
   for (const entry of [...next.challenges, ...next.projects, ...next.agenda]) if (!Object.hasOwn(campus.names, entry.buildingId)) throw Error('La zona del mapa no existe.');
   for (const row of adminRows(previous, storage)) {
     if (row.error || !row.progress) throw Error(`Revisa los datos guardados de ${row.user.name} antes de cambiar el catálogo.`);

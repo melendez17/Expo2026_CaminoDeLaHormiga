@@ -250,5 +250,23 @@
     "specialty": "Ciberseguridad",
     "description": "Proyecto ficticio de Ciberseguridad de undécimo para la demo.",
     "level": 11
+  },
+  {
+    "id": "adm-pasitos-2",
+    "name": "Exploradores de colores",
+    "buildingId": "8",
+    "category": "pasitos",
+    "specialty": "Pasitos",
+    "description": "Proyecto ficticio adicional para probar la distribución configurable.",
+    "level": "preescolar"
+  },
+  {
+    "id": "adm-escuela-2",
+    "name": "Ideas que crecen",
+    "buildingId": "3",
+    "category": "school",
+    "specialty": "Escuela",
+    "description": "Proyecto ficticio adicional para probar la distribución configurable.",
+    "level": 5
   }
 ]

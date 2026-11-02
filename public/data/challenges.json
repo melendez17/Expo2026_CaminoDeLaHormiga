@@ -917,5 +917,23 @@
     "isBase": false,
     "description": "Averigua qué ofrece este puesto y valida la visita con el código.",
     "code": "P0S2"
+  },
+  {
+    "id": "reto-adm-pasitos-2",
+    "title": "Exploradores de colores",
+    "description": "Visita este proyecto de prueba y comparte lo que descubriste.",
+    "buildingId": "8",
+    "kind": "freeform",
+    "isBase": false,
+    "projectId": "adm-pasitos-2"
+  },
+  {
+    "id": "reto-adm-escuela-2",
+    "title": "Ideas que crecen",
+    "description": "Visita este proyecto de prueba y comparte lo que descubriste.",
+    "buildingId": "3",
+    "kind": "freeform",
+    "isBase": false,
+    "projectId": "adm-escuela-2"
   }
 ]

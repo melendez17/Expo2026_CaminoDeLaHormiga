@@ -38,13 +38,13 @@ test('categorías de proyecto y especialidades completas; Web y Ciberseguridad c
   }
 });
 test('rutas por modalidad cumplen las cantidades y categorías, sin proyectos repetidos',()=>{
-  for(const [role,expected] of [['pasitos',{pasitos:1,school:1,specialty:2}],['school',{school:1,third_cycle:1,specialty:2}],['third_cycle',{third_cycle:2,specialty:2}]] as const) {
+  for(const [role,expected] of [['pasitos',{pasitos:2,school:1,specialty:1}],['school',{school:2,third_cycle:1,specialty:1}],['third_cycle',{third_cycle:2,specialty:2}]] as const) {
     const fixture=structuredClone(raw);fixture.users[0].role=role;
     const catalog=localDataSchema.parse(fixture),started=startLocal(catalog,freshProgress(catalog,'ana'),()=>.4);
     assert.equal(started.routeIds.length,5);
     const route=routeChallenges(catalog,started),projects=route.filter(c=>c.projectId).map(c=>catalog.projects.find(p=>p.id===c.projectId)!);
     assert.equal(new Set(projects.map(p=>p.id)).size,4);
-    assert.equal(new Set(projects.filter(p=>p.category==='specialty').map(p=>p.specialty)).size,2);
+    assert.equal(new Set(projects.filter(p=>p.category==='specialty').map(p=>p.specialty)).size,role==='third_cycle'?2:1);
     assert.equal(route.filter(c=>!c.projectId&&(c.kind==='code'||c.kind==='saint')).length,1);
     for(const [category,count] of Object.entries(expected))assert.equal(projects.filter(p=>p.category===category).length,count);
     assert.deepEqual(parseProgress(catalog,'ana',started),started);

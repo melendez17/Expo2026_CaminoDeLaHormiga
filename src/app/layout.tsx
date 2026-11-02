@@ -11,6 +11,7 @@ import './admin-console.css';
 import './map-interactions.css';
 import './brand.css';
 import './admin-tickets.css';
+import './admin-assignments.css';
 import './loading-screen.css';
 export const metadata:Metadata={title:'El camino de la hormiga · ExpoTEC',description:'Explora CEDES Don Bosco, completa retos y descubre tu próximo destino.',manifest:'/manifest.webmanifest',appleWebApp:{capable:true,title:'Camino ExpoTEC'}};
 export const viewport:Viewport={width:'device-width',initialScale:1,themeColor:'#0b793e'};

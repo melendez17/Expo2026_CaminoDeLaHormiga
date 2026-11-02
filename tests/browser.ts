@@ -474,7 +474,7 @@ async function main() {
     await pairsContext.addInitScript(catalog=>{if(!localStorage.getItem('camino-local-catalog-v1'))localStorage.setItem('camino-local-catalog-v1',JSON.stringify(catalog));},pairsCatalog);
     const pairs=await pairsContext.newPage();await pairs.goto(base);
     await pairs.getByLabel('Token de acceso').fill('K8P2');await pairs.getByRole('button',{name:'Ingresar →'}).click();
-    await pairs.getByRole('heading',{name:'Bienvenido, Ana.'}).waitFor();await pairs.getByText(/Recibirás dos retos a la vez/).waitFor();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();
+    await pairs.getByRole('heading',{name:'Bienvenido, Ana.'}).waitFor();await pairs.getByText(/Recibirás 2 retos por ronda/).waitFor();await pairs.getByRole('button',{name:'Iniciar el camino →'}).click();
     const pairsNav=(name:string)=>pairs.getByRole('navigation',{name:'Navegación principal'}).getByRole('button',{name,exact:true});
     const readPair=()=>pairs.evaluate(()=>{const p=JSON.parse(localStorage.getItem('camino-local:demo-2026-v1:ana')!);return p.visitorRounds[p.visitorRoundIndex] as string[];});
     async function finishPairChallenge(id:string){

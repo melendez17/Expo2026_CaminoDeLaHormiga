@@ -1,0 +1,43 @@
+.admin-assignment-section { display:grid; gap:20px; }
+.admin-assignment-section form>h2,.assignment-person>h2 { margin:22px 0 12px; font-size:24px; }
+.admin-assignment-section form>h3 { margin:28px 0 10px; }
+.admin-assignment-section p { font-size:13px; line-height:1.65; color:#526e5b; }
+.assignment-visitor-rule { display:flex; gap:24px; align-items:center; padding:22px; background:#e9f4ed; border-radius:14px; }
+.assignment-visitor-rule label { max-width:190px; flex:none; }
+.assignment-rule-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:20px 0; }
+.assignment-rule-grid fieldset { min-width:0; padding:18px; border:1px solid #d5e5db; border-radius:14px; background:#fff; }
+.assignment-rule-grid legend { color:#113d27; font-weight:800; padding:0 6px; font-size:17px; }
+.assignment-rule-grid legend span { display:inline-block; margin-left:8px; font-size:11px; color:#4a7759; font-weight:500; }
+.assignment-counts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.assignment-counts label { font-size:12px; }
+.assignment-counts input { width:100%; }
+.assignment-specialties details { background:#fff; border:1px solid #d5e5db; border-radius:12px; margin:10px 0; padding:18px; }
+.assignment-specialties summary { cursor:pointer; font-weight:750; color:#143e27; }
+.assignment-specialties summary span { float:right; font-size:12px; font-weight:500; }
+.assignment-specialties .assignment-counts { margin-top:18px; grid-template-columns:repeat(5,minmax(0,1fr)); }
+.assignment-note { padding:16px; border-radius:12px; background:#eaf4ee; margin:18px 0; }
+.assignment-person-list { list-style:none; margin:18px 0; padding:0; display:grid; gap:10px; }
+.assignment-person-list li { display:flex; justify-content:space-between; align-items:center; gap:20px; background:#fff; border:1px solid #d5e5db; border-radius:12px; padding:18px; }
+.assignment-person-list strong { display:block; color:#173b27; font-size:14px; line-height:1.5; }
+.assignment-person-list small { display:block; color:#597562; margin-top:6px; }
+.assignment-person-list button { flex:none; }
+.assignment-protected { color:#237442; font-size:12px; flex:none; }
+.assignment-unavailable { color:#9b4c15; font-size:12px; }
+.assignment-edit form,.assignment-edit { display:grid; gap:16px; }
+.assignment-history { margin-top:24px; }
+.assignment-history ul { list-style:none; padding:0; }
+.assignment-history li { padding:16px 0; border-bottom:1px solid #d5e5db; }
+.assignment-history strong { font-size:13px; line-height:1.6; }
+.assignment-history small { color:#597562; }
+.admin-editor .project-availability { flex-direction:row; align-items:center; gap:10px; }
+.admin-editor .project-availability input { width:18px; height:18px; margin:0; flex:none; }
+@media(max-width:1000px) { .assignment-rule-grid { grid-template-columns:1fr; } }
+@media(max-width:650px) {
+ .assignment-visitor-rule { flex-direction:column; align-items:stretch; gap:8px; }
+ .assignment-specialties .assignment-counts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .assignment-person-list li { flex-direction:column; align-items:stretch; gap:12px; }
+ .assignment-person-list button { align-self:flex-start; }
+ .assignment-specialties summary { font-size:14px; }
+ .assignment-specialties summary span { float:none; display:block; margin-top:6px; }
+}
+@media(min-width:1320px) { .admin-local .admin-navigation button { padding-left:6px; padding-right:6px; } }

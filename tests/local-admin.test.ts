@@ -74,7 +74,7 @@ test('el catálogo anterior recibe los proyectos y retos necesarios de admisión
   old.challenges=old.challenges.filter((c:{id:string})=>!c.id.startsWith('reto-'));
   old.projects[0].name='Proyecto editado anteriormente';
   const migrated=restoreCatalog(data,{getItem:()=>JSON.stringify(old)});
-  assert.equal(migrated.schemaRevision,3);
+  assert.equal(migrated.schemaRevision,4);
   assert.equal(migrated.projects[0].name,'Proyecto editado anteriormente');
   assert.equal(migrated.projects.filter(p=>p.category==='third_cycle').length,2);
   assert.ok(migrated.challenges.some(c=>c.projectId==='ciber'));

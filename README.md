@@ -97,8 +97,8 @@ El formulario exige **Área de afinidad** para los participantes. Ofrece Escuela
 
 | Área | Ruta obligatoria de Admisión |
 |---|---|
-| Pasitos | 1 proyecto de Pasitos + 1 de Escuela + 2 de especialidad + 1 extra |
-| Escuela | 1 de Escuela + 1 de Tercer ciclo + 2 de especialidad + 1 extra |
+| Pasitos | 2 proyectos de Pasitos + 1 de Escuela + 1 de especialidad + 1 extra |
+| Escuela | 2 de Escuela + 1 de Tercer ciclo + 1 de especialidad + 1 extra |
 | Tercer ciclo | 2 de Tercer ciclo + 2 de especialidad + 1 extra |
 | Una especialidad | 1 de décimo + 1 de undécimo de esa especialidad + otro distinto de ella (décimo o undécimo) + 1 de otra especialidad + 1 extra |
 
@@ -133,3 +133,16 @@ El panel incluye Agenda para crear, editar y eliminar actividades de viernes 13,
 Al iniciar reciben dos retos, priorizando proyectos de su área de afinidad y completando la pareja con otros retos disponibles si falta catálogo afín. Cada dos retos completados otorgan un tiquete y un voto, sin exigir cinco base. La siguiente ronda se solicita con **Recibir otros 2 retos** y no repite retos ni proyectos. Se termina la ronda y los extras pendientes por fallos antes de pedir otra. Si solo queda un reto en el catálogo, la última ronda contiene ese reto; los premios siguen contando parejas completas. La encuesta de experiencia y su bono se habilitan tras los dos primeros completados. Admisión mantiene sus cinco retos iniciales y sus reglas anteriores.
 
 El progreso guarda `visitorRounds` y `visitorRoundIndex`. Los visitantes anteriores se adaptan al entrar sin borrar respuestas, votos, encuesta ni tiquetes manuales; sus asignaciones previas se presentan en parejas sucesivas. Los nuevos tiquetes digitales se calculan por parejas completadas, por lo que un visitante antiguo puede recibir tiquetes adicionales al migrar.
+
+## Asignación desde el administrador
+
+Admin → **Asignación** tiene dos apartados:
+
+- **Distribución por área:** tamaño de ronda para visitantes (2 por defecto) y cantidades para cada área de admisión. Pasitos inicia con 2 Pasitos, 1 Escuela, 1 especialidad y 1 extra; Escuela con 2 Escuela, 1 Tercer ciclo, 1 especialidad y 1 extra; Tercer ciclo con 2 propios, 2 especialidades y 1 extra. Cada especialidad conserva 1 propio de décimo, 1 de undécimo, otro propio de cualquier nivel, 1 de otra especialidad y 1 extra. Las cantidades son editables y se valida disponibilidad antes de guardarlas. El premio del visitante sigue siendo un tiquete por dos completados, independientemente del tamaño de la ronda.
+- **Retos por persona:** buscar por nombre o token, preparar una ruta si aún no empezó, reemplazar o quitar un pendiente y añadir otro reto. Las excepciones manuales pueden cambiar la distribución y la meta de esa persona, con motivo e historial de administrador y fecha. Los completados están protegidos. Una ruta completada no recibe nuevos obligatorios que puedan revocar sus premios: se añaden extras.
+
+Las reglas nuevas se guardan en `assignmentRules` dentro del catálogo JSON local y afectan solo asignaciones nuevas. Cada ruta de admisión guarda `routeRule`; los cambios individuales quedan en `assignmentEdits`. Las respuestas, votos, tiquetes y sorteos existentes se conservan. Los usuarios ven las actualizaciones entre pestañas del mismo navegador; todavía no hay sincronización entre dispositivos.
+
+En **Proyectos** se puede desmarcar **Disponible para nuevas asignaciones** si el puesto cerró. Se excluye de rutas nuevas y de los reemplazos, manteniendo las asignaciones anteriores para que el administrador decida qué cambiar. El proyecto sigue disponible para votar. Los retos retirados de una persona no vuelven a generarse para ella.
+
+El catálogo de ejemplo incluye un segundo proyecto de Pasitos y otro de Escuela. La revisión 4 los agrega a catálogos anteriores sin sobrescribir ediciones ni recuperar otros proyectos eliminados. Se puede verificar la gestión con `npm run test:assignments-browser` y las mismas variables `BASE_URL` y `PLAYWRIGHT_CHROMIUM_EXECUTABLE` del test general.
