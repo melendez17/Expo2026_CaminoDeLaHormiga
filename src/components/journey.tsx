@@ -5,6 +5,9 @@ import { ruleDescription } from '@/lib/assignment-rules';
 import { hasIncorrectAnswer } from '@/lib/incorrect-answer';
 import { LoadingScreen } from './loading-screen';
 import { AntMascot } from './ant-mascot';
+import {failedAttempts,type FailedAttempt} from '@/lib/failed-attempts';
+import {FailedChallengeCard,FailedChallengeReview} from './failed-challenge-card';
+import {Fragment} from 'react';
 import { IncorrectAnswerNotice } from './incorrect-answer-notice';
 
 import { useEffect, useRef, useState } from 'react';
@@ -97,6 +100,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const [filter, setFilter] = useState<'base' | 'extra'>('base');
   const [online, setOnline] = useState(true);
   const [,refreshVoteTotals]=useState(0);
+  const [reviewAttempt,setReviewAttempt]=useState<FailedAttempt|null>(null);
   const [failureNotice,setFailureNotice]=useState<{challenge:LocalChallenge;replacement:LocalChallenge;answers:Answers}|null>(null);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [resetConfirm, setResetConfirm] = useState(false);
@@ -174,7 +178,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
     attempt(() => { setUser(person);sessionStorage.setItem(SESSION_KEY,person.id);const saved = person.role === 'admin' ? freshProgress(data, person.id) : readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
   }
   function logout() {
-    sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);setFailureNotice(null);
+    sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);setFailureNotice(null);setReviewAttempt(null);
     setMessage(''); setError(''); setVoteTarget(null); setSection('route'); setFilter('base'); setSelected(null); setSearch(''); setProjectArea(''); setResetConfirm(false);
   }
   function exportProgress() {
@@ -224,6 +228,9 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const extraPending = extras.some(c => !done.has(c.id));
   const baseComplete=visitorPairs?route.length>0&&route.every(c=>done.has(c.id)):stats.routeComplete;
   const displayed = filter === 'base' ? route : extras;
+  const attempts=failedAttempts(data,progress);
+  const failuresHere=attempts.filter(attempt=>filter==='extra'?additionalIds.has(attempt.currentId):!additionalIds.has(attempt.currentId));
+  const visibleIds=new Set(displayed.map(c=>c.id));
   const projectRanking=section==='votes'?rankProjects(data.projects,adminRows(data,localStorage).flatMap(row=>row.progress?.votes??[])):[];
   const projectVoteCounts=new Map(projectRanking.map(project=>[project.id,project.votes]));
   const projects = assignedProjects.filter(p => (!projectArea || p.specialty === projectArea) && normalize(p.name + ' ' + p.specialty).includes(normalize(search))).sort((a, b) => a.name.localeCompare(b.name, 'es'));
@@ -252,7 +259,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
         <section className="route-overview"><div className="route-heading"><div><h1>Tu camino, {user.name.split(' ')[0]}.</h1></div><button className="route-wallet" onClick={() => changeSection('dashboard')} aria-label="Ver mis tiquetes"><AppIcon name="ticket"/><strong>{stats.tickets}</strong><span>{stats.tickets === 1 ? 'tiquete' : 'tiquetes'}</span></button></div>
         <div className="route-progress-head"><span>Camino base</span><strong>{stats.base}<small> de {stats.baseTarget} {stats.baseTarget===1?'reto':'retos'}</small></strong></div><div className="local-route-progress"><progress value={stats.base} max={stats.baseTarget} aria-label="Retos base completados"/><span>{stats.routeComplete ? '¡Lo lograste! Sigue explorando para ganar más tiquetes.' : 'Completa tu ruta y gana tu primer tiquete.'}</span></div></section>
         <div className="filter-tabs"><button aria-pressed={filter === 'base'} onClick={() => setFilter('base')}>Retos base · {stats.base}/{stats.baseTarget}</button><button aria-pressed={filter === 'extra'} onClick={() => setFilter('extra')}>{visitorPairs?'Retos adicionales':'Retos extra'} · {stats.extra}</button></div>
-        <div className="challenge-list">{displayed.map((c, index) => <ChallengeCard key={c.id} challenge={{...c,isBase:filter==='base'}} index={index} completed={done.has(c.id)} requiredExtra={!visitorPairs&&filter==='base'&&!!progress.routeIds.length&&!c.projectId} specialty={data.projects.find(p => p.id === c.projectId)?.specialty} projectCategory={data.projects.find(p => p.id === c.projectId)?.category} projectLevel={data.projects.find(p=>p.id===c.projectId)?.level} projectName={visitorPairs||progress.routeIds.length?data.projects.find(p=>p.id===c.projectId)?.name:undefined} place={names[c.buildingId]} onLocate={() => setSelected(c.buildingId)} onAnswer={() => { setSelected(c.buildingId); setActive(c); }}/>)}</div>
+        <div className="challenge-list">{displayed.map((c, index) => <Fragment key={c.id}>{failuresHere.filter(attempt=>attempt.currentId===c.id).map(attempt=><FailedChallengeCard key={attempt.id} attempt={attempt} onReview={()=>setReviewAttempt(attempt)}/>)}<ChallengeCard challenge={{...c,isBase:filter==='base'}} index={index} completed={done.has(c.id)} requiredExtra={!visitorPairs&&filter==='base'&&!!progress.routeIds.length&&!c.projectId} specialty={data.projects.find(p => p.id === c.projectId)?.specialty} projectCategory={data.projects.find(p => p.id === c.projectId)?.category} projectLevel={data.projects.find(p=>p.id===c.projectId)?.level} projectName={visitorPairs||progress.routeIds.length?data.projects.find(p=>p.id===c.projectId)?.name:undefined} place={names[c.buildingId]} onLocate={() => setSelected(c.buildingId)} onAnswer={() => { setSelected(c.buildingId); setActive(c); }}/></Fragment>)}{failuresHere.filter(attempt=>!visibleIds.has(attempt.currentId)).map(attempt=><FailedChallengeCard key={attempt.id} attempt={attempt} onReview={()=>setReviewAttempt(attempt)}/>)}</div>
         {visitorPairs&&filter==='extra'&&<section className="extras-card"><h2>{visitorPending?'Tu ronda, a tu ritmo':nextVisitorAvailable?'¡Ronda completada!':'¡Exploraste todos los retos!'}</h2><p>{visitorPending?'Completa los retos pendientes para recibir la siguiente ronda. Cada dos completados te dan un tiquete.':nextVisitorAvailable?'Puedes votar con tus tiquetes o pedir otra ronda de retos, sin repetir los anteriores.':'No quedan retos sin repetir. Tus tiquetes y votos se conservan.'}</p><button className="primary" disabled={visitorPending||!nextVisitorAvailable} onClick={()=>attempt(()=>{const next=mutate(p=>generateVisitorRound(data,p));setFilter('extra');setSelected(currentVisitorRound(data,next)[0]?.buildingId??null);scrollRef.current?.scrollTo({top:0});setMessage('Nuevos retos adicionales asignados al azar.');})}>Recibir otros {data.assignmentRules.visitorBatchSize} retos</button></section>}
         {!visitorPairs&&filter === 'extra' && <section className="extras-card"><h2>{!stats.routeComplete ? (extras.length?'Tienes retos extra asignados':'Tu aventura apenas comienza') : remainingExtras ? 'Siempre hay algo más por descubrir' : '¡Exploraste todos los retos!'}</h2><p>{!stats.routeComplete ? (extras.length?'Puedes realizar ahora los extras asignados por una respuesta incorrecta. Los retos originales siguen pendientes; termina tu ruta base para generar nuevas rondas.':'Termina tu ruta base para desbloquear retos adicionales.') : extraPending ? 'Completa los retos de esta ronda antes de generar la siguiente.' : remainingExtras ? `Cada ${data.settings.extraEvery} retos extra te dan otro tiquete. Quedan ${remainingExtras} retos por descubrir.` : 'Completaste el catálogo de esta demo. Puedes añadir nuevos retos al archivo JSON.'}</p><button className="primary" disabled={!stats.routeComplete || extraPending || !remainingExtras} onClick={() => attempt(() => { mutate(p => generateExtras(data, p)); setMessage('Nuevos destinos añadidos a tu camino.'); })}>Generar más retos</button></section>}
         {baseComplete && filter === 'base' && <section className="extras-card"><h2>¡Terminaste el camino base!</h2><p>{visitorPairs?'Completaste tus retos base. Sigue explorando para ganar un tiquete por cada dos retos completados.':'Tu primer tiquete ya está disponible. Puedes votar o seguir explorando.'}</p><div className="row"><button className="primary" onClick={() => setFilter('extra')}>Descubrir más retos</button><button onClick={() => changeSection('votes')}>Ir a votar</button></div></section>}
@@ -278,6 +285,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       {section === 'agenda' && <EventAgenda data={data} onLocate={locate} />}
       {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." /><FullCampusMap data={data} progress={progress} selected={selected} onSelect={setSelected} onReturn={() => changeSection('route')}/></section>}
     </main>
+    {reviewAttempt&&<FailedChallengeReview attempt={reviewAttempt} place={names[reviewAttempt.challenge.buildingId]} replacementTitle={data.challenges.find(c=>c.id===reviewAttempt.currentId)?.title??'Consulta tu recorrido actual'} onClose={()=>setReviewAttempt(null)}/>}
     {failureNotice&&<IncorrectAnswerNotice {...failureNotice} onClose={()=>setFailureNotice(null)} onContinue={()=>{setActive(failureNotice.replacement);setFailureNotice(null);}}/>}
     {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
       if(hasIncorrectAnswer(active,answers)) {

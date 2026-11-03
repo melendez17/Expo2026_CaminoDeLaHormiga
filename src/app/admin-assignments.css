@@ -52,3 +52,13 @@
  .admin-local .admin-record-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
  .admin-local .admin-record-actions button { min-height:44px; }
 }
+
+.last-created-user { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:22px; margin-bottom:24px; background:#edf8ee; border:1px solid #b8d9b9; border-radius:14px; }
+.admin-local .last-created-user h3 { color:#23703e; font-size:13px; font-weight:650; margin:0 0 10px; }
+.last-created-user p { margin:0 0 6px; font-size:20px; color:#0b3520; overflow-wrap:anywhere; }
+.last-created-user small { color:#42644f; font-size:12px; }
+.last-created-token { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.last-created-token > span { width:100%; font-size:11px; color:#42644f; }
+.last-created-token code { font-size:28px; font-weight:750; letter-spacing:.12em; color:#0b3520; }
+.last-created-token button { min-height:44px; font-size:12px; }
+@media(max-width:650px) { .last-created-user { align-items:flex-start; flex-direction:column; gap:18px; padding:18px; } }

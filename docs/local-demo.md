@@ -200,3 +200,5 @@ Visitante conserva su primera ronda en Retos base (dos por defecto): un proyecto
 Votar muestra un top 3 y el número de votos por proyecto del mismo navegador, con empates y actualización entre pestañas. Los proyectos sin votos no reciben puesto. No se agregan votos de otros dispositivos automáticamente.
 
 Los fallos ya no agregan una obligación manteniendo el original: el extra sustituye al fallado en su posición. El aviso de Respuesta incorrecta muestra la corrección antes de abrir el reemplazo. Los intentos se conservan en la ficha de respuestas y el Excel. La adaptación de los avances anteriores conserva los datos y guarda su copia original. Las acciones completadas muestran confirmaciones flotantes durante diez segundos, con cierre manual, tanto en la administración como en el recorrido.
+
+La evidencia de un fallo sigue en el recorrido como una tarjeta roja bloqueada, sin modificar premios o pendientes. Su revisión es de solo lectura y muestra la respuesta enviada y la correcta. El recuadro Último usuario creado facilita consultar y copiar el token sin buscarlo en la lista.

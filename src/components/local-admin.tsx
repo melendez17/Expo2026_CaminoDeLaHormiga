@@ -30,6 +30,9 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
   const [tab, setTab] = useState<Tab>('overview');
   const [search, setSearch] = useState('');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
+  const lastCreatedKey=`camino-last-created-user:${data.settings.dataVersion}`;
+  const [lastCreatedId,setLastCreatedId]=useState(()=>localStorage.getItem(lastCreatedKey));
+  const lastCreated=data.users.find(user=>user.id===lastCreatedId);
   const [userView,setUserView]=useState<'answers'|'assignments'|null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [kind, setKind] = useState<LocalChallenge['kind']>('freeform');
@@ -45,10 +48,10 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
   const [error, setError] = useState('');
   const [, refresh] = useState(0);
   useEffect(() => {
-    const update = () => refresh(n => n + 1);
+    const update = () => {refresh(n => n + 1);setLastCreatedId(localStorage.getItem(lastCreatedKey));};
     window.addEventListener('storage', update); window.addEventListener('focus', update);
     return () => { window.removeEventListener('storage', update); window.removeEventListener('focus', update); };
-  }, []);
+  }, [lastCreatedKey]);
   useEffect(()=>{if(userView){const back=document.querySelector<HTMLButtonElement>('.admin-back-users');back?.focus();back?.scrollIntoView({block:'start'});}},[userView,selectedParticipant]);
   useEffect(()=>{if(editor?.resource==='agenda')document.querySelector('.admin-editor')?.scrollIntoView({block:'start'});},[editor]);
   const rows = adminRows(data, localStorage);
@@ -114,7 +117,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
         }
         next.challenges = editor.id ? next.challenges.map(c => c.id === id ? value : c) : [...next.challenges, value];
       }
-      onSave(next); setEditor(null); setMessage(editor.resource === 'agenda' ? 'Agenda actualizada. Los usuarios de este navegador verán los cambios automáticamente.' : editor.resource === 'users' && !editor.id ? `Usuario creado. Token de acceso: ${next.users.find(u => u.id === id)!.token}.` : 'Cambio guardado en este navegador. Exporta el catálogo si quieres conservarlo como archivo.');
+      onSave(next);if(editor.resource==='users'&&!editor.id){setLastCreatedId(id);try{localStorage.setItem(lastCreatedKey,id);}catch{/* The user was saved; keep the quick reference in this view. */}} setEditor(null); setMessage(editor.resource === 'agenda' ? 'Agenda actualizada. Los usuarios de este navegador verán los cambios automáticamente.' : editor.resource === 'users' && !editor.id ? `Usuario creado. Token de acceso: ${next.users.find(u => u.id === id)!.token}.` : 'Cambio guardado en este navegador. Exporta el catálogo si quieres conservarlo como archivo.');
     });
   }
   function removeEntry() {
@@ -150,6 +153,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
       {tab === 'overview' && <AdminOverview data={data} rows={rows} onAnswers={showAnswers}/>}
       {((tab === 'users'&&!userView) || tab === 'challenges' || tab === 'projects' || tab === 'agenda') && <>
         <div className="admin-section-top"><h2>{tab === 'users' ? 'Usuarios de prueba' : tab === 'challenges' ? 'Catálogo de retos' : tab === 'agenda' ? 'Programación de ExpoTEC' : 'Proyectos para votar'}</h2><button className="primary" onClick={() => open(tab, null)}>{tab === 'users' ? 'Nuevo usuario' : tab === 'challenges' ? 'Nuevo reto' : tab === 'agenda' ? 'Nueva actividad' : 'Nuevo proyecto'}</button></div>
+        {tab==='users'&&lastCreated&&<section className="last-created-user" aria-label="Último usuario creado"><div><h3>Último usuario creado</h3><p><strong>{lastCreated.name}</strong></p><small>{roleLabel(lastCreated.role)}{lastCreated.area&&` · ${areaLabel(lastCreated.area)}`}</small></div><div className="last-created-token"><span>Token de acceso</span><code>{lastCreated.token}</code><button onClick={async()=>{try{await navigator.clipboard.writeText(lastCreated.token);setMessage('Token copiado.');}catch{setError('No se pudo copiar el token. Puedes seleccionarlo y copiarlo manualmente.');}}}>Copiar token</button></div></section>}
         {editor && <section className="admin-editor" key={`${editor.resource}-${editor.id ?? 'new'}`}><h3>{editor.id ? 'Editar registro' : 'Crear registro'}</h3><form onSubmit={save}>
           {editor.resource === 'users' && <>{field('Nombre', 'firstName', user?.firstName ?? user?.name)}{field('Apellido 1', 'firstSurname', user?.firstSurname)}{field('Apellido 2', 'secondSurname', user?.secondSurname)}<label>Correo electrónico<input name="email" type="email" autoComplete="email" defaultValue={user?.email ?? ''} required maxLength={254} /></label>{user ? <p>Token de acceso: <strong>{user.token}</strong></p> : <p className="muted">El token de acceso se generará automáticamente al guardar.</p>}<label>Rol<select aria-label="Rol" name="role" value={editingRole} onChange={e=>setEditingRole(e.target.value as LocalUser['role'])}>{roles.map(role=><option key={role.value} value={role.value}>{role.label}</option>)}</select></label>{editingRole!=='admin'&&<label>Área de afinidad<select name="area" aria-label="Área de afinidad" defaultValue={user?.area??''} required><option value="">Selecciona un área</option>{participantAreas.map(a=><option key={a.value} value={a.value}>{a.label}</option>)}</select></label>}<p className="muted">El rol determina el acceso y la encuesta. El área de afinidad determina los retos para Visitante y Admisión.</p>{user?.id === actor.id && <p>Tu propio acceso debe conservar el rol Admin.</p>}</>}
           {editor.resource === 'agenda' && <>{field('Nombre de la actividad','title',agendaEvent?.title)}<label>Día<select name="day" aria-label="Día" defaultValue={agendaEvent?.day??'Viernes'} required><option value="Viernes">Viernes 13 de noviembre</option><option value="Sábado">Sábado 14 de noviembre</option><option value="Domingo">Domingo 15 de noviembre</option></select></label><label>Hora de inicio<input type="time" name="time" defaultValue={agendaEvent?.time??'09:00'} required /></label><label>Hora de finalización (opcional)<input type="time" name="endTime" defaultValue={agendaEvent?.endTime??''} /></label><label>Categoría de la actividad<select name="category" aria-label="Categoría de la actividad" defaultValue={agendaEvent?.category??'general'}><option value="general">General</option><option value="pastoral">Pastoral</option><option value="radio">CEDES Radio</option></select></label>{location(agendaEvent?.buildingId)}<label>Descripción de la actividad<textarea name="description" defaultValue={agendaEvent?.description??''} maxLength={1000} required /></label><p className="muted">Los horarios son de Costa Rica. Al guardar, la agenda del usuario se actualiza en las otras pestañas de este navegador.</p></>}
