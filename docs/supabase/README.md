@@ -7,6 +7,7 @@ Rama: `implementacionbackend`. El backend real está implementado en `/api/v1` y
 | Guía | Contenido |
 |---|---|
 | [Configuración paso a paso](setup.md) | Crear Supabase, migrar, preparar catálogo, primer administrador y probar la conexión |
+| [UML de la base de datos](database-uml.md) | Diagrama completo, claves, relaciones y archivos editables |
 | [API](api.md) | Rutas, permisos, cuerpos, errores y reintentos |
 | [Seguridad y arquitectura](security.md) | Credenciales, RLS, transacciones, privacidad y límites |
 | [Operación y capacidad](operations.md) | Importación, respaldos, correo, 5.000 personas y prueba de carga |

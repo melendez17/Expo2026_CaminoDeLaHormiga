@@ -21,7 +21,8 @@
     "db:import-users": "tsx scripts/supabase/import-users.ts",
     "db:check": "tsx scripts/supabase/check-connection.ts",
     "admin:session": "tsx scripts/supabase/admin-session.ts",
-    "api:check": "tsx scripts/supabase/smoke-api.ts"
+    "api:check": "tsx scripts/supabase/smoke-api.ts",
+    "docs:database": "tsx scripts/docs/database-uml.ts"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

@@ -1,0 +1,290 @@
+@startuml database
+title Camino de la Hormiga · Base de datos Supabase
+hide methods
+hide circle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam class {
+  BackgroundColor #F3F9F5
+  BorderColor #17573C
+  ArrowColor #426554
+}
+legend left
+  PK = clave primaria (puede ser compuesta)
+  FK = clave foránea real
+  UQ = unicidad de una columna
+  ? = admite NULL
+  Las relaciones dibujadas corresponden únicamente a FK SQL.
+endlegend
+package "Supabase Auth · externo" {
+  class "auth.users" as auth_users <<externa>> {
+    id : uuid [PK]
+  }
+}
+package "Identidad" {
+  class "camino.areas" as camino_areas <<table>> {
+    id : text [PK]
+  }
+  class "camino.profiles" as camino_profiles <<table>> {
+    id : uuid [PK]
+    auth_user_id : uuid? [FK, UQ]
+    first_name : text
+    first_surname : text
+    second_surname : text
+    email : text [UQ]
+    role : text
+    area : text? [FK]
+    public_token : text [UQ]
+    active : boolean
+    consented_at : timestamp with time zone?
+    claim_hash : text? [UQ]
+    claim_expires_at : timestamp with time zone?
+    version : bigint
+    created_at : timestamp with time zone
+    updated_at : timestamp with time zone
+  }
+}
+package "Catálogo y configuración" {
+  class "camino.buildings" as camino_buildings <<table>> {
+    id : text [PK]
+    name : text
+  }
+  class "camino.projects" as camino_projects <<table>> {
+    id : text [PK]
+    name : text
+    category : text
+    specialty : text
+    level : text
+    building_id : text [FK]
+    active : boolean
+    description : text
+  }
+  class "camino.challenges" as camino_challenges <<table>> {
+    id : text [PK]
+    title : text
+    description : text
+    building_id : text [FK]
+    project_id : text? [FK]
+    kind : text
+    is_base : boolean
+    level : smallint?
+    code : text?
+    saint_answer : text?
+    badge : text?
+  }
+  class "camino.questions" as camino_questions <<table>> {
+    challenge_id : text [PK, FK]
+    id : text [PK]
+    prompt : text
+    options : jsonb
+    correct_index : smallint
+    position : smallint
+    --
+    {field} PRIMARY KEY (challenge_id, id)
+  }
+  class "camino.agenda" as camino_agenda <<table>> {
+    id : text [PK]
+    title : text
+    category : text
+    day : text
+    day_number : smallint?
+    starts_at : time without time zone
+    ends_at : time without time zone?
+    building_id : text [FK]
+    description : text
+    time_zone : text
+  }
+  class "camino.configuration" as camino_configuration <<table>> {
+    id : boolean [PK]
+    version : bigint
+    document : jsonb
+    voting_open : boolean
+    raffle_open : boolean
+    initialized_at : timestamp with time zone
+  }
+}
+package "Recorrido y respuestas" {
+  class "camino.progress" as camino_progress <<table>> {
+    participant_id : uuid [PK, FK]
+    version : bigint
+    snapshot : jsonb
+    stats : jsonb
+    catalog_version : bigint
+    updated_at : timestamp with time zone
+  }
+  class "camino.assignments" as camino_assignments <<table>> {
+    participant_id : uuid [PK, FK]
+    challenge_id : text [PK, FK]
+    phase : text
+    round : integer
+    --
+    {field} PRIMARY KEY (participant_id, challenge_id)
+  }
+  class "camino.assignment_changes" as camino_assignment_changes <<table>> {
+    id : uuid [PK]
+    participant_id : uuid [FK]
+    actor_id : uuid [FK]
+    from_id : text? [FK]
+    to_id : text? [FK]
+    scope : text
+    reason : text
+    changed_at : timestamp with time zone
+    route_snapshot : jsonb?
+  }
+  class "camino.completions" as camino_completions <<table>> {
+    participant_id : uuid [PK, FK]
+    challenge_id : text [PK, FK]
+    answers : jsonb
+    completed_at : timestamp with time zone
+    --
+    {field} PRIMARY KEY (participant_id, challenge_id)
+  }
+  class "camino.attempts" as camino_attempts <<table>> {
+    id : uuid [PK]
+    participant_id : uuid [FK]
+    challenge_id : text [FK]
+    replacement_id : text [FK]
+    answers : jsonb
+    attempted_at : timestamp with time zone
+    source : text
+    --
+    {field} UNIQUE (participant_id, challenge_id, attempted_at, source, replacement_id)
+  }
+  class "camino.surveys" as camino_surveys <<table>> {
+    participant_id : uuid [PK, FK]
+    expectations : text
+    interest : text
+    satisfaction : smallint
+    submitted_at : timestamp with time zone
+  }
+}
+package "Tiquetes, votos y rifa" {
+  class "camino.tickets" as camino_tickets <<table>> {
+    id : text [PK]
+    participant_id : uuid [FK]
+    source : text
+    serial : integer
+    code : text [UQ]
+    issued_at : timestamp with time zone
+    issued_by : uuid? [FK]
+    --
+    {field} UNIQUE (participant_id, source, serial)
+  }
+  class "camino.votes" as camino_votes <<table>> {
+    id : uuid [PK]
+    ticket_id : text [FK, UQ]
+    participant_id : uuid [FK]
+    project_id : text [FK]
+    voted_at : timestamp with time zone
+  }
+  class "camino.raffles" as camino_raffles <<table>> {
+    id : uuid [PK]
+    request_id : uuid
+    actor_id : uuid [FK]
+    ticket_id : text [FK, UQ]
+    prize : text
+    pool_size : integer
+    created_at : timestamp with time zone
+    --
+    {field} UNIQUE (actor_id, request_id)
+  }
+}
+package "Seguridad y operación" {
+  class "camino.sessions" as camino_sessions <<table>> {
+    token_hash : text [PK]
+    participant_id : uuid [FK]
+    created_at : timestamp with time zone
+    expires_at : timestamp with time zone
+  }
+  class "camino.email_codes" as camino_email_codes <<table>> {
+    id : uuid [PK]
+    participant_id : uuid [FK]
+    code_hash : text
+    expires_at : timestamp with time zone
+    attempts : smallint
+    used_at : timestamp with time zone?
+    created_at : timestamp with time zone
+  }
+  class "camino.mail_outbox" as camino_mail_outbox <<table>> {
+    id : uuid [PK]
+    envelope : text
+    status : text
+    attempts : smallint
+    available_at : timestamp with time zone
+    lease_until : timestamp with time zone?
+    expires_at : timestamp with time zone
+    created_at : timestamp with time zone
+    sent_at : timestamp with time zone?
+  }
+  class "camino.requests" as camino_requests <<table>> {
+    actor_id : uuid [PK]
+    request_id : uuid [PK]
+    payload_hash : text
+    response : jsonb?
+    created_at : timestamp with time zone
+    --
+    {field} PRIMARY KEY (actor_id, request_id)
+  }
+  class "camino.rate_limits" as camino_rate_limits <<table>> {
+    key : text [PK]
+    hits : integer
+    expires_at : timestamp with time zone
+  }
+  class "camino.audit" as camino_audit <<table>> {
+    id : bigint [PK]
+    actor_id : uuid? [FK]
+    action : text
+    target_id : text?
+    request_id : uuid?
+    metadata : jsonb
+    created_at : timestamp with time zone
+  }
+}
+camino_buildings "1" -- "0..*" camino_agenda : building_id
+camino_profiles "1" -- "0..*" camino_assignment_changes : actor_id
+camino_challenges "0..1" -- "0..*" camino_assignment_changes : from_id
+camino_profiles "1" -- "0..*" camino_assignment_changes : participant_id
+camino_challenges "0..1" -- "0..*" camino_assignment_changes : to_id
+camino_challenges "1" -- "0..*" camino_assignments : challenge_id
+camino_profiles "1" -- "0..*" camino_assignments : participant_id
+camino_challenges "1" -- "0..*" camino_attempts : challenge_id
+camino_profiles "1" -- "0..*" camino_attempts : participant_id
+camino_challenges "1" -- "0..*" camino_attempts : replacement_id
+camino_profiles "0..1" -- "0..*" camino_audit : actor_id
+camino_buildings "1" -- "0..*" camino_challenges : building_id
+camino_projects "0..1" -- "0..*" camino_challenges : project_id
+camino_challenges "1" -- "0..*" camino_completions : challenge_id
+camino_profiles "1" -- "0..*" camino_completions : participant_id
+camino_profiles "1" -- "0..*" camino_email_codes : participant_id
+camino_areas "0..1" -- "0..*" camino_profiles : area
+auth_users "0..1" -- "0..1" camino_profiles : auth_user_id
+camino_profiles "1" -- "0..1" camino_progress : participant_id
+camino_buildings "1" -- "0..*" camino_projects : building_id
+camino_challenges "1" -- "0..*" camino_questions : challenge_id
+camino_profiles "1" -- "0..*" camino_raffles : actor_id
+camino_tickets "1" -- "0..1" camino_raffles : ticket_id
+camino_profiles "1" -- "0..*" camino_sessions : participant_id
+camino_profiles "1" -- "0..1" camino_surveys : participant_id
+camino_profiles "0..1" -- "0..*" camino_tickets : issued_by
+camino_profiles "1" -- "0..*" camino_tickets : participant_id
+camino_profiles "1" -- "0..*" camino_votes : participant_id
+camino_projects "1" -- "0..*" camino_votes : project_id
+camino_tickets "1" -- "0..1" camino_votes : ticket_id
+note bottom of camino_profiles
+  role: admin | visitor | admission
+  email y public_token únicos.
+  Auth solo para admins; área obligatoria para participantes.
+end note
+note bottom of camino_configuration
+  Fila única. document contiene catálogo y reglas.
+  progress.snapshot conserva el avance canónico.
+  Ambos se sincronizan con las proyecciones SQL mediante RPC.
+end note
+note bottom of camino_requests
+  actor_id/request_id son correlaciones lógicas, no FK.
+  catalog_version y audit.request_id tampoco tienen FK.
+  mail_outbox no tiene FK a perfiles: envelope está cifrado.
+end note
+@enduml
