@@ -265,7 +265,7 @@ async function main() {
     await admin.getByRole("button", { name: "Nuevo usuario" }).click();
     const form = admin.locator(".admin-editor form");
     await form.getByLabel("Nombre", { exact: true }).fill("Nueva");
-    await form.getByLabel("Apellido 1").fill("Persona");
+    await form.getByLabel("Primer Apellido").fill("Persona");
     await form.getByLabel("Apellido 2").fill("API");
     await form
       .getByLabel("Correo electrónico")
@@ -542,7 +542,7 @@ async function main() {
       })
       .click();
     const freshForm = admin.locator(".admin-editor form");
-    await freshForm.getByLabel("Apellido 1").fill("Persona");
+    await freshForm.getByLabel("Primer Apellido").fill("Persona");
     await freshForm.getByRole("button", { name: "Guardar cambios" }).click();
     await admin
       .getByRole("heading", { name: "Actualizada Persona API", exact: true })

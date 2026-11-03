@@ -505,7 +505,7 @@ export function ApiJourney({ adminOnly = false }: { adminOnly?: boolean }) {
         </header>
         <main className="login-layout">
           <section className="login-story">
-            <span className="eyebrow">FERIA TECNOLÓGICA · CEDES DON BOSCO</span>
+            <span className="eyebrow">FERIA DE INGENIERÍA, CIENCIA Y ARTE · CEDES DON BOSCO</span>
             <h1 className="login-event-wordmark" aria-label="ExpoTEC">
               <span>EXPO</span>
               <span>TEC</span>
@@ -540,7 +540,7 @@ export function ApiJourney({ adminOnly = false }: { adminOnly?: boolean }) {
                   pattern="[A-Z0-9]{4}"
                   required
                   autoComplete="off"
-                  placeholder="Tu token"
+                  placeholder="Escribe aquí tu token"
                 />
               </label>
               {error && (

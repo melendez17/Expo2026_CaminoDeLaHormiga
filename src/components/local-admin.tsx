@@ -717,7 +717,7 @@ export function LocalAdmin({
                           user?.firstName ?? user?.name,
                         )}
                         {field(
-                          "Apellido 1",
+                          "Primer Apellido",
                           "firstSurname",
                           user?.firstSurname,
                         )}

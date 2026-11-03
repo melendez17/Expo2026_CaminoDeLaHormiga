@@ -241,7 +241,7 @@ async function main() {
 
     await adminNav('Usuarios').click(); await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
     await page.getByLabel('Nombre',{exact:true}).fill('Valeria');
-    await page.getByLabel('Apellido 1',{exact:true}).fill('Prueba');
+    await page.getByLabel('Primer Apellido',{exact:true}).fill('Prueba');
     await page.getByLabel('Apellido 2',{exact:true}).fill('Registro');
     await page.getByLabel('Correo electrónico',{exact:true}).fill('valeria@example.com');
     await page.getByLabel('Área de afinidad',{exact:true}).selectOption('school');
@@ -362,7 +362,7 @@ async function main() {
     for (const [role,label] of variants) {
       await rolePage.getByRole('button',{name:'Nuevo usuario',exact:true}).click();
       await rolePage.getByLabel('Nombre',{exact:true}).fill('Admisión');
-      await rolePage.getByLabel('Apellido 1',{exact:true}).fill(label);
+      await rolePage.getByLabel('Primer Apellido',{exact:true}).fill(label);
       await rolePage.getByLabel('Apellido 2',{exact:true}).fill('Prueba');
       await rolePage.getByLabel('Correo electrónico',{exact:true}).fill(`${role}@example.com`);
       assert.equal(await rolePage.locator('input[name="token"]').count(),0);
