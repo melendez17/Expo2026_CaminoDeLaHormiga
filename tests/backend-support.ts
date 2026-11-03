@@ -65,6 +65,15 @@ export async function backendFixture() {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      new URL(
+        "../supabase/migrations/202611030002_token_login.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   const store = new SQLStore(db),
     config = {
       pepper: "test-only-pepper-not-a-production-key-123456789",

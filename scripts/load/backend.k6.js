@@ -1,4 +1,4 @@
-// Run ONLY against staging you control, with synthetic people and one-time access links.
+// Run ONLY against staging you control, with synthetic people and private participant tokens.
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { SharedArray } from "k6/data";
@@ -22,7 +22,7 @@ const access = new SharedArray("private-synthetic-access", () =>
 );
 if (access.length < vus)
   throw Error(
-    "One unique synthetic participant credential per virtual user is required.",
+    "One unique synthetic participant token per virtual user is required.",
   );
 export const options = {
   noCookiesReset: true,
@@ -53,8 +53,8 @@ function post(path, body) {
 }
 export default function () {
   if (!initialized) {
-    const activation = post("auth/activate", {
-      credential: access[__VU - 1].access.credential,
+    const activation = post("auth/login", {
+      token: access[__VU - 1].user.token,
     });
     if (!check(activation, { "access activated": (r) => r.status === 200 })) {
       sleep(30);

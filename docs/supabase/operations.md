@@ -10,7 +10,7 @@ Antes de la feria:
 
 1. Crear staging con catálogo y datos sintéticos, sin correos/personas reales. Medir tamaño de base con `queries.sql` y extrapolar respuestas/intentos/votos/tiquetes esperados de 5.000 personas. Reservar margen; no cargar imágenes en PostgreSQL.
 2. Probar desde el hosting previsto y una red semejante al colegio; medir p95/p99, 429/5xx, CPU/IO y recursos de Next.js/Supabase. Verificar límites de duración/memoria de las funciones del hosting.
-3. Ejecutar gradualmente `scripts/load/backend.k6.js`. Usa accesos privados únicos por usuario virtual y NO debe ejecutarse contra producción. Puede crear avance/tiquetes si se amplía; este guion solo inicia rutas y lee.
+3. Ejecutar gradualmente `scripts/load/backend.k6.js`. Usa tokens privados únicos por usuario virtual y NO debe ejecutarse contra producción. Puede crear avance/tiquetes si se amplía; este guion solo inicia rutas y lee.
 4. Usar un solo refresco periódico por pantalla/visibilidad (p.ej. ranking cada 20–30 s), no polling por cada tarjeta. Empezar con lectura HTTP; no suscribir 1.500 sockets de Realtime para datos privados.
 5. Tener plan de respaldo y presupuesto de contingencia. Si la prueba excede recursos/cuotas, contratar capacidad temporal o reducir tráfico. Dominio/hosting del colegio no incluyen automáticamente recursos de Supabase ni SMTP.
 
@@ -20,7 +20,7 @@ Ejemplo, con k6 instalado por separado, contra staging propio:
 k6 run -e ALLOW_STAGING_LOAD=true -e BASE_URL=https://staging.example.cr -e ACCESS_FILE="$PWD/private/staging-access.json" -e VUS=100 scripts/load/backend.k6.js
 ```
 
-Aumentar a 300, 750 y 1.500 solo después de revisar métricas. Preparar un archivo nuevo de accesos para cada ejecución: las credenciales son de un solo uso. Cada VU usa su propia persona. No enviar credenciales a servicios de carga externos.
+Aumentar a 300, 750 y 1.500 solo después de revisar métricas. Usar un archivo privado de tokens de personas sintéticas; cada usuario virtual recibe su propio token. Cada VU usa su propia persona. No enviar credenciales a servicios de carga externos.
 
 ## Migrar usuarios existentes
 
@@ -48,7 +48,7 @@ El Excel administrativo permite leer/exportar datos y preservar la evidencia de 
 
 ## Correo opcional
 
-QR/enlace entregado por información no depende de SMTP. Para correo habilitar EMAIL_ACCESS_ENABLED y configurar SMTP_HOST/PORT (465 o 587), SMTP_USER/PASSWORD, MAIL_FROM y JOBS_SECRET en el servidor. Usar proveedor con TLS, SPF, DKIM y DMARC; verificar cuotas/precios y autorización del dominio. El SMTP de Supabase Auth administra invitaciones de admins por separado; no equivale al SMTP de participantes de esta aplicación.
+El acceso principal por token entregado por información no depende de SMTP ni requiere QR. Para correo habilitar EMAIL_ACCESS_ENABLED y configurar SMTP_HOST/PORT (465 o 587), SMTP_USER/PASSWORD, MAIL_FROM y JOBS_SECRET en el servidor. Usar proveedor con TLS, SPF, DKIM y DMARC; verificar cuotas/precios y autorización del dominio. El SMTP de Supabase Auth administra invitaciones de admins por separado; no equivale al SMTP de participantes de esta aplicación.
 
 Programar un POST por minuto a `/api/v1/internal/jobs` con Bearer JOBS_SECRET desde un scheduler privado. No se agregó cron externo que envíe mensajes automáticamente. El worker procesa hasta 200 mensajes por ejecución y como máximo unos 35 s antes de terminar el grupo activo, con cinco envíos en paralelo, arrendamiento de dos minutos, reintentos hasta cinco y exclusión con SKIP LOCKED. No registrar payloads del outbox. El transporte es al menos una vez: un corte después de enviar puede duplicar el correo; códigos/enlaces siguen siendo de un uso. El código más reciente invalida los anteriores, aunque un mensaje viejo tarde en llegar.
 

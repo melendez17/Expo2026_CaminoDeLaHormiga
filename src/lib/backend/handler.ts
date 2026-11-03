@@ -4,6 +4,7 @@ import { BackendService } from "./service";
 import { BackendError } from "./errors";
 import {
   activateInput,
+  tokenLoginInput,
   answerInput,
   assignmentInput,
   commandInput,
@@ -190,6 +191,36 @@ export function createBackendHandler(deps: HandlerDependencies) {
             Vary: "Accept-Encoding",
           },
         );
+      }
+      if (path === "auth/login" && method === "POST") {
+        // Shared school Wi-Fi must allow the attendance peak; only trust a client
+        // IP when the hosting proxy replaces the forwarded header (see setup).
+        await service.rate(
+          "login:network:" + network,
+          network === "shared" ? 3000 : 30,
+        );
+        const input = await readJson(request, tokenLoginInput);
+        await service.rate("login:token:" + input.token, 6, 300);
+        const raw = secret();
+        const participantId = await service.store.rpc<string | null>(
+          "camino_login_token",
+          {
+            p_token: input.token,
+            p_session_hash: hash(raw),
+            p_expires: new Date(
+              Date.now() + service.config.sessionSeconds * 1000,
+            ).toISOString(),
+          },
+        );
+        if (!participantId)
+          throw new BackendError(
+            401,
+            "invalid_credential",
+            "El token no es válido o el usuario está inactivo.",
+          );
+        return json({ ok: true }, 200, {
+          "Set-Cookie": sessionCookie(raw, service.config.sessionSeconds),
+        });
       }
       if (path === "auth/activate" && method === "POST") {
         await service.rate("activate:network:" + network, 3000);
@@ -788,12 +819,10 @@ export function createBackendHandler(deps: HandlerDependencies) {
             error: {
               code: "invalid_input",
               message: "Revisa los campos de la solicitud.",
-              fields: error.issues
-                .slice(0, 8)
-                .map((issue) => ({
-                  path: issue.path.join("."),
-                  message: issue.message,
-                })),
+              fields: error.issues.slice(0, 8).map((issue) => ({
+                path: issue.path.join("."),
+                message: issue.message,
+              })),
             },
             requestId: trace,
           },

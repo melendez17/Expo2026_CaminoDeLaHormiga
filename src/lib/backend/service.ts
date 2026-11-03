@@ -130,7 +130,7 @@ export class BackendService {
               {
                 to: input.email,
                 subject: "Tu acceso al Camino de la Hormiga",
-                text: `Tu identificador es ${token}. Abre este enlace privado de un solo uso para entrar: ${access.url} . Vence en 24 horas. No compartas el enlace.`,
+                text: `Tu token de acceso es ${token}. Entra en ${this.config.origin}/ e ingresa el token. No lo compartas: permite acceder a tu recorrido.`,
               },
               this.config.encryptionKey,
             );
@@ -166,6 +166,7 @@ export class BackendService {
     const { accessEnvelope, ...safe } = value;
     return {
       ...safe,
+      login: { method: "token", token: (safe.user as LocalUser).token },
       user: safe.user as LocalUser,
       access: decrypt(String(accessEnvelope), this.config.encryptionKey) as {
         credential: string;

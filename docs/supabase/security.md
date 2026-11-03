@@ -19,12 +19,12 @@ Esta frontera confía en el backend. La función de commit no es una API públic
 
 ## Accesos
 
-- Participantes: código de cuatro hexadecimales público para identificación y tiquetes. Acceso secreto de 256 bits de un solo uso entregado por el administrador; su hash HMAC se guarda en perfiles. OTP opcional de ocho dígitos con HMAC, cinco intentos y diez minutos. Respuesta de solicitud de correo uniforme aunque no coincida la persona.
+- Participantes: ingreso únicamente por token reutilizable de cuatro hexadecimales, entregado por información; no requiere QR ni correo. El token es una credencial secreta de baja entropía (65.536 combinaciones), elegida expresamente para el evento. Se aplican límites por token (6 intentos cada 5 minutos) y red (30/minuto con IP de proxy confiable; 3.000/minuto compartidos sin ella para admitir Wi-Fi escolar). Son mitigaciones parciales: alguien que adivine u obtenga un token puede entrar como esa persona. No publicar tokens, códigos de tiquetes que los incluyan ni archivos de usuarios reales. Los campos heredados claim_hash/enlace y OTP permanecen solo para compatibilidad, sin ser requisitos del acceso.
 - Sesión opaca aleatoria en cookie `__Host-camino_session`, Secure, HttpOnly, SameSite=Strict y Path=/ en producción. SHA-256 en base; vence por defecto en doce horas. Baja, cambio de correo o reemisión revocan sesiones/credenciales previas. No se almacena el secreto en localStorage.
 - Administradores: usuario real de Supabase Auth con segundo factor TOTP. El servidor consulta `auth.getUser`, comprueba issuer/sub/audience/exp/AAL2 del token ya verificado y exige perfil activo `admin` de la base en cada petición. No confía en `user_metadata` ni en un rol enviado por cliente. En producción no puede deshabilitarse MFA con una variable.
 - No hay registro público de participantes. La invitación de nuevos administradores usa Auth más perfil SQL; al fallar el perfil se intenta deshacer la cuenta Auth. Como involucra dos servicios, revisar invitaciones incompletas ante un fallo de red; no es una transacción distribuida.
 
-Los enlaces de acceso usan fragmento `#access=...` para no enviar la credencial a logs del servidor/referrers. La siguiente interfaz debe consumirlo y eliminarlo con `history.replaceState`, sin analítica ni recursos externos en ese paso. La API devuelve secretos solo al administrador que entrega el acceso. Los resultados idempotentes de alta están cifrados AES-256-GCM en la base, así como el contenido del outbox.
+Como alternativa heredada, los enlaces de acceso usan fragmento `#access=...` para no enviar la credencial a logs del servidor/referrers. Si se reutiliza esa alternativa, la interfaz debe consumirlo y eliminarlo con `history.replaceState`, sin analítica ni recursos externos en ese paso. La API devuelve el token al administrador que lo entrega; la pantalla de ingreso solo lo solicita y obtiene una cookie protegida. Los resultados idempotentes de alta están cifrados AES-256-GCM en la base, así como el contenido del outbox.
 
 ## Base y autorización
 
@@ -46,7 +46,7 @@ La rifa elige un índice con `crypto.randomInt` sobre todos los tiquetes activos
 
 Mutaciones con Origin exacto, bloqueo cross-site, cuerpos limitados por lectura incremental (16 KiB general, 256 KiB catálogo), esquemas estrictos y límites de campos. Sin CORS permisivo. Sesiones y descargas privadas no se cachean; ranking/catálogo públicos tienen caché compartida de diez segundos. Los errores no exponen SQL/stack/PII y logs de fallos inesperados solo guardan ID de traza y tipo de error.
 
-Hay límites persistentes para activación, OTP, comandos y admin. `TRUST_PROXY=false` agrupa accesos de red sin confiar en headers falsificables; el límite de activación compartido es 3.000/minuto para admitir una red escolar. Solo habilitar TRUST_PROXY si el proveedor garantiza reemplazar x-forwarded-for. Configurar protección de abuso/WAF en el hosting y ajustar con pruebas: el límite de la aplicación no sustituye una defensa de infraestructura.
+Hay límites persistentes para login por token, activación heredada, OTP, comandos y admin. `TRUST_PROXY=false` agrupa accesos de red sin confiar en headers falsificables; el límite de activación compartido es 3.000/minuto para admitir una red escolar. Solo habilitar TRUST_PROXY si el proveedor garantiza reemplazar x-forwarded-for. Configurar protección de abuso/WAF en el hosting y ajustar con pruebas: el límite de la aplicación no sustituye una defensa de infraestructura.
 
 ## Datos sensibles y tareas pendientes antes de producción
 

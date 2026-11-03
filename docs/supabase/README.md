@@ -28,4 +28,6 @@ Rama: `implementacionbackend`. El backend real está implementado en `/api/v1` y
 
 ## Decisión de acceso
 
-El código hexadecimal de cuatro caracteres identifica a la persona, pero **no es una contraseña**: existen solo 65.536 combinaciones; con 5.000 registros, cerca del 7,6 % de las combinaciones identificarían a alguien. La entrega por un administrador continúa: al registrar se obtiene el código corto y un enlace/QR privado, de un solo uso y 24 horas. Alternativamente, el participante solicita un código temporal de ocho dígitos enviado a su correo registrado. El administrador puede reemitir el acceso, revocando los anteriores. No hay registro público.
+Por decisión del colegio, el participante ingresa **solo con su token hexadecimal de cuatro caracteres**, mediante `POST /api/v1/auth/login`. Es reutilizable; no exige QR ni verificación por correo. El correo se mantiene como dato único del registro. Los administradores conservan Supabase Auth y MFA; su código no sirve para iniciar sesión en el panel.
+
+El token pasa a ser una credencial secreta. Cuatro caracteres tienen solo 65.536 combinaciones: los límites de intentos y las cookies protegidas reducen abuso, pero no ofrecen la protección de una contraseña larga o segundo factor. No publicar tokens ni códigos de tiquetes que los contengan en rankings o pantallas públicas. Los endpoints de enlace/OTP anteriores se conservan por compatibilidad, sin ser necesarios para ingresar.

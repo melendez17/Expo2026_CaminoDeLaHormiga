@@ -136,7 +136,7 @@ test("API v1 real sobre PostgreSQL: permisos, cookies, privacidad y flujos compl
     },
   );
   await t.test(
-    "cuatro caracteres solos no autentican; credencial real produce cookie segura de un uso",
+    "el enlace heredado conserva su formato y uso único, independiente del login por token",
     async () => {
       assert.equal(
         (await send("auth/activate", "POST", { credential: alice.user.token }))
@@ -205,7 +205,9 @@ test("API v1 real sobre PostgreSQL: permisos, cookies, privacidad y flujos compl
         for (const q of c.questions ?? [])
           assert.equal(q.correctIndex, undefined);
       }
-      const original = body.state.challenges[0],
+      const original = body.state.challenges.find(
+          (c: { questions?: unknown[] }) => c.questions?.length,
+        ),
         real = (await f.service.catalog()).catalog.challenges.find(
           (c) => c.id === original.id,
         )!;

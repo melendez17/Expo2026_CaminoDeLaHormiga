@@ -11,9 +11,9 @@ No se necesitan credenciales para probar la demo actual ni las pruebas automatiz
 
 ## 2. Crear las tablas
 
-La migración vigente es `supabase/migrations/202611030001_production.sql`. En un proyecto nuevo se puede copiar completa al SQL Editor y ejecutar una sola vez. Crea el esquema privado, tablas, índices, RLS y funciones de servidor. No requiere ejecutar las dos migraciones antiguas.
+Las migraciones vigentes son `supabase/migrations/202611030001_production.sql` y `202611030002_token_login.sql`. En un proyecto nuevo ejecutar ambas completas, en ese orden, una sola vez desde SQL Editor. En un proyecto que ya tenga la primera, aplicar solo la segunda. Crea el esquema privado, tablas, índices, RLS y funciones de servidor. No requiere ejecutar las dos migraciones antiguas.
 
-También se puede usar la CLI de Supabase: vincular el proyecto con `supabase link --project-ref TU_REFERENCIA`, revisar `supabase db push --dry-run` y aplicar con `supabase db push`. La CLI aplica las tres migraciones en orden; la nueva convive con las anteriores sin borrar sus tablas. **No ejecutar `db reset` contra una base con datos reales**. Revisar la lista de migraciones con `supabase migration list` antes de aplicar cambios posteriores.
+También se puede usar la CLI de Supabase: vincular el proyecto con `supabase link --project-ref TU_REFERENCIA`, revisar `supabase db push --dry-run` y aplicar con `supabase db push`. La CLI aplica las cuatro migraciones en orden; la nueva convive con las anteriores sin borrar sus tablas. **No ejecutar `db reset` contra una base con datos reales**. Revisar la lista de migraciones con `supabase migration list` antes de aplicar cambios posteriores.
 
 Las tablas históricas de `public` se conservan si existían. La API nueva usa exclusivamente `camino`; no convierte automáticamente las tablas históricas. `supabase/seed.example.sql` es legado y no es la semilla de producción.
 
@@ -98,7 +98,7 @@ npm run api:check -- --session-file private/admin-session.json
 
 `db:check` consulta la base y muestra solamente conteos. `api:check` comprueba la ruta HTTP administrativa y su rol; consultar `GET /api/v1/health` solo verifica que arranca la configuración, no sustituye la comprobación de base. Un `503 backend_disabled/not_configured` significa que no están listas las variables; no hay caída silenciosa al almacenamiento local.
 
-El siguiente paso será conectar las pantallas con `createApiClient` y Supabase Auth MFA, consumir el fragmento `#access` y borrarlo inmediatamente del historial. La API ya devuelve el enlace privado, pero el login de la demo todavía no lo consume. Durante esa integración hay que desactivar el service worker de la demo para datos privados: nunca almacenar `/api/v1/me`, `/admin` ni sesiones en cachés offline. Los participantes reales necesitan conexión para confirmar respuestas/votos.
+El siguiente paso será conectar las pantallas con `createApiClient` y Supabase Auth MFA, usar `api.login(token)` contra `POST /api/v1/auth/login`. El ingreso será solo por token, sin QR ni código por correo; la demo ya usa token, pero todavía lo busca en JSON. Durante esa integración hay que desactivar el service worker de la demo para datos privados: nunca almacenar `/api/v1/me`, `/admin` ni sesiones en cachés offline. Los participantes reales necesitan conexión para confirmar respuestas/votos.
 
 ## 7. Ver los datos
 

@@ -1,6 +1,6 @@
 # API v1
 
-Prefijo `/api/v1`, JSON UTF-8, mismo origen. Node.js en Next.js. No se aceptan los endpoints anteriores ni un token de cuatro caracteres como contraseña. No hay CORS público.
+Prefijo `/api/v1`, JSON UTF-8, mismo origen. Node.js en Next.js. Los participantes ingresan solo con su token hexadecimal de cuatro caracteres; los administradores requieren Supabase Auth y MFA. No hay CORS público.
 
 ## Autorización y comandos
 
@@ -19,12 +19,13 @@ Paginación: `?offset=0&limit=50&search=texto`; máximo 100 por petición públi
 | GET | `/health` | Configuración habilitada; no verifica por sí sola toda la base |
 | GET | `/catalog` | Proyectos, agenda, configuración pública y reglas. Sin usuarios, respuestas ni códigos |
 | GET | `/leaderboard` | Proyectos, puestos y conteos agregados; sin votantes |
+| POST | `/auth/login` | `{ "token": "A12F" }`; inicia una sesión con cookie, sin QR ni correo |
 | POST | `/auth/activate` | `{ "credential": "SECRETO_PRIVADO_DE_43_CARACTERES" }`; consume el acceso y fija cookie |
 | POST | `/auth/request-email` | `{ "email":"persona@ejemplo.cr", "token":"A12F" }`; devuelve challengeId aun si no coincide, para evitar enumeración |
 | POST | `/auth/verify-email` | `{ "challengeId":"UUID", "code":"12345678" }`; fija cookie si es correcto |
 | POST | `/auth/logout` | Revoca sesión y borra cookie |
 
-Credencial/QR: aleatoria de 256 bits, un uso, 24 horas. Sesión: 12 horas por defecto, revocable. OTP: ocho dígitos, diez minutos y cinco intentos; solicitar otro invalida el anterior. El correo requiere SMTP y trabajo programado configurados. Un código corto aislado no inicia sesión.
+Credencial/QR: aleatoria de 256 bits, un uso, 24 horas. Sesión: 12 horas por defecto, revocable. OTP: ocho dígitos, diez minutos y cinco intentos; solicitar otro invalida el anterior. El correo requiere SMTP y trabajo programado configurados. El acceso principal es `/auth/login`: el token es reutilizable. Las rutas de enlace/OTP se conservan únicamente como alternativas compatibles; no se requieren en la pantalla de ingreso.
 
 ## Participante autenticado
 
@@ -88,7 +89,7 @@ Registro de participante:
 }
 ```
 
-Entrega: `card` devuelve código/enlace para información; `email` o `both` además encolan el enlace si el correo está habilitado. La API no dibuja el QR: el siguiente frontend puede generarlo localmente a partir de `access.url`. La respuesta de alta contiene secretos: no registrarla en logs/analítica ni ponerla en localStorage. No se admite `role: admin`, token elegido o avance en este endpoint. El correo normalizado es único en toda la aplicación, incluso entre admins y participantes; los miembros de una familia necesitan correos distintos según la regla solicitada.
+Entrega: `card` devuelve código/enlace para información; `email` o `both` además encolan el enlace si el correo está habilitado. La API no dibuja el QR: el siguiente frontend puede generarlo localmente a partir de `access.url`. El alta también devuelve `login: {method: "token", token: "A12F"}`; la pantalla debe entregar ese token, sin pedir QR ni activar correo. `access` es información de compatibilidad con el enlace anterior y no se necesita para iniciar sesión. La respuesta de alta contiene secretos: no registrarla en logs/analítica ni ponerla en localStorage. No se admite `role: admin`, token elegido o avance en este endpoint. El correo no se utiliza para verificar este inicio de sesión. El correo normalizado es único en toda la aplicación, incluso entre admins y participantes; los miembros de una familia necesitan correos distintos según la regla solicitada.
 
 Áreas exactas: `pasitos`, `school`, `third_cycle`, `Desarrollo Web`, `Ciberseguridad`, `Dibujo y Modelado de Edificaciones`, `Diseño Gráfico Multimedia`, `Electromecánica`, `Mecánica de Precisión`.
 

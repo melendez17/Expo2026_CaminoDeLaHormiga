@@ -96,6 +96,15 @@ export const rulesInput = z
     assignmentRules: assignmentRulesSchema,
   })
   .strict();
+export const tokenLoginInput = z
+  .object({
+    token: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-F0-9]{4}$/),
+  })
+  .strict();
 export const activateInput = z
   .object({ credential: z.string().regex(/^[A-Za-z0-9_-]{43}$/) })
   .strict();

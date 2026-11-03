@@ -82,6 +82,7 @@ export function createApiClient(
     me: () => request("GET", "/me"),
     catalog: () => request("GET", "/catalog"),
     leaderboard: () => request("GET", "/leaderboard"),
+    login: (token: string) => request("POST", "/auth/login", { token }),
     activate: (credential: string) =>
       request("POST", "/auth/activate", { credential }),
     requestEmail: (email: string, token: string) =>
