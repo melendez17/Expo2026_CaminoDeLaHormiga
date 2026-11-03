@@ -6,3 +6,6 @@ node_modules/
 coverage/
 
 .vercel/
+# Datos y accesos reales: nunca versionarlos.
+private/
+supabase/.temp/

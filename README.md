@@ -1,4 +1,8 @@
-# El camino de la hormiga · Demo local JSON
+# El camino de la hormiga · ExpoTEC
+
+**Rama `implementacionbackend`: backend Supabase implementado, pendiente de conectar al proyecto remoto y a las pantallas.** La interfaz continúa como demo JSON. Consulta [la guía completa de Supabase](docs/supabase/README.md) y [el paso a paso de conexión](docs/supabase/setup.md). No introducir datos personales reales en la demo.
+
+## Demo local JSON
 
 Frontend de ExpoTEC para CEDES Don Bosco, con **Next.js, React y TypeScript**. Esta versión funciona con archivos JSON y progreso guardado en el navegador: **no necesita Supabase, credenciales ni una API**.
 
@@ -83,15 +87,16 @@ Para probar offline, abre primero la aplicación con conexión y espera la insta
 - `public/data/`: fuente de datos de la demo.
 - `tests/local-game.test.ts` y `tests/browser.ts`: pruebas de la experiencia local.
 
-El trabajo previo de API/Supabase se conserva como referencia en `src/app/api/`, `src/lib/server.ts` y `supabase/`, pero **no participa en este frontend**. `/admin` abre el acceso administrativo local con `ADM1`, sin Supabase. Las guías de [arquitectura](docs/architecture.md), [base de datos](docs/database.md), [API](docs/api.md) y [operación](docs/operations.md) describen esa futura integración; la guía vigente para esta entrega es [Demo local JSON](docs/local-demo.md).
+La API vigente está en `src/app/api/` y `src/lib/backend/`, con migración privada en `supabase/migrations/202611030001_production.sql`. El servidor anterior se archivó en `docs/legacy`. `/admin` sigue abriendo la demo local; no es todavía el acceso Supabase MFA. `CAMINO_BACKEND_ENABLED=false` mantiene los endpoints reales cerrados hasta configurar el entorno.
 
+Pruebas del backend: `npm run test:backend`. Las pruebas usan PostgreSQL embebido y no envían correos ni requieren credenciales. Conexión real: [configuración](docs/supabase/setup.md).
 ## Publicar en Vercel
 
 La demo puede publicarse sin variables de entorno usando la rama `implementacion-v0.1`. Consulta [la guía de publicación](docs/vercel.md); `vercel.json` incluye la configuración de Next.js.
 
 ## Roles y áreas de afinidad
 
-La rama de este cambio es `correccion-roles-proyectos-tiquetes`. Solo existen tres roles: Admin (`admin`), Visitante (`visitor`) y Admisión (`admission`). El rol controla el acceso, la encuesta y el tamaño del recorrido. El área orienta la asignación de retos. Admisión conserva cinco retos obligatorios; Visitante recibe rondas de dos.
+Las siguientes funcionalidades describen la demo JSON; el backend equivalente está en `implementacionbackend`. Solo existen tres roles: Admin (`admin`), Visitante (`visitor`) y Admisión (`admission`). El rol controla el acceso, la encuesta y el tamaño del recorrido. El área orienta la asignación de retos. Admisión conserva cinco retos obligatorios; Visitante recibe rondas de dos.
 
 El formulario exige **Área de afinidad** para los participantes. Ofrece Escuela (`school`), Pasitos (`pasitos`), Tercer ciclo (`third_cycle`) y las seis especialidades: Desarrollo Web, Ciberseguridad, Dibujo y Modelado de Edificaciones, Diseño Gráfico Multimedia, Electromecánica y Mecánica de Precisión. No hay opción Cuarto ciclo ni segundo campo de especialidad: se elige la especialidad directamente como `area`.
 

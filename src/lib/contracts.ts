@@ -1,3 +1,5 @@
+// Legacy API v0 contracts, retained only by the dormant offline/demo adapters.
+// Production API schemas live in src/lib/backend/contracts.ts.
 import { z } from 'zod';
 export const tokenInput = z.object({ token: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}$/) });
 export const registrationInput = z.object({
