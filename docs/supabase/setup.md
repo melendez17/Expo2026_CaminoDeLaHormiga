@@ -111,3 +111,14 @@ node ".\node_modules\tsx\dist\cli.mjs" ".\scripts\supabase\seed-catalog.ts" --ap
 El modo debug de las herramientas privadas muestra nombre de RPC, código de PostgreSQL/PostgREST y mensaje técnico acotado. No imprime argumentos, claves del entorno, cabeceras ni detalles de filas; también oculta credenciales/correos detectados en el mensaje. Las respuestas de la API pública siguen siendo genéricas.
 
 Si la inicialización falla dentro de la transacción, los cambios de esa llamada se revierten. Primero revisar ese código/mensaje para corregir la causa; un catálogo ausente no significa necesariamente que falten todas las tablas. No volver a crear el proyecto para diagnosticarlo.
+
+## Error `21000: DELETE requires a WHERE clause`
+
+Aplica `supabase/migrations/202611030005_catalog_safe_delete.sql` completo desde el SQL Editor de Supabase antes de repetir el seed. Esta migración reemplaza únicamente la función interna que escribe el catálogo y añade el filtro explícito a la eliminación de preguntas que se reconstruyen. Conserva las tablas, sus permisos y la protección de Supabase contra eliminaciones sin `WHERE`. No requiere reiniciar ni borrar la base de datos.
+
+Después ejecuta en PowerShell:
+
+```powershell
+node ".\node_modules\tsx\dist\cli.mjs" ".\scripts\supabase\seed-catalog.ts" --apply --debug
+node ".\node_modules\tsx\dist\cli.mjs" ".\scripts\supabase\check-connection.ts"
+```

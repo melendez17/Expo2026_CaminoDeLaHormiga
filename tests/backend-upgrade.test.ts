@@ -14,6 +14,7 @@ test("migración de producción convive con las dos migraciones históricas sin 
     "202611030002_token_login.sql",
     "202611030003_admin_token_login.sql",
     "202611030004_frontend_api.sql",
+    "202611030005_catalog_safe_delete.sql",
   ]) {
     await db.exec(
       readFileSync(
@@ -27,6 +28,11 @@ test("migración de producción convive con las dos migraciones históricas sin 
   );
   assert.equal(result.rows[0].legacy, "participants");
   assert.equal(result.rows[0].production, "camino.profiles");
+  const definition = await db.query<{ body: string }>(
+    "select pg_get_functiondef('camino.write_catalog(jsonb)'::regprocedure) body",
+  );
+  assert.doesNotMatch(definition.rows[0].body, /delete\s+from\s+camino\.questions\s*;/i);
+  assert.match(definition.rows[0].body, /delete from camino.questions where challenge_id is not null/i);
   await db.exec("set role authenticated");
   await assert.rejects(
     () => db.query("select * from camino.profiles"),
