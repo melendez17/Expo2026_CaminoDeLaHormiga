@@ -1,6 +1,6 @@
 /** Generates documentation from a fresh, in-memory database. Never connects to Supabase. */
 import { PGlite } from "@electric-sql/pglite";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 const root = new URL("../../", import.meta.url);
@@ -56,12 +56,15 @@ async function main() {
     await db.exec(
       "create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key);",
     );
-    await db.exec(
-      readFileSync(
-        new URL("supabase/migrations/202611030001_production.sql", root),
-        "utf8",
-      ),
-    );
+    const migrationRoot = new URL("supabase/migrations/", root);
+    for (const name of readdirSync(migrationRoot)
+      .filter(
+        (name) =>
+          name >= "202611030001_production.sql" && name.endsWith(".sql"),
+      )
+      .sort()) {
+      await db.exec(readFileSync(new URL(name, migrationRoot), "utf8"));
+    }
     const columns = (
       await db.query<Column>(`
     select c.relname table_name, a.attname column_name, format_type(a.atttypid,a.atttypmod) data_type, a.attnotnull required,
@@ -164,7 +167,7 @@ async function main() {
       "note bottom of camino_profiles",
       "  role: admin | visitor | admission",
       "  email y public_token únicos.",
-      "  Auth solo para admins; área obligatoria para participantes.",
+      "  Auth es opcional y heredado para admins; acceso actual por token.",
       "end note",
     );
     uml.push(

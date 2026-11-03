@@ -1,47 +1,51 @@
-# Configuración de Supabase paso a paso
+# Configurar Supabase con acceso por token
 
-No se necesitan credenciales para probar la demo actual ni las pruebas automatizadas. Los siguientes pasos los realiza una persona administradora del colegio en un proyecto de pruebas antes de producción. No enviar claves ni contraseñas por chats, repositorio o capturas.
+Los participantes **y administradores** ingresan con su token. No se requieren contraseña, QR, verificación por correo ni doble factor. Los permisos se obtienen del rol activo en la base, no de lo que envíe el navegador.
+
+La interfaz actual todavía es la demo JSON. Estos pasos preparan la base/API; conectar las pantallas será una etapa posterior. No introducir personas reales en la demo pública.
 
 ## 1. Crear el proyecto
 
-1. Crear una organización/proyecto en Supabase, elegir región próxima al público y guardar la contraseña de PostgreSQL en el gestor de contraseñas del colegio.
-2. Anotar **Project URL** y la clave **service_role** (o secret key del servidor compatible con el SDK). Se usan únicamente en Next.js y scripts privados. La clave publishable/anon nunca autoriza administración.
-3. En Authentication, deshabilitar registro público por correo y proveedores que no se utilicen. Habilitar TOTP MFA para administradores. Configurar Site URL y Redirect URLs con el origen HTTPS final y `/admin`. `supabase/config.toml` documenta la configuración local; no modifica automáticamente el proyecto alojado.
-4. Mantener únicamente `public` como esquema expuesto por la Data API. **No exponer `camino`**. No otorgar permisos a `anon` o `authenticated` sobre él.
+Crear una organización/proyecto en Supabase, elegir una región próxima y guardar la contraseña PostgreSQL en el gestor del colegio. Anotar Project URL y service_role/secret key del servidor. No compartirlas en chats, capturas ni repositorio.
 
-## 2. Crear las tablas
+Mantener solo `public` expuesto en la Data API; no exponer `camino` ni concederle acceso a `anon`/`authenticated`. No es necesario crear usuarios en Authentication para el acceso por token. Deshabilitar el signup público de Auth si no se usa; los ajustes MFA de ese servicio no afectan este acceso.
 
-Las migraciones vigentes son `supabase/migrations/202611030001_production.sql` y `202611030002_token_login.sql`. En un proyecto nuevo ejecutar ambas completas, en ese orden, una sola vez desde SQL Editor. En un proyecto que ya tenga la primera, aplicar solo la segunda. Crea el esquema privado, tablas, índices, RLS y funciones de servidor. No requiere ejecutar las dos migraciones antiguas.
+## 2. Ejecutar migraciones
 
-También se puede usar la CLI de Supabase: vincular el proyecto con `supabase link --project-ref TU_REFERENCIA`, revisar `supabase db push --dry-run` y aplicar con `supabase db push`. La CLI aplica las cuatro migraciones en orden; la nueva convive con las anteriores sin borrar sus tablas. **No ejecutar `db reset` contra una base con datos reales**. Revisar la lista de migraciones con `supabase migration list` antes de aplicar cambios posteriores.
+En un proyecto nuevo, ejecutar completas y en orden desde SQL Editor:
 
-Las tablas históricas de `public` se conservan si existían. La API nueva usa exclusivamente `camino`; no convierte automáticamente las tablas históricas. `supabase/seed.example.sql` es legado y no es la semilla de producción.
+1. `supabase/migrations/202611030001_production.sql`
+2. `supabase/migrations/202611030002_token_login.sql`
+3. `supabase/migrations/202611030003_admin_token_login.sql`
 
-## 3. Variables del servidor
+Si ya aplicaste alguna, ejecutar únicamente las pendientes. La tercera habilita el token para admins y elimina la necesidad de un vínculo Auth para sus perfiles; conserva datos y permisos SQL privados.
 
-Copiar `.env.example` a `.env.local`, que está ignorado por Git. Configurar:
+Con CLI: `supabase link --project-ref TU_REFERENCIA`, revisar `supabase db push --dry-run` y después `supabase db push`. La CLI también incluye las dos migraciones históricas anteriores: cinco archivos en total. No ejecutar `db reset` en una base con datos reales. Las tablas viejas de `public` se conservan; la API vigente usa `camino`. `seed.example.sql` es histórico, no una semilla de producción.
+
+## 3. Variables privadas del servidor
+
+Copiar `.env.example` a `.env.local` (ignorado por Git):
 
 ```dotenv
 CAMINO_BACKEND_ENABLED=true
 SUPABASE_URL=https://TU-PROYECTO.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=CLAVE_PRIVADA_DEL_SERVIDOR
+SUPABASE_SERVICE_ROLE_KEY=CLAVE_PRIVADA
 APP_ORIGIN=http://localhost:3000
 TOKEN_PEPPER=SECRETO_ALEATORIO_INDEPENDIENTE
 APP_ENCRYPTION_KEY=64_CARACTERES_HEXADECIMALES
-ADMIN_REQUIRE_MFA=true
 PARTICIPANT_SESSION_SECONDS=43200
 TRUST_PROXY=false
 EMAIL_ACCESS_ENABLED=false
 JOBS_SECRET=OTRO_SECRETO_ALEATORIO
 ```
 
-Generar **cada secreto por separado** localmente con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Guardarlos en el gestor del colegio. No reutilizar service_role como pepper o clave de cifrado. No usar prefijo `NEXT_PUBLIC` en claves privadas. En Vercel/otro hosting se colocan en sus variables de entorno del servidor; volver a desplegar después.
+Generar cada secreto por separado con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`, en una terminal privada. Guardarlos fuera del repositorio. No usar `NEXT_PUBLIC` para secretos, ni reutilizar service_role como pepper/clave.
 
-En producción, `APP_ORIGIN` debe ser el origen HTTPS exacto, sin ruta ni barra final. Las cookies de producción son Secure y las mutaciones exigen el encabezado Origin de ese mismo sitio. Para desarrollo HTTP usar `npm run dev`; un build de producción requiere HTTPS en el origen configurado.
+En producción APP_ORIGIN debe ser el origen HTTPS exacto, sin ruta/barra final; cookies Secure y mutaciones con Origin coincidente. Para desarrollo HTTP usar `npm run dev`. En el hosting configurar variables del servidor y desplegar de nuevo; el dominio del colegio no configura Supabase automáticamente.
 
-## 4. Inicializar el catálogo
+## 4. Inicializar catálogo
 
-Preparar un JSON privado con `projects`, `challenges`, `agenda`, `settings`, `assignmentRules` y demás campos del catálogo. Puede partir del respaldo local. Las respuestas correctas, códigos reales y datos personales **no van en `public/data` ni en Git**. Cambiar `settings.dataVersion` por una versión real del evento. Completar todos los proyectos de décimo/undécimo y suficientes extras de sustitución.
+Preparar un JSON privado con proyectos, retos, agenda, reglas y settings. Puede partir de un respaldo local revisado. Nunca guardar respuestas/códigos reales o personas en `public/data` o Git. Usar una dataVersion del evento real y suficiente catálogo de décimo, undécimo y extras.
 
 ```bash
 mkdir -p private
@@ -49,41 +53,22 @@ npm run db:seed -- --file private/catalogo.json --production
 npm run db:seed -- --file private/catalogo.json --production --apply
 ```
 
-Sin `--apply` solo valida, sin conexión ni escritura. El script no importa usuarios de ejemplo. Sin `--file` sirve para sembrar el catálogo ficticio en staging, no para la feria. La validación conserva los cinco marcadores `isBase` del formato anterior; la cantidad efectiva de ruta depende del rol y de la distribución por área.
+Sin --apply solo valida. No importa usuarios de ejemplo. Sin --file sirve para staging ficticio; no usar ese catálogo en la feria. Se conservan los cinco marcadores isBase del formato; la cantidad efectiva depende de distribución/rol.
 
-Una base ya inicializada se modifica con la API administrativa. `--replace-empty` permite sustituir el catálogo solo si aún no hay progreso/participantes; la base rechaza la operación si los hay.
+Para cambiar un catálogo ya utilizado emplear la API. --replace-empty solo funciona sin progreso/participantes.
 
-## 5. Crear el primer administrador
-
-En Authentication → Users crear/invitar una cuenta real del colegio, completar su contraseña y copiar su UUID. Deshabilitar signup público no impide crearla desde el panel administrativo. No usar la cuenta de un participante.
+## 5. Primer administrador: sin Auth ni MFA
 
 ```bash
-npm run db:bootstrap-admin -- --id UUID_AUTH --email admin@colegio.cr --first Nombre --surname1 Apellido1 --surname2 Apellido2
-npm run db:bootstrap-admin -- --id UUID_AUTH --email admin@colegio.cr --first Nombre --surname1 Apellido1 --surname2 Apellido2 --apply
+npm run db:bootstrap-admin -- --email admin@colegio.cr --first Nombre --surname1 Apellido1 --surname2 Apellido2
+npm run db:bootstrap-admin -- --email admin@colegio.cr --first Nombre --surname1 Apellido1 --surname2 Apellido2 --token-output private/admin-token.json --apply
 ```
 
-El script comprueba que el UUID y el correo corresponden al usuario real de Supabase Auth; la función solo permite crear el primer administrador. Los siguientes se invitan mediante `POST /api/v1/admin/staff`. No registrar administradores por `POST /admin/users`.
+El script genera UUID y token aleatorios, crea el primer perfil admin y guarda el resultado privado con permisos 0600. No imprime el token en consola. Abrir el archivo en un equipo privado y entregar el token al responsable; no publicarlo ni enviarlo a analítica. No se necesita correo de verificación ni cuenta Supabase Auth.
 
-Para probar MFA sin una interfaz nueva, usar una terminal privada:
+El comando solo permite el primer administrador. Los siguientes se crean desde `POST /api/v1/admin/staff`, con una sesión administrativa válida. No usar tokens de ejemplo del repositorio para producción. Si ya había administradores con Auth, conservan sus tokens y ahora también pueden usarlos directamente.
 
-```bash
-read -rsp 'Contraseña de admin: ' CAMINO_ADMIN_PASSWORD
-export CAMINO_ADMIN_PASSWORD
-npm run admin:session -- --email admin@colegio.cr --enroll --output private/totp.svg
-```
-
-Abrir localmente `private/totp.svg` y escanearlo con una app autenticadora. Luego:
-
-```bash
-read -rsp 'Código TOTP: ' CAMINO_TOTP_CODE
-export CAMINO_TOTP_CODE
-npm run admin:session -- --email admin@colegio.cr --output private/admin-session.json
-unset CAMINO_ADMIN_PASSWORD CAMINO_TOTP_CODE
-```
-
-El segundo comando verifica el factor y guarda una sesión AAL2. El QR y el archivo de sesión son secretos; eliminarlos al terminar. Para sesiones posteriores no repetir `--enroll`. Si la cuenta fue invitada, completar antes la activación y contraseña en Supabase Auth. La pantalla `/admin` existente **todavía es el administrador de la demo**, no este acceso MFA.
-
-## 6. Verificar la conexión
+## 6. Comprobar conexión
 
 ```bash
 npm run db:check
@@ -93,15 +78,23 @@ npm run dev
 En otra terminal:
 
 ```bash
-npm run api:check -- --session-file private/admin-session.json
+npm run api:check -- --token-file private/admin-token.json
 ```
 
-`db:check` consulta la base y muestra solamente conteos. `api:check` comprueba la ruta HTTP administrativa y su rol; consultar `GET /api/v1/health` solo verifica que arranca la configuración, no sustituye la comprobación de base. Un `503 backend_disabled/not_configured` significa que no están listas las variables; no hay caída silenciosa al almacenamiento local.
+Esta prueba inicia sesión con el token del archivo, consulta `/admin/me` y cierra la sesión; solo imprime estado y rol. `db:check` muestra conteos, sin personas/secretos. `/health` solo comprueba la configuración habilitada, no sustituye consultar la base.
 
-El siguiente paso será conectar las pantallas con `createApiClient` y Supabase Auth MFA, usar `api.login(token)` contra `POST /api/v1/auth/login`. El ingreso será solo por token, sin QR ni código por correo; la demo ya usa token, pero todavía lo busca en JSON. Durante esa integración hay que desactivar el service worker de la demo para datos privados: nunca almacenar `/api/v1/me`, `/admin` ni sesiones en cachés offline. Los participantes reales necesitan conexión para confirmar respuestas/votos.
+Un 503 backend_disabled/not_configured significa que faltan variables. Un 401 indica token inválido/inactivo/sesión vencida; 403 en el panel indica rol sin permiso; 429 pide esperar por límite de intentos.
 
-## 7. Ver los datos
+Las pantallas se conectarán mediante `createApiClient().login(token)` y cookies HttpOnly. El admin consultará `/admin/me`; los participantes `/me`. No enviar un rol escogido por el usuario para autorizar. La pantalla `/admin` actual continúa siendo la demo local hasta esa integración. Las herramientas antiguas admin:session y admin-auth.ts quedan como compatibilidad Auth opcional; no se necesitan para ingresar por token.
 
-En Supabase Table Editor seleccionar el esquema `camino`; si la interfaz no lo ofrece, usar SQL Editor. Abrir `profiles`, `projects`, `agenda`, `completions`, `attempts`, `tickets`, `votes` y `raffles`. La cuenta administradora del panel puede consultarlos; un navegador con clave anon no.
+No guardar sesiones/usuarios privados en el service worker de la demo ni reimportar progreso de participantes como premios reales. Confirmar respuestas/votos reales requiere conexión.
 
-Ejecutar [queries.sql](queries.sql) en el SQL Editor para ver datos legibles con sus relaciones. Para DBeaver/pgAdmin usar la cadena **Connect** del panel, SSL y usuario autorizado del colegio. Para funciones serverless preferir la Data API/RPC ya implementada; no abrir una conexión PostgreSQL nueva por cada petición ni publicar la contraseña de PostgreSQL en frontend.
+## 7. Consultar datos
+
+En Table Editor seleccionar `camino` o usar SQL Editor y [queries.sql](queries.sql). Perfiles, respuestas, fallos, tiquetes, votos y sorteos están relacionados con UUID y claves foráneas. El operador del panel puede consultarlos; una clave anon no.
+
+En DBeaver/pgAdmin usar la cadena Connect del panel con SSL y cuenta autorizada. El backend Next.js ya usa RPC/Data API, sin abrir una conexión PostgreSQL por participante. No modificar a mano proyecciones/snapshots: el backend las sincroniza en transacciones.
+
+## Protección del token
+
+El token es toda la credencial, también para un administrador. Quien lo obtenga tendrá sus permisos; cuatro caracteres ofrecen poca resistencia a adivinación. No publicar tokens ni códigos de tiquete que los contengan. Los límites, sesiones revocables y validación de rol se conservan, pero no equivalen a un segundo factor. El colegio ha elegido este acceso simplificado para esta etapa.

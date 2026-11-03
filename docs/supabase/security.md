@@ -7,7 +7,7 @@ El navegador llama a Next.js. Next.js autentica, valida con Zod, ejecuta el mism
 ```mermaid
 flowchart LR
   U[Navegador participante] -->|Cookie HttpOnly| N[API Next.js]
-  A[Admin con MFA] -->|JWT Supabase AAL2| N
+  A[Admin por token] -->|Cookie HttpOnly| N
   N -->|service_role privada| R[RPC service-only]
   R --> C[(Esquema privado camino)]
   N --> E[Outbox cifrado y SMTP opcional]
@@ -21,8 +21,9 @@ Esta frontera confía en el backend. La función de commit no es una API públic
 
 - Participantes: ingreso únicamente por token reutilizable de cuatro hexadecimales, entregado por información; no requiere QR ni correo. El token es una credencial secreta de baja entropía (65.536 combinaciones), elegida expresamente para el evento. Se aplican límites por token (6 intentos cada 5 minutos) y red (30/minuto con IP de proxy confiable; 3.000/minuto compartidos sin ella para admitir Wi-Fi escolar). Son mitigaciones parciales: alguien que adivine u obtenga un token puede entrar como esa persona. No publicar tokens, códigos de tiquetes que los incluyan ni archivos de usuarios reales. Los campos heredados claim_hash/enlace y OTP permanecen solo para compatibilidad, sin ser requisitos del acceso.
 - Sesión opaca aleatoria en cookie `__Host-camino_session`, Secure, HttpOnly, SameSite=Strict y Path=/ en producción. SHA-256 en base; vence por defecto en doce horas. Baja, cambio de correo o reemisión revocan sesiones/credenciales previas. No se almacena el secreto en localStorage.
-- Administradores: usuario real de Supabase Auth con segundo factor TOTP. El servidor consulta `auth.getUser`, comprueba issuer/sub/audience/exp/AAL2 del token ya verificado y exige perfil activo `admin` de la base en cada petición. No confía en `user_metadata` ni en un rol enviado por cliente. En producción no puede deshabilitarse MFA con una variable.
-- No hay registro público de participantes. La invitación de nuevos administradores usa Auth más perfil SQL; al fallar el perfil se intenta deshacer la cuenta Auth. Como involucra dos servicios, revisar invitaciones incompletas ante un fallo de red; no es una transacción distribuida.
+- Administradores: ingresan directamente con token y reciben la misma clase de cookie protegida. En cada operación se consulta el perfil activo y se exige rol admin de la base. No hay contraseña ni segundo factor en este flujo; no se acepta un rol elegido por cliente. La alternativa JWT/MFA anterior permanece como compatibilidad opcional y no se ejecuta cuando se usa la sesión por token.
+- No hay registro público. Otros administradores se crean únicamente desde una sesión admin, mediante una transacción SQL con token aleatorio y correo único. No se crean cuentas Supabase Auth ni se envían invitaciones. El primer administrador se inicializa con una herramienta privada service-only que rechaza ejecutarse de nuevo si ya existe alguno.
+
 
 Como alternativa heredada, los enlaces de acceso usan fragmento `#access=...` para no enviar la credencial a logs del servidor/referrers. Si se reutiliza esa alternativa, la interfaz debe consumirlo y eliminarlo con `history.replaceState`, sin analítica ni recursos externos en ese paso. La API devuelve el token al administrador que lo entrega; la pantalla de ingreso solo lo solicita y obtiene una cookie protegida. Los resultados idempotentes de alta están cifrados AES-256-GCM en la base, así como el contenido del outbox.
 
@@ -50,8 +51,8 @@ Hay límites persistentes para login por token, activación heredada, OTP, coman
 
 ## Datos sensibles y tareas pendientes antes de producción
 
-Recoger solo lo necesario. El registro guarda fecha de consentimiento administrativo confirmado, pero el texto/alcance legal, autorizaciones de menores, permisos del personal, conservación/borrado y atención de derechos deben acordarse con el colegio. No se afirma cumplimiento legal automático. El servidor no cifra cada nombre/correo con una clave propia porque se consultan operacionalmente; dependen de controles y cifrado en tránsito/en reposo del proveedor. Los secretos sí tienen hash/cifrado adicional. Copias Excel/JSON contienen datos personales y requieren acceso restringido.
+Recoger solo lo necesario. El registro guarda fecha de consentimiento administrativo confirmado, pero el texto/alcance legal, autorizaciones de menores, permisos del personal, conservación/borrado y atención de derechos deben acordarse con el colegio. No se afirma cumplimiento legal automático. El servidor no cifra cada nombre/correo con una clave propia porque se consultan operacionalmente; dependen de controles y cifrado en tránsito/en reposo del proveedor. Las sesiones se guardan como hash y los sobres heredados/outbox se cifran. Los tokens cortos están en profiles.public_token en texto para consulta y entrega administrativa; proteger el acceso a esa tabla y sus respaldos es esencial. Copias Excel/JSON contienen datos personales y requieren acceso restringido.
 
-Pendiente de verificar en el proyecto real: políticas efectivas con claves reales, flujos Supabase Auth/MFA e invitación, SMTP/dominio de correo, hostname HTTPS/cookies/proxy, recuperación de respaldos y carga. Faltan las pantallas conectadas a la API; la demo JSON contiene respuestas ficticias públicas y no es un modo seguro para datos reales.
+Pendiente de verificar en el proyecto real: políticas efectivas con claves reales, login administrativo por token, SMTP/dominio de correo, hostname HTTPS/cookies/proxy, recuperación de respaldos y carga. Faltan las pantallas conectadas a la API; la demo JSON contiene respuestas ficticias públicas y no es un modo seguro para datos reales.
 
 `npm audit --omit=dev` debe revisarse antes de publicar. Se actualizó la dependencia de correo a Nodemailer 10.3.1 para corregir los avisos de la versión anterior. La cadena heredada de ExcelJS 4.4 todavía tiene avisos moderados en dependencias transitivas (glob/minimatch/uuid y archivado), sin arreglo directo compatible publicado para toda la cadena. No se expone una importación pública de Excel en esta API; no procesar respaldos de orígenes no confiables. No forzar cambios mayores transitivos sin probar lectura/escritura de respaldos.

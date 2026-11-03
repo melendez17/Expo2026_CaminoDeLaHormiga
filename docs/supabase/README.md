@@ -1,6 +1,6 @@
 # Backend Supabase · implementación y estado
 
-Rama: `implementacionbackend`. El backend real está implementado en `/api/v1` y probado localmente con PostgreSQL embebido (PGlite), HTTP Request/Response reales y pruebas de concurrencia/idempotencia. No se ha creado ni conectado un proyecto remoto: falta configurar las credenciales del colegio y verificar Supabase Auth, SMTP y rendimiento en ese entorno.
+Rama: `implementacionbackend`. El backend real está implementado en `/api/v1` y probado localmente con PostgreSQL embebido (PGlite), HTTP Request/Response reales y pruebas de concurrencia/idempotencia. No se ha creado ni conectado un proyecto remoto: falta configurar las credenciales del colegio y verificar el acceso por token, SMTP y rendimiento en ese entorno.
 
 **La interfaz existente sigue siendo la demo JSON/localStorage.** Esta entrega agrega el backend y el adaptador `src/lib/api-client.ts`; todavía no sustituye el almacenamiento de `journey.tsx`. Activar una variable no migra la interfaz. No introducir personas reales en la demo pública ni asumir que sus cambios se comparten entre dispositivos. La conexión de las pantallas se hace en la siguiente etapa, contra estos endpoints, eliminando las ayudas con respuestas y el login local. El diseño y la lógica actual se conservaron.
 
@@ -28,6 +28,6 @@ Rama: `implementacionbackend`. El backend real está implementado en `/api/v1` y
 
 ## Decisión de acceso
 
-Por decisión del colegio, el participante ingresa **solo con su token hexadecimal de cuatro caracteres**, mediante `POST /api/v1/auth/login`. Es reutilizable; no exige QR ni verificación por correo. El correo se mantiene como dato único del registro. Los administradores conservan Supabase Auth y MFA; su código no sirve para iniciar sesión en el panel.
+Por decisión del colegio, el participante ingresa **solo con su token hexadecimal de cuatro caracteres**, mediante `POST /api/v1/auth/login`. Es reutilizable; no exige QR ni verificación por correo. El correo se mantiene como dato único del registro. Los administradores también ingresan directamente con su token, sin contraseña, correo de verificación ni doble factor. El rol real se consulta en la base de datos en cada acceso al panel.
 
 El token pasa a ser una credencial secreta. Cuatro caracteres tienen solo 65.536 combinaciones: los límites de intentos y las cookies protegidas reducen abuso, pero no ofrecen la protección de una contraseña larga o segundo factor. No publicar tokens ni códigos de tiquetes que los contengan en rankings o pantallas públicas. Los endpoints de enlace/OTP anteriores se conservan por compatibilidad, sin ser necesarios para ingresar.

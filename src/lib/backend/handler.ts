@@ -46,7 +46,7 @@ export type HandlerDependencies = {
   emailEnabled: boolean;
   jobsSecret?: string;
   dispatchMail?: () => Promise<unknown>;
-  inviteAdmin?: (
+  createAdmin?: (
     input: {
       email: string;
       firstName: string;
@@ -107,12 +107,21 @@ export function createBackendHandler(deps: HandlerDependencies) {
       return record;
     }
     async function admin() {
-      const authId = await deps.verifyAdmin(request);
-      const actor = await service.store.rpc<ParticipantRecord | null>(
-        "camino_actor",
-        { p_auth_id: authId },
-      );
-      if (!actor || actor.user.role !== "admin" || !actor.user.active)
+      const raw = readCookie(request, sessionCookieName(deps.production));
+      const actor = raw
+        ? await service.store.rpc<ParticipantRecord | null>("camino_actor", {
+            p_session_hash: hash(raw),
+          })
+        : await service.store.rpc<ParticipantRecord | null>("camino_actor", {
+            p_auth_id: await deps.verifyAdmin(request),
+          });
+      if (!actor || !actor.user.active)
+        throw new BackendError(
+          401,
+          "invalid_session",
+          "Tu sesión venció o fue revocada.",
+        );
+      if (actor.user.role !== "admin")
         throw new BackendError(
           403,
           "forbidden",
@@ -370,7 +379,7 @@ export function createBackendHandler(deps: HandlerDependencies) {
         await service.rate("admin:" + actor.id, 180);
         const page = pagination.parse(Object.fromEntries(url.searchParams));
         if (path === "admin/me" && method === "GET")
-          return json({ user: actor, mfaRequired: true });
+          return json({ user: actor, mfaRequired: false });
         if (path === "admin/users" && method === "GET") {
           const list = await service.listUsers(
             page.offset,
@@ -642,11 +651,11 @@ export function createBackendHandler(deps: HandlerDependencies) {
         if (path === "admin/metrics" && method === "GET")
           return json(await service.store.rpc("camino_metrics"));
         if (path === "admin/staff" && method === "POST") {
-          if (!deps.inviteAdmin)
+          if (!deps.createAdmin)
             throw new BackendError(
               503,
-              "invite_disabled",
-              "La invitación administrativa no está configurada.",
+              "admin_creation_disabled",
+              "La creación administrativa no está configurada.",
             );
           const input = await readJson(
             request,
@@ -661,7 +670,7 @@ export function createBackendHandler(deps: HandlerDependencies) {
               .strict(),
           );
           return json(
-            await deps.inviteAdmin(
+            await deps.createAdmin(
               input,
               actor.id,
               input.requestId,

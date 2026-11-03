@@ -1,33 +1,54 @@
-import { z } from "zod";
+import { randomUUID } from "node:crypto";
+import { writeFileSync, existsSync } from "node:fs";
 import { args, connection, text } from "./common";
+import { profileInput } from "../../src/lib/backend/contracts";
+import { publicToken } from "../../src/lib/backend/security";
+import { BackendError } from "../../src/lib/backend/errors";
 async function main() {
-  const id = z.uuid().parse(text("id")),
-    email = z.email().parse(text("email").trim().toLowerCase()),
-    first = text("first"),
-    surname1 = text("surname1"),
-    surname2 = text("surname2");
+  const input = profileInput
+    .pick({
+      firstName: true,
+      firstSurname: true,
+      secondSurname: true,
+      email: true,
+    })
+    .parse({
+      firstName: text("first"),
+      firstSurname: text("surname1"),
+      secondSurname: text("surname2"),
+      email: text("email"),
+    });
   if (!args.apply) {
     console.log(
-      "Solicitud válida. Usa --apply tras crear y verificar la cuenta en Supabase Auth.",
+      "Solicitud válida. El administrador ingresará directamente con su token, sin Supabase Auth ni MFA.",
     );
     return;
   }
-  const { client, store } = connection();
-  const auth = await client.auth.admin.getUserById(id);
-  if (auth.error || auth.data.user?.email?.toLowerCase() !== email)
-    throw Error(
-      "El ID y el correo no corresponden a la cuenta de Supabase Auth.",
-    );
-  await store.rpc("camino_bootstrap_admin", {
-    p_id: id,
-    p_first: first,
-    p_surname1: surname1,
-    p_surname2: surname2,
-    p_email: email,
-  });
-  console.log(
-    "Administrador inicial creado. Activa TOTP/MFA antes de llamar a la API.",
-  );
+  const output = text("token-output");
+  if (existsSync(output))
+    throw Error("El archivo de salida ya existe. Usa otro nombre.");
+  const { store } = connection();
+  const id = randomUUID();
+  for (let attempt = 0; attempt < 12; attempt++) {
+    try {
+      const result = await store.rpc("camino_bootstrap_token_admin", {
+        p_profile: { ...input, id, token: publicToken() },
+      });
+      writeFileSync(output, JSON.stringify(result, null, 2), {
+        mode: 0o600,
+        flag: "wx",
+      });
+      console.log(
+        "Primer administrador creado. Su token privado está en el archivo indicado; no se imprimió en consola.",
+      );
+      return;
+    } catch (error) {
+      if (error instanceof BackendError && error.code === "token_collision")
+        continue;
+      throw error;
+    }
+  }
+  throw Error("No se pudo reservar un token único.");
 }
 main().catch((error) => {
   console.error(

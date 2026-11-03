@@ -82,6 +82,43 @@ export class BackendService {
       record.version,
     );
   }
+  async createAdmin(
+    input: Pick<
+      Registration,
+      "firstName" | "firstSurname" | "secondSurname" | "email"
+    >,
+    actor: string,
+    request: string,
+    fingerprint: string,
+  ) {
+    const cached = await this.cached(actor, request, fingerprint);
+    if (cached) return cached;
+    const id = randomUUID();
+    for (let attempt = 0; attempt < 12; attempt++) {
+      try {
+        return await this.store.rpc<Profile>("camino_add_admin", {
+          p_id: id,
+          p_first: input.firstName,
+          p_surname1: input.firstSurname,
+          p_surname2: input.secondSurname,
+          p_email: input.email,
+          p_token: publicToken(),
+          p_actor: actor,
+          p_request: request,
+          p_hash: fingerprint,
+        });
+      } catch (error) {
+        if (error instanceof BackendError && error.code === "token_collision")
+          continue;
+        throw error;
+      }
+    }
+    throw new BackendError(
+      503,
+      "token_capacity",
+      "No se pudo reservar un token único para el administrador.",
+    );
+  }
   async register(
     input: Registration & { delivery?: "card" | "email" | "both" },
     actor: string,

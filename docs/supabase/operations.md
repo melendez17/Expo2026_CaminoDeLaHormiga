@@ -48,7 +48,7 @@ El Excel administrativo permite leer/exportar datos y preservar la evidencia de 
 
 ## Correo opcional
 
-El acceso principal por token entregado por información no depende de SMTP ni requiere QR. Para correo habilitar EMAIL_ACCESS_ENABLED y configurar SMTP_HOST/PORT (465 o 587), SMTP_USER/PASSWORD, MAIL_FROM y JOBS_SECRET en el servidor. Usar proveedor con TLS, SPF, DKIM y DMARC; verificar cuotas/precios y autorización del dominio. El SMTP de Supabase Auth administra invitaciones de admins por separado; no equivale al SMTP de participantes de esta aplicación.
+El acceso por token de participantes y administradores no depende de SMTP, QR, contraseña ni MFA. Para correo habilitar EMAIL_ACCESS_ENABLED y configurar SMTP_HOST/PORT (465 o 587), SMTP_USER/PASSWORD, MAIL_FROM y JOBS_SECRET en el servidor. Usar proveedor con TLS, SPF, DKIM y DMARC; verificar cuotas/precios y autorización del dominio. La creación actual de administradores no envía invitaciones de Supabase Auth. Ese servicio queda solo como mecanismo heredado opcional.
 
 Programar un POST por minuto a `/api/v1/internal/jobs` con Bearer JOBS_SECRET desde un scheduler privado. No se agregó cron externo que envíe mensajes automáticamente. El worker procesa hasta 200 mensajes por ejecución y como máximo unos 35 s antes de terminar el grupo activo, con cinco envíos en paralelo, arrendamiento de dos minutos, reintentos hasta cinco y exclusión con SKIP LOCKED. No registrar payloads del outbox. El transporte es al menos una vez: un corte después de enviar puede duplicar el correo; códigos/enlaces siguen siendo de un uso. El código más reciente invalida los anteriores, aunque un mensaje viejo tarde en llegar.
 

@@ -1,6 +1,6 @@
 # UML de la base de datos
 
-Modelo físico de `supabase/migrations/202611030001_production.sql` en la rama `implementacionbackend`: **23 tablas en `camino`, una entidad externa `auth.users` y 30 claves foráneas**. Representa la migración implementada; no indica que ya esté desplegada en Supabase. Excluye las tablas públicas históricas del backend anterior.
+Modelo físico de las migraciones `202611030001_production.sql`, `202611030002_token_login.sql` y `202611030003_admin_token_login.sql` en la rama `implementacionbackend`: **23 tablas en `camino`, una entidad externa `auth.users` y 30 claves foráneas**. Representa la migración implementada; no indica que ya esté desplegada en Supabase. Excluye las tablas públicas históricas del backend anterior.
 
 - [Abrir diagrama completo SVG](database.svg): se puede ampliar sin perder nitidez y abrir en el navegador.
 - [Fuente UML editable en PlantUML](database.puml): todas las columnas, tipos, claves y cardinalidades.
@@ -52,7 +52,7 @@ Las multiplicidades reflejan las restricciones SQL. Por ejemplo, el perfil tiene
 
 Los roles `admin`, `visitor` y `admission` son valores de `profiles.role`, no tablas separadas. Las especialidades se guardan en `projects.specialty`; los grados están en `projects.level`. Desarrollo Web y Ciberseguridad se relacionan con el mismo edificio TICs mediante `building_id`.
 
-`profiles.auth_user_id` es opcional y único: se usa para administradores; los participantes usan sesiones propias. En el diagrama de `auth.users` solo se muestra el ID necesario para esta relación; sus demás columnas son administradas por Supabase.
+`profiles.auth_user_id` es opcional y único: se conserva para identidades administrativas heredadas. Actualmente todos los roles usan token y sesiones propias; los administradores nuevos no necesitan una cuenta Auth. En el diagrama de `auth.users` solo se muestra el ID necesario para esta relación; sus demás columnas son administradas por Supabase.
 
 `configuration.document` conserva el catálogo y las reglas; `progress.snapshot` conserva el avance canónico. El backend sincroniza sus proyecciones SQL en transacciones. No se dibujan líneas de FK para vínculos que PostgreSQL no declara: `progress.catalog_version`, `requests.actor_id/request_id` y `audit.request_id` son referencias lógicas. `mail_outbox.envelope` está cifrado y no tiene FK a perfiles.
 

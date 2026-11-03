@@ -275,7 +275,7 @@ camino_tickets "1" -- "0..1" camino_votes : ticket_id
 note bottom of camino_profiles
   role: admin | visitor | admission
   email y public_token únicos.
-  Auth solo para admins; área obligatoria para participantes.
+  Auth es opcional y heredado para admins; acceso actual por token.
 end note
 note bottom of camino_configuration
   Fila única. document contiene catálogo y reglas.

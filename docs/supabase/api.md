@@ -1,10 +1,10 @@
 # API v1
 
-Prefijo `/api/v1`, JSON UTF-8, mismo origen. Node.js en Next.js. Los participantes ingresan solo con su token hexadecimal de cuatro caracteres; los administradores requieren Supabase Auth y MFA. No hay CORS público.
+Prefijo `/api/v1`, JSON UTF-8, mismo origen. Node.js en Next.js. Los participantes ingresan solo con su token hexadecimal de cuatro caracteres; los administradores también ingresan por token, sin contraseña ni MFA. No hay CORS público.
 
 ## Autorización y comandos
 
-Participante: cookie HttpOnly de sesión; no se envían IDs de otra persona para actuar. Administrador: `Authorization: Bearer SUPABASE_ACCESS_TOKEN`, verificado por Supabase Auth, con AAL2 y perfil activo `admin` en la base. **La service_role nunca se usa desde el navegador**.
+Participante: cookie HttpOnly de sesión; no se envían IDs de otra persona para actuar. Administrador: la misma cookie HttpOnly obtenida al iniciar con su token, y perfil activo `admin` verificado en base en cada petición. Un token de visitante no adquiere permisos administrativos. El Bearer de Supabase Auth queda solo como alternativa heredada. **La service_role nunca se usa desde el navegador**.
 
 Toda mutación normal requiere `Origin: APP_ORIGIN` y `Content-Type: application/json`. Los comandos de juego/admin incluyen `requestId` UUID v4 generado **una vez por intención**; un reintento de la misma operación reutiliza exactamente cuerpo, ruta y UUID. El servidor guarda la huella y resultado siete días. El mismo UUID con otro contenido da `409`. Tras ese plazo no reutilizar solicitudes antiguas. No reintentar un alta, voto, tiquete o sorteo creando un UUID nuevo por un error de red. `api-client.ts` conserva el identificador cuando se pierde la respuesta.
 
@@ -52,7 +52,7 @@ Una respuesta válida pero incorrecta devuelve HTTP 200 con `result.outcome: "in
 
 | Método | Ruta | Detalle |
 |---|---|---|
-| GET | `/admin/me` | Perfil administrativo verificado |
+| GET | `/admin/me` | Perfil administrativo y `mfaRequired: false` |
 | GET / POST | `/admin/users` | Listar / registrar participantes |
 | GET | `/admin/users/:uuid` | Perfil, progreso completo (respuestas e historial) y vista de estado; lectura auditada |
 | PATCH | `/admin/users/:uuid` | Campos parciales, active, expectedVersion y requestId |
@@ -71,7 +71,7 @@ Una respuesta válida pero incorrecta devuelve HTTP 200 con `result.outcome: "in
 | GET | `/admin/metrics`, `/admin/audit` | Métricas e historial paginado |
 | GET | `/admin/export?format=csv\|json\|xlsx` | Datos privados; CSV neutraliza fórmulas, Excel es archivo real |
 | GET | `/admin/backup` | Exportación Excel con catálogo y avance; sin secretos ni sesiones |
-| POST | `/admin/staff` | Invitar administrador: requestId, email, firstName, firstSurname, secondSurname |
+| POST | `/admin/staff` | Crear administrador con token, sin invitación ni cuenta Auth: requestId, email, firstName, firstSurname, secondSurname |
 
 Registro de participante:
 

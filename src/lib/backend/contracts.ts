@@ -102,7 +102,7 @@ export const tokenLoginInput = z
       .string()
       .trim()
       .toUpperCase()
-      .regex(/^[A-F0-9]{4}$/),
+      .regex(/^[A-Z0-9]{4}$/),
   })
   .strict();
 export const activateInput = z

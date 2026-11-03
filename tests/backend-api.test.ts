@@ -183,7 +183,7 @@ test("API v1 real sobre PostgreSQL: permisos, cookies, privacidad y flujos compl
       assert.equal(
         (await send("admin/users/" + bob.user.id, "GET", undefined, { cookie }))
           .status,
-        401,
+        403,
       );
     },
   );
@@ -391,7 +391,7 @@ test("API v1 real sobre PostgreSQL: permisos, cookies, privacidad y flujos compl
     async () => {
       assert.equal(
         (await send("admin/backup", "GET", undefined, { cookie })).status,
-        401,
+        403,
       );
       assert.equal((await send("internal/jobs", "POST", {})).status, 401);
       const response = await send(

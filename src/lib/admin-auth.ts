@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-// Used by the future production admin screen. Keep sessions in memory, never localStorage.
+// Optional legacy Supabase Auth helper. Current admin access uses an application token.
+// Keep legacy sessions in memory, never localStorage.
 export function createAdminAuth(url: string, publishableKey: string) {
   if (publishableKey.startsWith("sb_secret_"))
     throw Error("Nunca uses una clave secreta en el navegador.");
