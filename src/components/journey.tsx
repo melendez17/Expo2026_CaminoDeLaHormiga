@@ -1,9 +1,11 @@
 'use client';
+import {notifyAction} from '@/lib/action-feedback';
 import { loadLocalProgress } from '@/lib/progress-storage';
 import { ruleDescription } from '@/lib/assignment-rules';
 import { hasIncorrectAnswer } from '@/lib/incorrect-answer';
 import { LoadingScreen } from './loading-screen';
 import { AntMascot } from './ant-mascot';
+import { IncorrectAnswerNotice } from './incorrect-answer-notice';
 
 import { useEffect, useRef, useState } from 'react';
 import { FullCampusMap } from './full-campus-map';
@@ -53,7 +55,7 @@ function ChallengeDialog({ challenge, onClose, onComplete }: {
       const answers = Object.fromEntries(new FormData(e.currentTarget)) as Answers;
       try { onComplete(answers); } catch (e) { setError((e as Error).message); }
     }}>
-      {['quiz','code'].includes(challenge.kind) && <p className="muted">Si respondes incorrectamente, se añadirá otro reto extra y este quedará pendiente.</p>}
+      {['quiz','code'].includes(challenge.kind) && <p className="muted">Si respondes incorrectamente, este reto quedará bloqueado y se sustituirá por otro, sin aumentar tus pendientes.</p>}
       {challenge.kind === 'freeform' && <>
         <label>Nombre del proyecto<input name="projectName" minLength={2} maxLength={160} required /></label>
         <label>Nivel<input name="level" maxLength={80} required placeholder="Por ejemplo: quinto grado" /></label>
@@ -87,7 +89,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const [section, setSection] = useState<Section>('route');
   const [selected, setSelected] = useState<string | null>(null);
   const [active, setActive] = useState<LocalChallenge | null>(null);
-  const [message, setMessage] = useState('');
+  const setMessage=notifyAction;
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
@@ -95,6 +97,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const [filter, setFilter] = useState<'base' | 'extra'>('base');
   const [online, setOnline] = useState(true);
   const [,refreshVoteTotals]=useState(0);
+  const [failureNotice,setFailureNotice]=useState<{challenge:LocalChallenge;replacement:LocalChallenge;answers:Answers}|null>(null);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [resetConfirm, setResetConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -171,7 +174,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
     attempt(() => { setUser(person);sessionStorage.setItem(SESSION_KEY,person.id);const saved = person.role === 'admin' ? freshProgress(data, person.id) : readProgress(data, person.id); sessionStorage.setItem(SESSION_KEY, person.id); setUser(person); setProgress(saved); setToken(''); setMessage(''); });
   }
   function logout() {
-    sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);
+    sessionStorage.removeItem(SESSION_KEY); setUser(null); setProgress(null); setActive(null);setFailureNotice(null);
     setMessage(''); setError(''); setVoteTarget(null); setSection('route'); setFilter('base'); setSelected(null); setSearch(''); setProjectArea(''); setResetConfirm(false);
   }
   function exportProgress() {
@@ -179,7 +182,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
     const saved = readProgress(data, user.id);
     const url = URL.createObjectURL(new Blob([JSON.stringify(saved, null, 2)], { type: 'application/json' }));
     const link = document.createElement('a'); link.href = url; link.download = `camino-${user.id}.json`; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);setMessage('Progreso descargado.');
   }
 
   const brand = <a href="/" className="brand school-brand" aria-label="CEDES Don Bosco, inicio"><img src="/brand/cedes-don-bosco-white.png" alt="CEDES Don Bosco" width="2048" height="661" /></a>;
@@ -203,7 +206,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
   const affinity=routeArea(user);
   if (!progress.startedAt) return <div className="local-login"><header className="local-header">{brand}<button onClick={logout}>Cambiar usuario</button></header>
     <main className="welcome-screen"><AntMascot className="welcome-mascot" /><span className="eyebrow">QUÉ BUENO TENERTE AQUÍ</span><h1>Bienvenido, {user.name.split(' ')[0]}.</h1><p>¿Quieres iniciar el camino de la hormiga?</p><p className="muted">{user.role==='visitor'?`Recibirás ${data.assignmentRules.visitorBatchSize} retos base${user.area?`, uno de ${user.area} si hay disponibilidad`:''} y los demás al azar. Después podrás generar retos adicionales de cualquier área. Cada dos completados te dan un tiquete.`:user.area?`Tu ruta: ${ruleDescription(data.assignmentRules.admission[user.area],user.area)}.`:'El administrador debe asignarte un área para preparar tu ruta.'}<br/>Después puedes seguir explorando y ganar más tiquetes.</p>{error && <p className="form-error" role="alert">{error}</p>}
-      <button className="primary start-button" onClick={() => attempt(() => { mutate(p => startLocal(data,p)); setSection('route'); })}>Iniciar el camino →</button>
+      <button className="primary start-button" onClick={() => attempt(() => { mutate(p => startLocal(data,p)); setSection('route');setMessage('Camino iniciado. Tus retos están listos.'); })}>Iniciar el camino →</button>
     </main></div>;
 
   const stats = summary(data, progress);
@@ -239,7 +242,7 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       { id: 'route', title: 'Retos', icon: 'route' }, { id: 'dashboard', title: 'Mi resumen', icon: 'dashboard' },
       { id: 'votes', title: 'Votar', icon: 'votes' }, { id: 'agenda', title: 'Agenda', icon: 'agenda' }, { id: 'map', title: 'Mapa completo', icon: 'map' }
     ] as const} active={section} onChange={changeSection}/>
-    {(message || error) && <div className={error ? 'local-feedback is-error' : 'local-feedback'} role={error ? 'alert' : 'status'}>{error || message}<button onClick={() => { setError(''); setMessage(''); }} aria-label="Cerrar mensaje"><AppIcon name="close" width="16" height="16"/></button></div>}
+    {error && <div className="local-feedback is-error" role="alert">{error}<button onClick={() => { setError(''); setMessage(''); }} aria-label="Cerrar mensaje"><AppIcon name="close" width="16" height="16"/></button></div>}
     {section === 'route' && <section className="route-hero" aria-label="Tu recorrido en ExpoTEC">
       <div><p className="route-edition">01 <span/> FERIA TECNOLÓGICA · EXPOTEC 2026</p><h1>TUS<br/><em>RETOS.</em></h1><p className="route-hero-description">{stats.routeComplete ? '¡Lo lograste! Sigue explorando para ganar más tiquetes.' : 'Completa tu ruta y gana tu primer tiquete.'}</p></div>
       <div className="route-hero-counts"><div><span>COMPLETADOS</span><strong>{String(stats.base).padStart(2, '0')}</strong></div><div><span>META</span><strong>{String(stats.baseTarget).padStart(2,'0')}</strong></div></div>
@@ -275,13 +278,13 @@ export function Journey({ adminOnly = false }: { adminOnly?: boolean }) {
       {section === 'agenda' && <EventAgenda data={data} onLocate={locate} />}
       {section === 'map' && <section className="local-section full-map"><PageIntro eyebrow="ENCUENTRA TU PRÓXIMO DESTINO" title="El campus" accent="completo." sequence="05" description="Un campus, muchas historias. Toca una zona o elige un edificio y explora en 3D o 2D." /><FullCampusMap data={data} progress={progress} selected={selected} onSelect={setSelected} onReturn={() => changeSection('route')}/></section>}
     </main>
+    {failureNotice&&<IncorrectAnswerNotice {...failureNotice} onClose={()=>setFailureNotice(null)} onContinue={()=>{setActive(failureNotice.replacement);setFailureNotice(null);}}/>}
     {active && <ChallengeDialog key={active.id} challenge={active} onClose={() => setActive(null)} onComplete={answers => {
       if(hasIncorrectAnswer(active,answers)) {
         const next=mutate(current=>addExtraForWrongAnswer(data,current,active.id,answers));
-        const extraId=active.kind==='saint'?next.failedExtras.at(-1)!.replacementId:next.failedAnswers.at(-1)!.extraId;
+        const extraId=next.failedExtras.at(-1)!.replacementId;
         const extra=data.challenges.find(c=>c.id===extraId)!;
-        setActive(extra);setSelected(extra.buildingId);setFilter(next.routeIds.includes(extra.id)?'base':'extra');setError('');
-        setMessage(active.kind==='saint'?'La respuesta no era correcta. Te asignamos otro reto extra; este intento no suma puntos.':'La respuesta no era correcta. Añadimos un reto extra a tu camino. El reto original sigue pendiente.');return;
+        setActive(null);setFailureNotice({challenge:active,replacement:extra,answers});setSelected(extra.buildingId);setFilter(next.routeIds.includes(extra.id)||next.visitorRounds[0]?.includes(extra.id)?'base':'extra');setError('');setMessage('');return;
       }
       const wasComplete = stats.routeComplete;
       const next = mutate(current => completeLocal(data, current, active.id, answers));

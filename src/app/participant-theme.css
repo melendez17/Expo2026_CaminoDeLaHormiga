@@ -201,3 +201,12 @@
 .visitor-ranking-tie { color:#42644f; font-size:11px; margin:10px 0 0; }
 .journey-app .project-vote-total { display:inline-block; margin-left:8px; font-size:11px; color:#42644f; white-space:nowrap; font-variant-numeric:tabular-nums; }
 @media(max-width:1000px) { .visitor-project-leaders ol { grid-template-columns:1fr; gap:8px; } .visitor-project-leaders li { padding:12px 15px; } }
+
+.incorrect-answer-notice dl { margin-block:22px; }
+.incorrect-answer-notice dl > div { padding-block:12px; border-bottom:1px solid #d7e7dd; }
+.incorrect-answer-notice dt { font-size:13px; color:#42644f; }
+.incorrect-answer-notice dd { margin:6px 0 0; font-size:15px; line-height:1.5; color:#0b2519; }
+.incorrect-answer-notice .row { flex-wrap:wrap; gap:10px; }
+
+.local-app .local-dialog.incorrect-answer-notice .primary { background:#087d43; border-color:#087d43; color:white; }
+.local-dialog.incorrect-answer-notice .row button { min-height:44px; font-size:13px; }

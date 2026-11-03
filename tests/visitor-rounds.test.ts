@@ -27,13 +27,13 @@ test('migración conserva respuestas, encuesta, votos y tiquetes manuales y mues
  const pending=upgradeVisitorProgress(data,{...freshProgress(data,'ana'),startedAt:new Date().toISOString()});assert.equal(pending.visitorRounds.length,3);assert.throws(()=>completeLocal(data,pending,pending.visitorRounds[1][0],answer(data.challenges.find(c=>c.id===pending.visitorRounds[1][0])!)),/otra ronda/);
 });
 test('errores conservan la pareja y asignan extras; el santo se reemplaza dentro de la ronda',()=>{
- const catalog=structuredClone(data);catalog.users[0].area='Ciberseguridad';let p=startLocal(catalog,freshProgress(catalog,'ana'),()=>.3);const c=currentVisitorRound(catalog,p)[0],a=answer(c);a.code='ZZZZ';p=addExtraForWrongAnswer(catalog,p,c.id,a,()=>0);assert.equal(p.failedAnswers.length,1);assert.equal(p.extraIds.length,1);assert.equal(summary(catalog,p).tickets,0);assert.deepEqual(parseProgress(catalog,'ana',p),p);assert.throws(()=>generateVisitorRound(catalog,p),/pendientes/);
+ const catalog=structuredClone(data);catalog.users[0].area='Ciberseguridad';let p=startLocal(catalog,freshProgress(catalog,'ana'),()=>.3);const c=currentVisitorRound(catalog,p)[0],a=answer(c);a.code='ZZZZ';p=addExtraForWrongAnswer(catalog,p,c.id,a,()=>0);assert.equal(p.failedExtras.length,1);assert.equal(p.extraIds.length,0);assert.equal(p.visitorRounds[0].length,2);assert.ok(!p.visitorRounds[0].includes(c.id));assert.equal(summary(catalog,p).tickets,0);assert.deepEqual(parseProgress(catalog,'ana',p),p);assert.throws(()=>generateVisitorRound(catalog,p),/pendientes/);
  const saint=data.challenges.find(c=>c.id==='santo-b')!;const forced:LocalProgress={...freshProgress(data,'ana'),startedAt:new Date().toISOString(),visitorRounds:[['santo-b','photo']]};const q=saintQuestion(saint);const changed=addExtraForWrongAnswer(data,forced,saint.id,{saintChoice:String((q.correctIndex+1)%q.options.length)},()=>0);assert.notEqual(changed.visitorRounds[0][0],saint.id);assert.equal(changed.visitorRounds[0].length,2);assert.deepEqual(parseProgress(data,'ana',changed),changed);
 });
 
 test('migración conserva intentos incorrectos y los extras asignados antes de entrar en rondas',()=>{
  const legacy:LocalProgress={...freshProgress(data,'ana'),startedAt:new Date().toISOString()};
- const failed=addExtraForWrongAnswer(data,legacy,'photo',{code:'ZZZZ'},()=>0);
+ const failed={...legacy,extraIds:['santo-b'],failedAnswers:[{challengeId:'photo',answers:{code:'ZZZZ'},at:new Date().toISOString(),extraId:'santo-b'}]};
  const migrated=upgradeVisitorProgress(data,failed);assert.equal(migrated.failedAnswers.length,1);assert.ok(routeChallenges(data,migrated).some(c=>c.id===failed.failedAnswers[0].extraId));assert.deepEqual(parseProgress(data,'ana',migrated),migrated);
 });
 

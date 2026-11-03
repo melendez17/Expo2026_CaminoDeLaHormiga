@@ -112,11 +112,14 @@ export function summary(data: LocalData, progress: LocalProgress) {
 export function availableProjects(data: LocalData, _userId: string) { return data.projects; }
 export function routeChallenges(data:LocalData,progress:LocalProgress) {
   if(progress.visitorRounds.length)return progress.visitorRounds.flat().map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean);
-  return progress.routeIds.length ? progress.routeIds.map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean) : data.challenges.filter(c=>c.isBase);
+  if(progress.routeIds.length)return progress.routeIds.map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean);
+  let base=data.challenges.filter(c=>c.isBase).map(c=>c.id);
+  for(const failure of progress.failedExtras)base=base.map(id=>id===failure.challengeId?failure.replacementId:id);
+  return base.map(id=>data.challenges.find(c=>c.id===id)!).filter(Boolean);
 }
 export function extraChallenges(data:LocalData) { return data.challenges.filter(c=>!c.projectId&&(c.kind==='code'||c.kind==='saint')); }
 export function visitorCandidates(data:LocalData,progress:LocalProgress) {
-  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId),...progress.assignmentEdits.flatMap(edit=>edit.fromId?[edit.fromId]:[])]);
+  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId),...progress.failedAnswers.flatMap(f=>[f.challengeId,f.extraId]),...progress.assignmentEdits.flatMap(edit=>edit.fromId?[edit.fromId]:[])]);
   // Before starting, routeChallenges refers to the legacy base; there is no assignment yet.
   if(!progress.startedAt)used.clear();
   const usedProjects=new Set(data.challenges.filter(c=>used.has(c.id)&&c.projectId).map(c=>c.projectId));
@@ -189,30 +192,40 @@ export function saintSelection(challenge:LocalChallenge,answers:Answers): number
   const index=saintQuestion(challenge).options.findIndex(option=>normalize(option)===normalize(answers.saint??''));
   return index<0?null:index;
 }
-export function replaceFailedSaint(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
+export function replaceFailedChallenge(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
   const challenge=data.challenges.find(c=>c.id===id);
-  if(!progress.startedAt||!challenge||challenge.kind!=='saint'||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
+  if(!progress.startedAt||!challenge||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
   if(progress.visitorRounds.length&&!progress.visitorRounds[progress.visitorRoundIndex].includes(id)&&!progress.extraIds.includes(id))throw Error('Este reto pertenece a otra ronda.');
-  const selected=saintSelection(challenge,answers);
-  if(selected===null)throw Error('Marca una opción para responder.');
-  if(selected===saintQuestion(challenge).correctIndex)throw Error('La respuesta es correcta; completa el reto.');
-  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId),...progress.assignmentEdits.flatMap(edit=>edit.fromId?[edit.fromId]:[])]);
+  if(challenge.kind==='saint'&&saintSelection(challenge,answers)===null)throw Error('Marca una opción para responder.');
+  if(!hasIncorrectAnswer(challenge,answers))throw Error('El intento no contiene una respuesta incorrecta válida.');
+  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId),...progress.failedAnswers.flatMap(f=>[f.challengeId,f.extraId]),...progress.assignmentEdits.flatMap(edit=>edit.fromId?[edit.fromId]:[])]);
   const candidates=extraChallenges(data).filter(c=>!used.has(c.id));
   if(!candidates.length)throw Error('No quedan retos extra para reemplazar este intento. Solicita al administrador que añada otro reto extra.');
   const replacementId=candidates[Math.floor(random()*candidates.length)].id;
   return {...progress,routeIds:progress.routeIds.map(c=>c===id?replacementId:c),visitorRounds:progress.visitorRounds.map(round=>round.map(c=>c===id?replacementId:c)),extraIds:progress.extraIds.map(c=>c===id?replacementId:c),failedExtras:[...progress.failedExtras,{challengeId:id,answers,at:new Date().toISOString(),replacementId}]};
 }
-export function addExtraForWrongAnswer(data:LocalData,progress:LocalProgress,id:string,answers:Answers,random=Math.random):LocalProgress {
-  const challenge=data.challenges.find(c=>c.id===id);
-  if(!progress.startedAt||!challenge||(!routeChallenges(data,progress).some(c=>c.id===id)&&!progress.extraIds.includes(id))||progress.completed.some(c=>c.challengeId===id))throw Error('Este reto no está pendiente en tu camino.');
-  if(progress.visitorRounds.length&&!progress.visitorRounds[progress.visitorRoundIndex].includes(id)&&!progress.extraIds.includes(id))throw Error('Este reto pertenece a otra ronda.');
-  if(!hasIncorrectAnswer(challenge,answers))throw Error('El intento no contiene una respuesta incorrecta válida.');
-  if(challenge.kind==='saint')return replaceFailedSaint(data,progress,id,answers,random);
-  const used=new Set([...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds,...progress.failedExtras.map(c=>c.challengeId),...progress.assignmentEdits.flatMap(edit=>edit.fromId?[edit.fromId]:[])]);
-  const candidates=extraChallenges(data).filter(c=>!used.has(c.id));
-  if(!candidates.length)throw Error('No quedan retos extra disponibles. Solicita al administrador que añada otro reto extra.');
-  const extraId=candidates[Math.floor(random()*candidates.length)].id;
-  return {...progress,extraIds:[...progress.extraIds,extraId],failedAnswers:[...progress.failedAnswers,{challengeId:id,answers,at:new Date().toISOString(),extraId}]};
+// Kept for compatibility with previous callers and exported progress files.
+export const replaceFailedSaint=replaceFailedChallenge;
+export const addExtraForWrongAnswer=replaceFailedChallenge;
+export function upgradeWrongAnswerProgress(data:LocalData,input:LocalProgress):LocalProgress {
+ let progress=input;
+ for(const record of [...input.failedAnswers].reverse()){
+  const active=[...routeChallenges(data,progress).map(c=>c.id),...progress.extraIds];
+  if(progress.completed.some(c=>c.challengeId===record.challengeId)||!active.includes(record.challengeId))continue;
+  let replacementId=record.extraId;const seen=new Set<string>();
+  while(!seen.has(replacementId)){seen.add(replacementId);const next=progress.failedExtras.find(f=>f.challengeId===replacementId);if(!next)break;replacementId=next.replacementId;}
+  if(!active.includes(replacementId)||progress.failedExtras.some(f=>f.challengeId===record.challengeId))continue;
+  const retired=new Set<string>();
+  for(const older of input.failedAnswers.filter(f=>f.challengeId===record.challengeId&&f!==record)){
+    let endpoint=older.extraId;const visited=new Set<string>();while(!visited.has(endpoint)){visited.add(endpoint);const next=progress.failedExtras.find(f=>f.challengeId===endpoint);if(!next)break;endpoint=next.replacementId;}
+    if(endpoint!==replacementId&&!progress.completed.some(c=>c.challengeId===endpoint))retired.add(endpoint);
+  }
+  const swap=(ids:string[])=>ids.filter(id=>id!==replacementId&&!retired.has(id)).map(id=>id===record.challengeId?replacementId:id);
+  const changedRounds=progress.visitorRounds.map(swap),removedBefore=changedRounds.slice(0,progress.visitorRoundIndex).filter(round=>!round.length).length;
+  const visitorRounds=changedRounds.filter(round=>round.length);
+  progress={...progress,routeIds:swap(progress.routeIds),extraIds:swap(progress.extraIds),visitorRounds,visitorRoundIndex:visitorRounds.length?Math.min(visitorRounds.length-1,progress.visitorRoundIndex-removedBefore):0,failedAnswers:progress.failedAnswers.filter(f=>f!==record),failedExtras:[{challengeId:record.challengeId,answers:record.answers,at:record.at,replacementId:record.extraId},...progress.failedExtras].sort((a,b)=>a.at.localeCompare(b.at))};
+ }
+ return progress;
 }
 function grantedExtraIds(progress:LocalProgress) {
   const granted=new Set(progress.failedAnswers.map(f=>f.extraId));
@@ -244,7 +257,7 @@ export function generateExtras(data: LocalData, progress: LocalProgress, random 
   if (!summary(data, progress).routeComplete) throw Error('Completa tu ruta asignada para descubrir más.');
   if (progress.extraIds.some(id => !progress.completed.some(c => c.challengeId === id))) throw Error('Termina los retos adicionales disponibles antes de generar otros.');
   const assigned = new Set(routeChallenges(data,progress).map(c=>c.id));
-  const candidates = extraChallenges(data).filter(c => !progress.extraIds.includes(c.id) && !assigned.has(c.id) && !progress.failedExtras.some(f=>f.challengeId===c.id)&&!progress.assignmentEdits.some(edit=>edit.fromId===c.id));
+  const candidates = extraChallenges(data).filter(c => !progress.extraIds.includes(c.id) && !assigned.has(c.id) && !progress.failedExtras.some(f=>f.challengeId===c.id)&&!progress.failedAnswers.some(f=>f.extraId===c.id||f.challengeId===c.id)&&!progress.assignmentEdits.some(edit=>edit.fromId===c.id));
   for (let i = candidates.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [candidates[i], candidates[j]] = [candidates[j], candidates[i]]; }
   return { ...progress, extraIds: [...progress.extraIds, ...candidates.slice(0, data.settings.extraBatchSize).map(c => c.id)] };
 }
@@ -277,16 +290,17 @@ export function parseProgress(data: LocalData, userId: string, input: unknown): 
   if(new Set(p.failedAnswers.map(f=>f.extraId)).size!==p.failedAnswers.length||(!p.startedAt&&p.failedAnswers.length))throw Error('Los retos extra por respuesta incorrecta no son válidos.');
   for(const record of p.failedAnswers) {
     const c=data.challenges.find(c=>c.id===record.challengeId);
-    if(!c||!['quiz','code'].includes(c.kind)||!hasIncorrectAnswer(c,record.answers)||(!routeChallenges(data,p).some(c=>c.id===record.challengeId)&&!p.extraIds.includes(record.challengeId)&&!retiredByAdmin.has(record.challengeId))||!extraChallenges(data).some(c=>c.id===record.extraId)||(!p.extraIds.includes(record.extraId)&&!routeChallenges(data,p).some(c=>c.id===record.extraId)&&!p.failedExtras.some(f=>f.challengeId===record.extraId)&&!retiredByAdmin.has(record.extraId)))throw Error('El historial de respuestas incorrectas no es válido.');
+    const replacedOriginal=p.failedExtras.some(f=>f.challengeId===record.challengeId);
+    if(!c||!['quiz','code'].includes(c.kind)||!hasIncorrectAnswer(c,record.answers)||(!routeChallenges(data,p).some(c=>c.id===record.challengeId)&&!p.extraIds.includes(record.challengeId)&&!retiredByAdmin.has(record.challengeId)&&!replacedOriginal)||!extraChallenges(data).some(c=>c.id===record.extraId)||(!p.extraIds.includes(record.extraId)&&!routeChallenges(data,p).some(c=>c.id===record.extraId)&&!p.failedExtras.some(f=>f.challengeId===record.extraId)&&!retiredByAdmin.has(record.extraId)&&!replacedOriginal))throw Error('El historial de respuestas incorrectas no es válido.');
   }
   const failedIds=new Set(p.failedExtras.map(f=>f.challengeId));
   if(failedIds.size!==p.failedExtras.length||(!p.startedAt&&p.failedExtras.length))throw Error('Los intentos de retos extra no son válidos.');
   for(const [index,record] of p.failedExtras.entries()) {
     const challenge=data.challenges.find(c=>c.id===record.challengeId);
-    const selected=challenge?saintSelection(challenge,record.answers):null;
+
     const active=[...routeChallenges(data,p).map(c=>c.id),...p.extraIds];
     const nextFailure=p.failedExtras.findIndex(f=>f.challengeId===record.replacementId);
-    if(!challenge||challenge.kind!=='saint'||selected===null||selected===saintQuestion(challenge).correctIndex||active.includes(record.challengeId)||p.completed.some(c=>c.challengeId===record.challengeId)||!extraChallenges(data).some(c=>c.id===record.replacementId)||(!active.includes(record.replacementId)&&nextFailure<=index&&!retiredByAdmin.has(record.replacementId)))throw Error('El historial de reemplazos no es válido.');
+    if(!challenge||!hasIncorrectAnswer(challenge,record.answers)||active.includes(record.challengeId)||p.completed.some(c=>c.challengeId===record.challengeId)||!extraChallenges(data).some(c=>c.id===record.replacementId)||(!active.includes(record.replacementId)&&nextFailure<=index&&!retiredByAdmin.has(record.replacementId)))throw Error('El historial de reemplazos no es válido.');
   }
   for (const record of p.completed) {
     const c = data.challenges.find(c => c.id === record.challengeId);
@@ -316,6 +330,8 @@ function validRoute(data:LocalData,p:LocalProgress) {
   if(JSON.stringify(expected)===JSON.stringify(p.routeIds))return true;
  }
  if(!user.area)return false;
- return p.routeRule?matchesRule(data,p.routeIds,user.area,p.routeRule):matchesRule(data,p.routeIds,user.area,data.assignmentRules.admission[user.area])||matchesRule(data,p.routeIds,user.area,legacyRule(user.area));
+ let original=[...p.routeIds];
+ for(const failure of [...p.failedExtras].reverse())original=original.map(id=>id===failure.replacementId?failure.challengeId:id);
+ return p.routeRule?matchesRule(data,original,user.area,p.routeRule):matchesRule(data,original,user.area,data.assignmentRules.admission[user.area])||matchesRule(data,original,user.area,legacyRule(user.area));
 }
 export const storageKey = (data: LocalData, userId: string) => `camino-local:${data.settings.dataVersion}:${userId}`;

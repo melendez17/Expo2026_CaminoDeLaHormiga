@@ -1,4 +1,5 @@
 'use client';
+import {notifyAction} from '@/lib/action-feedback';
 import {useEffect,useRef,useState,type CSSProperties} from 'react';
 import type{LocalData,LocalUser}from'@/lib/local-game';
 import{drawTicket,raffleKey,raffleTickets,readDraws,type RaffleDraw}from'@/lib/local-tickets';
@@ -9,10 +10,10 @@ export function AdminRaffle({data,actor,onDrawn}:{data:LocalData;actor:LocalUser
  const[reel,setReel]=useState<{id:string;tickets:ReelTicket[]}|null>(null),[spinning,setSpinning]=useState(false),[starting,setStarting]=useState(false),[error,setError]=useState(''),[prize,setPrize]=useState('');
  const[,refresh]=useState(0),busy=useRef(false);
  useEffect(()=>{const load=()=>{refresh(n=>n+1);if(!busy.current)try{setResult(readDraws(data,localStorage).at(-1)??null);setReel(null);}catch(e){setError((e as Error).message);}};window.addEventListener('storage',load);window.addEventListener('focus',load);return()=>{window.removeEventListener('storage',load);window.removeEventListener('focus',load);};},[data]);
- useEffect(()=>{if(!spinning)return;const timer=window.setTimeout(()=>{setSpinning(false);busy.current=false;},window.matchMedia('(prefers-reduced-motion: reduce)').matches?100:4300);return()=>window.clearTimeout(timer);},[spinning]);
+ useEffect(()=>{if(!spinning)return;const timer=window.setTimeout(()=>{setSpinning(false);busy.current=false;notifyAction('Sorteo finalizado. El ganador y su tiquete quedaron guardados.');},window.matchMedia('(prefers-reduced-motion: reduce)').matches?100:4300);return()=>window.clearTimeout(timer);},[spinning]);
  let draws:RaffleDraw[]=[],pool:ReturnType<typeof raffleTickets>={tickets:[],invalidUsers:0},loadError='';try{draws=readDraws(data,localStorage);pool=raffleTickets(data,localStorage);}catch(e){loadError=(e as Error).message;}
  const won=new Set(draws.map(d=>d.ticketId)),eligible=pool.tickets.filter(t=>!won.has(t.id));const digital=eligible.filter(t=>t.source==='digital').length,manual=eligible.length-digital;
- async function spin(){if(busy.current)return;busy.current=true;setStarting(true);setError('');try{
+ async function spin(){if(busy.current)return;busy.current=true;setStarting(true);setError('');notifyAction('');try{
   const action=()=>{const current=raffleTickets(data,localStorage),used=new Set(readDraws(data,localStorage).map(d=>d.ticketId)),available=current.tickets.filter(t=>!used.has(t.id));const winner=drawTicket(data,localStorage,actor.id,prize);return{available,winner};};
   const saved=navigator.locks?await navigator.locks.request(raffleKey(data),action):action();
   const tickets:ReelTicket[]=Array.from({length:36},(_,i)=>saved.available[i%saved.available.length]).map(t=>({code:t.code,name:t.name,source:t.source}));tickets.push({code:saved.winner.ticketCode,name:saved.winner.winnerName,source:saved.winner.source});

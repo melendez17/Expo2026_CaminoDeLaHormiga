@@ -1,4 +1,5 @@
 'use client';
+import {notifyAction} from '@/lib/action-feedback';
 import { useEffect, useState } from 'react';
 import { adminRows, csvField, generateUserToken } from '@/lib/local-admin';
 import { saintQuestion, normalize, type LocalChallenge, type LocalData, type LocalUser } from '@/lib/local-game';
@@ -40,7 +41,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
   const [projectCategory,setProjectCategory]=useState<ProjectCategory>('specialty');
   const [projectSpecialty,setProjectSpecialty]=useState<string>('Desarrollo Web');
   const [remove, setRemove] = useState<{ resource: Resource; id: string; title: string } | null>(null);
-  const [message, setMessage] = useState('');
+  const setMessage=notifyAction;
   const [error, setError] = useState('');
   const [, refresh] = useState(0);
   useEffect(() => {
@@ -130,7 +131,7 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
   function report() {
     const header = ['Nombre', 'Correo electrónico', 'Rol', 'Área de afinidad', 'Estado', 'Retos', 'Tiquetes', 'Votos emitidos', 'Votos disponibles', 'Encuesta'];
     const csv = [header, ...rows.map(r => [r.user.name, r.user.email ?? '', roleLabel(r.user.role), r.user.area?areaLabel(r.user.area):'', r.status, r.progress?.completed.length ?? '', r.stats?.tickets ?? '', r.progress?.votes.length ?? '', r.stats?.votesAvailable ?? '', r.progress?.survey ? 'Completada' : 'Pendiente'])].map(row => row.map(csvField).join(',')).join('\r\n');
-    download('metricas-demo.csv', '\ufeff' + csv, 'text/csv;charset=utf-8');
+    download('metricas-demo.csv', '\ufeff' + csv, 'text/csv;charset=utf-8');setMessage('Métricas descargadas en CSV.');
   }
   const field = (label: string, name: string, defaultValue = '', required = true) => <label>{label}<input name={name} defaultValue={defaultValue} required={required} maxLength={160} /></label>;
   const location = (value = '7') => <label>Edificio<select name="buildingId" aria-label="Edificio" defaultValue={value}>{Object.entries(names).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>;
@@ -141,9 +142,9 @@ export function LocalAdmin({ data, actor, onLogout, onSave, onRestored }: {
       { id: 'challenges', title: 'Retos', icon: 'route' }, { id: 'projects', title: 'Proyectos', icon: 'projects' },
       { id: 'assignments', title:'Asignación',icon:'route' }, { id: 'agenda', title: 'Agenda', icon: 'agenda' }, { id: 'tickets', title: 'Tiquetes', icon: 'ticket' }, { id: 'backup', title: 'Respaldo', icon: 'backup' }
     ] as const} active={tab} onChange={changeTab}/>
-    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={{overview:'Resumen',users:'Usuarios',projects:'Proyectos',challenges:'Retos',tickets:'Tiquetes',agenda:'Agenda',assignments:'Asignación',backup:'Respaldo'}[tab]} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => refresh(n => n + 1)}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
+    <main className="local-content"><div className="local-section admin-container"><div className="admin-title-row"><PageIntro eyebrow="PANEL DE ADMINISTRACIÓN" sequence="01" title={{overview:'Resumen',users:'Usuarios',projects:'Proyectos',challenges:'Retos',tickets:'Tiquetes',agenda:'Agenda',assignments:'Asignación',backup:'Respaldo'}[tab]} description="Gestiona el catálogo y consulta las pruebas realizadas en este navegador." />{tab === 'overview' && <div className="admin-overview-actions"><button onClick={() => {refresh(n => n + 1);setMessage('Métricas actualizadas.');}}>Actualizar métricas</button><button onClick={() => attempt(report)}>Descargar CSV</button></div>}</div>
       <p className="admin-local-note">Modo local de prueba: este token es público. Los cambios y las métricas no se comparten entre dispositivos ni modifican los JSON del repositorio.</p>
-      {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="feedback" role="status">{message}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
       {tab==='assignments'&&<AdminAssignments data={data} actor={actor} onSave={onSave} onChanged={()=>refresh(n=>n+1)}/>}
       {tab === 'tickets' && <AdminTickets data={data} actor={actor} onIssued={()=>refresh(n=>n+1)}/>}
       {tab === 'overview' && <AdminOverview data={data} rows={rows} onAnswers={showAnswers}/>}

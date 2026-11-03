@@ -1,4 +1,5 @@
 'use client';
+import {notifyAction} from '@/lib/action-feedback';
 import { useEffect, useState } from 'react';
 import type { LocalData, LocalUser } from '@/lib/local-game';
 import { routeChallenges } from '@/lib/local-game';
@@ -13,7 +14,7 @@ export function AdminAssignments({data,actor,onSave,onChanged,participantId}:{da
  const tab=participantId?'person':'rules';
  const userId=participantId??'';
  const [draft,setDraft]=useState(()=>structuredClone(data.assignmentRules));
- const [error,setError]=useState(''),[message,setMessage]=useState('');
+ const [error,setError]=useState('');const setMessage=notifyAction;
  const [edit,setEdit]=useState<{fromId:string|null;mode:'replace'|'remove'|'add'}|null>(null);
  const [category,setCategory]=useState(''),[level,setLevel]=useState<''|'10'|'11'>(''),[scope,setScope]=useState<'route'|'extra'|'visitor'>('route'),[reason,setReason]=useState('Proyecto no disponible');
  useEffect(()=>{if(edit)document.querySelector('.assignment-edit')?.scrollIntoView({block:'start'});},[edit?.fromId,edit?.mode]);
@@ -29,7 +30,7 @@ export function AdminAssignments({data,actor,onSave,onChanged,participantId}:{da
  const open=(fromId:string|null)=>{setEdit({fromId,mode:fromId?'replace':'add'});setCategory('');setLevel('');setScope(progress?.visitorRounds.length?'visitor':'route');setReason(fromId?'Proyecto no disponible':'Asignación manual');setError('');setMessage('');};
  const field=(area:string,key:keyof RouteRule,label:string)=><label key={key}>{label}<input aria-label={`${areaLabel(area)}: ${label}`} type="number" min={0} max={20} value={draft.admission[area][key]} onChange={e=>setDraft(old=>({...old,admission:{...old.admission,[area]:{...old.admission[area],[key]:Number(e.target.value)}}}))} required /></label>;
  return <section className="admin-assignment-section">
-  {error&&<p className="form-error" role="alert">{error}</p>}{message&&<p className="feedback" role="status">{message}</p>}
+  {error&&<p className="form-error" role="alert">{error}</p>}
   {tab==='rules'?<form onSubmit={e=>{e.preventDefault();attempt(()=>{onSave({...data,assignmentRules:draft});setMessage('Distribución guardada. Se aplicará a las rutas nuevas; las que ya iniciaron conservan sus retos.');});}}>
    <h2>Visitantes</h2><div className="assignment-visitor-rule"><label>Retos por ronda<input aria-label="Retos por ronda de visitantes" type="number" min={1} max={20} value={draft.visitorBatchSize} required onChange={e=>setDraft(old=>({...old,visitorBatchSize:Number(e.target.value)}))}/></label><p>La primera ronda es la base: un proyecto del área afín, si hay disponibilidad, y el resto al azar. Las rondas adicionales son completamente aleatorias. Cada dos retos completados dan un tiquete.</p></div>
    <h2>Admisión · Cantidades por área</h2><p>Escribe cuántos proyectos de cada categoría y cuántos extras debe completar cada persona. Cero significa que esa categoría no se asigna.</p>

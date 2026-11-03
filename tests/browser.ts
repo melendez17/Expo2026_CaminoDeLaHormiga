@@ -61,7 +61,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('.campus-map image')?.getAttribute('href') === '/campus/map-2d.jpg');
     console.log('PASS JSON login, invalid token, legacy admission route, mobile map ratio and highlight');
 
-    async function complete(c: LocalChallenge, testWrong = false) {
+    async function complete(c: LocalChallenge) {
       await page.getByRole('button', { name: `Responder: ${c.title}`, exact: true }).click();
       const dialog = page.getByRole('dialog');
       if (c.kind === 'freeform') {
@@ -70,16 +70,11 @@ async function main() {
         await dialog.getByLabel('¿Qué descubriste?').fill('Descubrí cómo cuidar el agua con sensores.');
       }
       if (c.kind === 'quiz') {
-        for (const q of c.questions!) await dialog.getByRole('radio', { name: q.options[testWrong ? (q.correctIndex + 1) % q.options.length : q.correctIndex], exact: true }).check();
+        for (const q of c.questions!) await dialog.getByRole('radio', { name: q.options[q.correctIndex], exact: true }).check();
       }
       if (c.kind === 'saint') await dialog.getByRole('radio',{name:c.questions![0].options[c.questions![0].correctIndex],exact:true}).check();
       if (c.code) await dialog.getByLabel('Código del stand').fill(c.code);
       await dialog.getByRole('button', { name: 'Completar reto', exact: true }).click();
-      if (testWrong) {
-        await dialog.getByRole('alert').filter({ hasText: 'Hay una respuesta por revisar' }).waitFor();
-        for (const q of c.questions!) await dialog.getByRole('radio', { name: q.options[q.correctIndex], exact: true }).check();
-        await dialog.getByRole('button', { name: 'Completar reto', exact: true }).click();
-      }
       await dialog.waitFor({ state: 'hidden' });
     }
     for (const c of challenges.filter(c => c.isBase)) await complete(c);

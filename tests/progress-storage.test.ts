@@ -26,3 +26,14 @@ test('errores reales, otra persona, versión incorrecta y referencias desconocid
 test('admin y asignaciones reconocen el mismo progreso recuperado sin sobrescribirlo al consultarlo',()=>{
  const s=store(),raw=JSON.stringify(legacy()),key=storageKey(data,'ana');s.values.set(key,raw);assert.equal(adminRows(data,s).find(row=>row.user.id==='ana')!.error,null);assert.equal(readAssignmentProgress(data,s,'ana').completed.length,legacy().completed.length);assert.equal(s.getItem(key),raw);assert.equal(s.writes.length,0);
 });
+
+test('repara el antiguo caso de dos retos más un extra por fallo, conserva el intento y respalda el original',()=>{
+ const old:LocalProgress={...freshProgress(data,'ana'),startedAt:'2026-11-01T10:00:00.000Z',visitorRounds:[['tics','pasitos']],extraIds:['santo-b'],failedAnswers:[{challengeId:'tics',answers:{...answer(data.challenges.find(c=>c.id==='tics')!),code:'ZZZZ'},at:'2026-11-01T10:01:00.000Z',extraId:'santo-b'}]};
+ assert.deepEqual(parseProgress(data,'ana',old),old);const s=store(),key=storageKey(data,'ana'),raw=JSON.stringify(old);s.values.set(key,raw);const repaired=loadLocalProgress(data,s,'ana');assert.equal(repaired.visitorRounds[0].length,2);assert.deepEqual(repaired.visitorRounds[0],['santo-b','pasitos']);assert.equal(repaired.extraIds.length,0);assert.equal(repaired.failedExtras.length,1);assert.deepEqual(repaired.failedExtras[0].answers,old.failedAnswers[0].answers);assert.equal(repaired.completed.length,0);assert.equal(summary(data,repaired).tickets,0);assert.equal(s.getItem(compatibilityBackupKey(data,'ana')),raw);assert.deepEqual(parseProgress(data,'ana',repaired),repaired);assert.throws(()=>completeLocal(data,repaired,'tics',answer(data.challenges.find(c=>c.id==='tics')!)),/camino/);assert.deepEqual(loadLocalProgress(data,s,'ana'),repaired);
+});
+
+test('repara fallos repetidos del mismo original sin acumular suplentes ni perder respuestas anteriores',()=>{
+ const wrong={...answer(data.challenges.find(c=>c.id==='tics')!),code:'ZZZZ'};
+ const old:LocalProgress={...freshProgress(data,'ana'),startedAt:'2026-11-01T10:00:00.000Z',visitorRounds:[['tics','pasitos']],extraIds:['santo-b','santo-c'],failedAnswers:[{challengeId:'tics',answers:wrong,at:'2026-11-01T10:01:00.000Z',extraId:'santo-b'},{challengeId:'tics',answers:wrong,at:'2026-11-01T10:02:00.000Z',extraId:'santo-c'}]};
+ const result=restoreCompatibleProgress(data,'ana',old);assert.equal(result.visitorRounds[0].length,2);assert.equal(result.extraIds.length,0);assert.equal(result.failedExtras.length+result.failedAnswers.length,2);assert.equal(result.failedExtras[0].replacementId,'santo-c');assert.deepEqual(parseProgress(data,'ana',result),result);
+});

@@ -6,7 +6,7 @@ const raw=Object.fromEntries(['users','projects','challenges','agenda','settings
 function store(){const values=new Map<string,string>();return{values,getItem:(key:string)=>values.get(key)??null,setItem:(key:string,v:string)=>{values.set(key,v);}};}
 function save(s:ReturnType<typeof store>,p:LocalProgress){s.setItem(storageKey(data,p.userId),JSON.stringify(p));}
 function answer(c:LocalChallenge):Answers{return c.kind==='freeform'?{projectName:'Proyecto',level:'Décimo',description:'Aprendí nuevas ideas durante esta visita.'}:c.kind==='saint'?{saintChoice:String(saintQuestion(c).correctIndex)}:{code:c.code!,...Object.fromEntries((c.questions??[]).map(q=>[q.id,String(q.correctIndex)]))};}
-const spare=(p:LocalProgress)=>data.challenges.find(c=>c.projectId&&!routeChallenges(data,p).some(a=>a.projectId===c.projectId)&&!p.extraIds.includes(c.id))!;
+const spare=(p:LocalProgress)=>data.challenges.find(c=>c.projectId&&!p.failedExtras.some(f=>f.challengeId===c.id)&&!routeChallenges(data,p).some(a=>a.projectId===c.projectId)&&!p.extraIds.includes(c.id))!;
 test('nuevas distribuciones y catálogo con dos proyectos disponibles de Pasitos y Escuela',()=>{
  validateRuleCapacity(data);
  for(const [area,expected] of [['pasitos',{pasitos:2,school:1,specialty:1}],['school',{school:2,third_cycle:1,specialty:1}],['third_cycle',{third_cycle:2,specialty:2}]] as const){
@@ -49,7 +49,7 @@ test('proyectos cerrados se excluyen de nuevas asignaciones y no se aceptan como
 });
 test('historial de fallos sigue siendo válido al reemplazar o retirar el reto pendiente',()=>{
  const s=store();let p=prepareAssignments(data,s,'admin','sofia');const c=data.challenges.find(c=>c.id===p.routeIds[0])!;p=addExtraForWrongAnswer(data,p,c.id,{...answer(c),code:'ZZZZ'},()=>0);save(s,p);
- const next=changeAssignment(data,s,'admin','sofia',{fromId:c.id,toId:spare(p).id,reason:'Proyecto cerrado tras el intento'});assert.equal(next.failedAnswers.length,1);assert.deepEqual(parseProgress(data,'sofia',next),next);
+ const next=changeAssignment(data,s,'admin','sofia',{fromId:p.failedExtras[0].replacementId,toId:spare(p).id,reason:'Proyecto cerrado tras el intento'});assert.equal(next.failedExtras.length,1);assert.deepEqual(parseProgress(data,'sofia',next),next);
 });
 test('migración agrega solo los nuevos ejemplos y no restaura proyectos borrados del catálogo anterior',()=>{
  const old=structuredClone(data);old.schemaRevision=3;old.projects=old.projects.filter(p=>!['adm-pasitos-2','adm-escuela-2','agua-11-b'].includes(p.id));old.challenges=old.challenges.filter(c=>!c.projectId||old.projects.some(p=>p.id===c.projectId));

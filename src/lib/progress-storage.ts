@@ -1,16 +1,17 @@
-import {freshProgress,parseProgress,progressSchema,storageKey,upgradeVisitorProgress,type LocalData,type LocalProgress} from './local-game';
+import {freshProgress,parseProgress,progressSchema,storageKey,upgradeWrongAnswerProgress,upgradeVisitorProgress,type LocalData,type LocalProgress} from './local-game';
 type Store=Pick<Storage,'getItem'|'setItem'>;
 export const compatibilityBackupKey=(data:LocalData,userId:string)=>`${storageKey(data,userId)}:before-compatibility-repair`;
 
 // Legacy visitors could have project visits in extraIds. Convert those assignments
 // before applying the newer extra-only validation, without dropping any answers.
 export function restoreCompatibleProgress(data:LocalData,userId:string,input:unknown):LocalProgress {
- try{return parseProgress(data,userId,input);}catch(originalError){
+ try{const parsed=parseProgress(data,userId,input);return parseProgress(data,userId,upgradeWrongAnswerProgress(data,parsed));}catch(originalError){
   const old=progressSchema.safeParse(input),user=data.users.find(u=>u.id===userId);
   if(!old.success||user?.role!=='visitor'||old.data.userId!==userId||old.data.dataVersion!==data.settings.dataVersion||!old.data.startedAt||old.data.visitorRounds.length)throw originalError;
   const refs=[...old.data.routeIds,...old.data.extraIds,...old.data.completed.map(c=>c.challengeId)];
   if(refs.some(id=>!data.challenges.some(c=>c.id===id)))throw originalError;
-  return parseProgress(data,userId,upgradeVisitorProgress(data,old.data));
+  const parsed=parseProgress(data,userId,upgradeVisitorProgress(data,old.data));
+  return parseProgress(data,userId,upgradeWrongAnswerProgress(data,parsed));
  }
 }
 export function loadLocalProgress(data:LocalData,storage:Store,userId:string,upgradeVisitors=true):LocalProgress {

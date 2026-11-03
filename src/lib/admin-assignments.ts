@@ -51,7 +51,7 @@ export function replacementCandidates(data:LocalData,p:LocalProgress,fromId:stri
  return data.challenges.filter(c=>{
   const project=data.projects.find(project=>project.id===c.projectId);
   if(c.projectId&&c.projectId===data.challenges.find(old=>old.id===fromId)?.projectId)return false;
-  if(assigned.includes(c.id)||p.failedExtras.some(f=>f.challengeId===c.id)||p.assignmentEdits.some(edit=>edit.fromId===c.id)||project?.active===false)return false;
+  if(assigned.includes(c.id)||p.failedExtras.some(f=>f.challengeId===c.id)||p.failedAnswers.some(f=>f.challengeId===c.id||f.extraId===c.id)||p.assignmentEdits.some(edit=>edit.fromId===c.id)||project?.active===false)return false;
   if(c.projectId&&assigned.some(id=>id!==fromId&&data.challenges.find(c=>c.id===id)?.projectId===c.projectId))return false;
   if(category==='extra')return !c.projectId&&['code','saint'].includes(c.kind);
   if(!project||level&&project.level!==level)return false;
