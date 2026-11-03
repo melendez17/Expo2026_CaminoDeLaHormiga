@@ -6,6 +6,7 @@ import { BackendService } from "../../src/lib/backend/service";
 import { mapDatabaseError } from "../../src/lib/backend/errors";
 import { localDataSchema } from "../../src/lib/local-game";
 import { validateRuleCapacity } from "../../src/lib/admin-assignments";
+import { databaseDiagnostic } from "./diagnostics";
 import type { BackendStore } from "../../src/lib/backend/store";
 if (existsSync(".env.local")) loadEnvFile(".env.local");
 export const args = Object.fromEntries(
@@ -38,7 +39,10 @@ export function connection() {
   const store: BackendStore = {
     async rpc<T>(name: string, params: Record<string, unknown> = {}) {
       const result = await client.rpc(name, params);
-      if (result.error) throw mapDatabaseError(result.error);
+      if (result.error) {
+        if (args.debug) console.error(databaseDiagnostic(name, result.error));
+        throw mapDatabaseError(result.error);
+      }
       return result.data as T;
     },
   };

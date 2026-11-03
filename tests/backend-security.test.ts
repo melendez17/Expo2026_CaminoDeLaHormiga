@@ -215,3 +215,23 @@ test("el adaptador conserva requestId al perderse una respuesta y permite reinte
     globalThis.fetch = previous;
   }
 });
+
+test("diagnóstico CLI conserva el código SQL sin volcar filas, claves o correos", async () => {
+  const { databaseDiagnostic } =
+    await import("../scripts/supabase/diagnostics");
+  const output = databaseDiagnostic("camino_initialize", {
+    code: "42501",
+    message:
+      "permission denied for schema camino; persona@example.com; Bearer secreto; sb_secret_prueba_larga",
+  });
+  assert.match(output, /42501/);
+  assert.match(output, /schema camino/);
+  assert.equal(output.includes("persona@example.com"), false);
+  assert.equal(output.includes("Bearer secreto"), false);
+  assert.equal(output.includes("sb_secret_prueba_larga"), false);
+  const invalid = databaseDiagnostic("camino_initialize", {
+    code: "22P02",
+    message: 'invalid input syntax for type integer: "123456"',
+  });
+  assert.equal(invalid.includes("123456"), false);
+});

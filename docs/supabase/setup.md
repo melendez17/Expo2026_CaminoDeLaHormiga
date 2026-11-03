@@ -99,3 +99,15 @@ En DBeaver/pgAdmin usar la cadena Connect del panel con SSL y cuenta autorizada.
 ## Protección del token
 
 El token es toda la credencial, también para un administrador. Quien lo obtenga tendrá sus permisos; cuatro caracteres ofrecen poca resistencia a adivinación. No publicar tokens ni códigos de tiquete que los contengan. Los límites, sesiones revocables y validación de rol se conservan, pero no equivalen a un segundo factor. El colegio ha elegido este acceso simplificado para esta etapa.
+
+## Si el seed solo muestra «No se pudo completar la operación»
+
+Actualizar la rama y ejecutar el diagnóstico desde la carpeta del proyecto:
+
+```powershell
+node ".\node_modules\tsx\dist\cli.mjs" ".\scripts\supabase\seed-catalog.ts" --apply --debug
+```
+
+El modo debug de las herramientas privadas muestra nombre de RPC, código de PostgreSQL/PostgREST y mensaje técnico acotado. No imprime argumentos, claves del entorno, cabeceras ni detalles de filas; también oculta credenciales/correos detectados en el mensaje. Las respuestas de la API pública siguen siendo genéricas.
+
+Si la inicialización falla dentro de la transacción, los cambios de esa llamada se revierten. Primero revisar ese código/mensaje para corregir la causa; un catálogo ausente no significa necesariamente que falten todas las tablas. No volver a crear el proyecto para diagnosticarlo.
