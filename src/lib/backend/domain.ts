@@ -9,6 +9,8 @@ import {
   summary,
   routeChallenges,
   currentVisitorRound,
+  visitorCandidates,
+  extraChallenges,
   saintQuestion,
   type LocalData,
   type LocalProgress,
@@ -218,6 +220,7 @@ export function participantView(
   user: LocalUser,
   progress: LocalProgress,
   version: number,
+  catalogVersion = 0,
 ) {
   const assigned = !progress.startedAt
     ? []
@@ -228,7 +231,17 @@ export function participantView(
   return {
     user,
     version,
+    catalogVersion,
     stats: summary(data, progress),
+    nextAvailable: progress.visitorRounds.length
+      ? progress.visitorRoundIndex < progress.visitorRounds.length - 1 ||
+        visitorCandidates(data, progress).length > 0
+      : extraChallenges(data).some(
+          (c) =>
+            !progress.routeIds.includes(c.id) &&
+            !progress.extraIds.includes(c.id) &&
+            !progress.failedExtras.some((f) => f.challengeId === c.id),
+        ),
     progress: {
       startedAt: progress.startedAt,
       routeIds: progress.routeIds,

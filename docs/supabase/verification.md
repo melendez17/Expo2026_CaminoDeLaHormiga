@@ -1,20 +1,27 @@
-# Verificación de esta entrega
+# Verificación de la versión conectada
 
-Verificado en el entorno de desarrollo el 3 de noviembre de 2026:
+Comprobado localmente, sin datos personales ni servicios remotos:
 
-- TypeScript sin errores (`npm run typecheck`).
-- Suite completa de 142 pruebas (`npm test`), incluyendo 36 del backend (se contabilizan también los grupos padre del runner).
-- Build de producción de Next.js.
-- Flujo de navegador de la demo JSON: login, mapas móvil, retos, fallos, premios, voto, rondas, encuestas, admin, Excel y modo sin conexión. La demo continúa sin depender de Supabase.
-- API HTTP desplegada localmente sin configuración: devuelve 503 y `private, no-store`; no expone el servidor anterior ni abre datos de prueba como autenticación real.
-- Migración nueva en PostgreSQL embebido, tanto sola como después de las dos históricas; permisos y RLS negados a anon/authenticated.
-- Registro con correo único, códigos/credenciales, OTP con intentos limitados, revocación de sesiones, propiedad de datos, MFA claims después de verificación del proveedor, CSRF y límites de cuerpo.
-- Rutas/asignaciones, intento incorrecto y evidencia, premios, conflictos de versión, solicitudes duplicadas, votos sin doble gasto, manuales incrementales y sorteos sin repetir tiquete.
-- Administración de catálogo/agenda/niveles, protección de avances existentes y exportación Excel con historial de rifa.
-- Auditoría npm de producción: sin avisos altos/críticos después de actualizar Nodemailer; persisten 11 moderados en la cadena transitiva existente de ExcelJS, descritos en seguridad.
+- TypeScript y build de producción de Next.js.
+- 143 pruebas automatizadas, incluidas 37 del backend (el runner contabiliza también los grupos padre).
+- Migraciones de producción solas y después de las históricas, sin eliminar tablas anteriores. RLS y RPC niegan acceso directo a anon/authenticated.
+- Correo único, tokens reutilizables, sesiones revocables, propiedad de datos, CSRF, límites de cuerpo e intentos. La autenticación Auth/MFA heredada sigue probada como alternativa, pero no se requiere para el acceso actual por token.
+- Reglas de visitantes/admisión, niveles, premios, fallos con evidencia/reemplazo, asignaciones por categoría, protección de completados, versiones e idempotencia.
+- Voto sin doble gasto, manuales incrementales, rifa uniforme sin repetir tiquete ganador y Excel con su historial.
+- Contratos del frontend: sesión actual, catálogo público sin claves, paginación/filtros globales, edición de staff y protección de acciones si otra pestaña cambió el usuario de la cookie.
 
-No verificado por falta de proyecto/credenciales: conectividad remota de Supabase, políticas desplegadas, login real por token de todos los roles, SMTP real, restauración de respaldo remoto ni capacidad con 1.500 usuarios. No se ha ejecutado el guion de carga ni enviado correos. El cliente visual aún no consume la API: la migración de pantallas y puesta en producción siguen pendientes.
+La prueba `test:api-browser` abre las páginas compiladas y dirige sus solicitudes al handler real con PostgreSQL embebido. Verifica:
 
-Actualización: se agregó ingreso reutilizable por token en `/auth/login`, sin QR/correo obligatorio. Se verifican normalización, cookie segura, reingreso, bloqueo de inactivos, separación de admin y límites persistentes; ver `tests/backend-token-login.test.ts`.
+- Login, inicio, fallo/corrección/evidencia bloqueada, reemplazo, completados y tiquete.
+- Voto, encuesta, descarga del avance y rondas adicionales.
+- Persistencia al recargar y desde otro contexto de navegador.
+- Creación/edición/desactivación/reactivación, última persona creada conservada en servidor y respuestas por usuario.
+- Distribución sin alterar rutas iniciadas y reemplazos por categoría.
+- Proyecto y reto de especialidad con nivel, CRUD del catálogo y agenda compartida.
+- Manual con una respuesta de red perdida: al reintentar queda un solo tiquete.
+- Sorteo y descarga de un Excel real.
+- Cero lecturas de JSON públicos y cero escrituras de progreso/catálogo privado en localStorage; sesión HttpOnly y diseño móvil/desktop conservado.
 
-Actualización administrativa: todos los roles acceden por token. Se verifica acceso al panel sin Auth/MFA, separación de permisos, alta administrativa sin Auth/invitación e inhabilitación de tokens administrativos. La integración remota continúa pendiente.
+Las páginas `/` y `/admin` ya utilizan la API. La migración `202611030004_frontend_api.sql` debe aplicarse a una base que todavía no la tenga. El service worker anterior se retira: no se utiliza la demo offline como respaldo de una operación real fallida.
+
+No verificado aquí: conexión al proyecto Supabase del colegio, configuración efectiva del hosting/HTTPS, SMTP real, recuperación de respaldos remotos ni carga de 1.500 usuarios. No se enviaron correos ni se ejecutó carga externa. La auditoría anterior documentó 11 avisos moderados heredados en la cadena de ExcelJS; no se añadieron dependencias de producción en esta integración.

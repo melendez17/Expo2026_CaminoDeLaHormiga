@@ -10,7 +10,11 @@ export class ApiClientError extends Error {
   }
 }
 export function createApiClient(
-  options: { base?: string; accessToken?: () => Promise<string | null> } = {},
+  options: {
+    base?: string;
+    accessToken?: () => Promise<string | null>;
+    userId?: () => string | null;
+  } = {},
 ) {
   const base = options.base ?? "/api/v1";
   if (!base.startsWith("/") || base.startsWith("//"))
@@ -43,9 +47,14 @@ export function createApiClient(
         method,
         credentials: "same-origin",
         cache: "no-store",
+        signal:
+          typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+            ? AbortSignal.timeout(45000)
+            : undefined,
         headers: {
           ...(body ? { "Content-Type": "application/json" } : {}),
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(options.userId?.() ? { "X-Camino-User": options.userId()! } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
       });

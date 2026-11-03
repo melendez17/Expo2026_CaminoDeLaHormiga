@@ -2,12 +2,13 @@
 
 Rama: `implementacionbackend`. El backend real está implementado en `/api/v1` y probado localmente con PostgreSQL embebido (PGlite), HTTP Request/Response reales y pruebas de concurrencia/idempotencia. No se ha creado ni conectado un proyecto remoto: falta configurar las credenciales del colegio y verificar el acceso por token, SMTP y rendimiento en ese entorno.
 
-**La interfaz existente sigue siendo la demo JSON/localStorage.** Esta entrega agrega el backend y el adaptador `src/lib/api-client.ts`; todavía no sustituye el almacenamiento de `journey.tsx`. Activar una variable no migra la interfaz. No introducir personas reales en la demo pública ni asumir que sus cambios se comparten entre dispositivos. La conexión de las pantallas se hace en la siguiente etapa, contra estos endpoints, eliminando las ayudas con respuestas y el login local. El diseño y la lógica actual se conservaron.
+**Las pantallas ya consumen la API.** Ingreso, recorrido, votos, agenda, mapa y administración consultan/guardan en servidor. No hay persistencia privada local ni fallback a JSON. Para activar una base ya configurada, aplica `202611030004_frontend_api.sql`, verifica las variables y reinicia Next.js. [Pasos del frontend conectado](frontend.md). La conexión con el Supabase real del colegio aún debe verificarse en ese entorno; no hay credenciales remotas en esta entrega.
 
 | Guía | Contenido |
 |---|---|
 | [Configuración paso a paso](setup.md) | Crear Supabase, migrar, preparar catálogo, primer administrador y probar la conexión |
 | [UML de la base de datos](database-uml.md) | Diagrama completo, claves, relaciones y archivos editables |
+| [Frontend conectado](frontend.md) | Actualización, pantallas, sincronización y pruebas |
 | [API](api.md) | Rutas, permisos, cuerpos, errores y reintentos |
 | [Seguridad y arquitectura](security.md) | Credenciales, RLS, transacciones, privacidad y límites |
 | [Operación y capacidad](operations.md) | Importación, respaldos, correo, 5.000 personas y prueba de carga |

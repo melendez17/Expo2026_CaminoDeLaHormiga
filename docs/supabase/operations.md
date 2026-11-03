@@ -74,4 +74,4 @@ npm test
 npm run build
 ```
 
-Las pruebas nuevas usan PostgreSQL embebido y HTTP real en memoria; no requieren cuentas reales ni envían correos. `db:check` y `api:check` son las comprobaciones pendientes contra el proyecto real. La interfaz local conserva sus pruebas de navegador. No se ejecutó carga contra servicios de terceros.
+Las pruebas nuevas usan PostgreSQL embebido y HTTP real en memoria; no requieren cuentas reales ni envían correos. `db:check` y `api:check` son las comprobaciones pendientes contra el proyecto real. La interfaz conectada tiene pruebas de navegador contra el handler real y PostgreSQL embebido; los guiones antiguos de la demo JSON quedan como referencia histórica. No se ejecutó carga contra servicios de terceros.

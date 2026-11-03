@@ -63,6 +63,8 @@ const id = z.uuid(),
     offset: z.coerce.number().int().min(0).max(100000).default(0),
     limit: z.coerce.number().int().min(1).max(100).default(50),
     search: z.string().trim().max(100).default(""),
+    status: z.enum(["", "Completado", "En proceso", "Sin activar"]).default(""),
+    sort: z.enum(["name", "tickets", "progress"]).default("name"),
   });
 export function createBackendHandler(deps: HandlerDependencies) {
   const service = deps.service;
@@ -86,6 +88,15 @@ export function createBackendHandler(deps: HandlerDependencies) {
       });
     const sessionCookie = (value: string, maxAge: number) =>
       `${sessionCookieName(deps.production)}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${deps.production ? "; Secure" : ""}`;
+    function assertActor(user: LocalData["users"][number]) {
+      const expected = request.headers.get("x-camino-user");
+      if (expected && expected !== user.id)
+        throw new BackendError(
+          409,
+          "session_changed",
+          "La sesión cambió en otra pestaña. Vuelve a ingresar.",
+        );
+    }
     async function participant() {
       const token = readCookie(request, sessionCookieName(deps.production));
       if (!token)
@@ -98,6 +109,7 @@ export function createBackendHandler(deps: HandlerDependencies) {
         "camino_actor",
         { p_session_hash: hash(token) },
       );
+      if (record) assertActor(record.user);
       if (!record || record.user.role === "admin")
         throw new BackendError(
           401,
@@ -121,6 +133,7 @@ export function createBackendHandler(deps: HandlerDependencies) {
           "invalid_session",
           "Tu sesión venció o fue revocada.",
         );
+      assertActor(actor.user);
       if (actor.user.role !== "admin")
         throw new BackendError(
           403,
@@ -172,11 +185,7 @@ export function createBackendHandler(deps: HandlerDependencies) {
             version: c.version,
             projects: d.projects,
             agenda: d.agenda,
-            settings: {
-              title: d.settings.title,
-              radioUrl: d.settings.radioUrl,
-              agendaNote: d.settings.agendaNote,
-            },
+            settings: d.settings,
             assignmentRules: d.assignmentRules,
             votingOpen: c.votingOpen,
           },
@@ -200,6 +209,21 @@ export function createBackendHandler(deps: HandlerDependencies) {
             Vary: "Accept-Encoding",
           },
         );
+      }
+      if (path === "auth/session" && method === "GET") {
+        const raw = readCookie(request, sessionCookieName(deps.production));
+        const session = raw
+          ? await service.store.rpc<ParticipantRecord | null>("camino_actor", {
+              p_session_hash: hash(raw),
+            })
+          : null;
+        if (!session)
+          throw new BackendError(
+            401,
+            "authentication_required",
+            "Inicia sesión para continuar.",
+          );
+        return json({ user: session.user });
       }
       if (path === "auth/login" && method === "POST") {
         // Shared school Wi-Fi must allow the attendance peak; only trust a client
@@ -319,10 +343,16 @@ export function createBackendHandler(deps: HandlerDependencies) {
       }
       if (path === "auth/logout" && method === "POST") {
         const raw = readCookie(request, sessionCookieName(deps.production));
-        if (raw)
+        if (raw) {
+          const current = await service.store.rpc<ParticipantRecord | null>(
+            "camino_actor",
+            { p_session_hash: hash(raw) },
+          );
+          if (current) assertActor(current.user);
           await service.store.rpc("camino_logout", {
             p_session_hash: hash(raw),
           });
+        }
         return json({ ok: true }, 200, { "Set-Cookie": sessionCookie("", 0) });
       }
       if ((path === "me" || path === "me/challenges") && method === "GET") {
@@ -381,16 +411,22 @@ export function createBackendHandler(deps: HandlerDependencies) {
         if (path === "admin/me" && method === "GET")
           return json({ user: actor, mfaRequired: false });
         if (path === "admin/users" && method === "GET") {
-          const list = await service.listUsers(
-            page.offset,
-            page.limit,
-            page.search,
-          );
+          const list = await service.store.rpc<
+            Awaited<ReturnType<BackendService["listUsers"]>>
+          >("camino_admin_users", {
+            p_offset: page.offset,
+            p_limit: page.limit,
+            p_search: page.search,
+            p_status: page.status,
+            p_sort: page.sort,
+          });
           return json({
             ...list,
             items: list.items.map(({ progress, progressVersion, ...user }) => ({
               ...user,
               progressVersion,
+              startedAt: progress.startedAt,
+              hasSurvey: !!progress.survey,
             })),
           });
         }
@@ -524,6 +560,10 @@ export function createBackendHandler(deps: HandlerDependencies) {
           return json({
             version: c.version,
             catalog: c.catalog,
+            admins: c.admins,
+            lastCreated: await service.store.rpc("camino_last_created", {
+              p_actor: actor.id,
+            }),
             votingOpen: c.votingOpen,
             raffleOpen: c.raffleOpen,
           });
@@ -648,8 +688,36 @@ export function createBackendHandler(deps: HandlerDependencies) {
               p_search: page.search,
             }),
           );
+        if (path === "admin/raffle-status" && method === "GET")
+          return json({
+            eligible: await service.store.rpc<number>("camino_raffle_count"),
+          });
         if (path === "admin/metrics" && method === "GET")
           return json(await service.store.rpc("camino_metrics"));
+        const staffMatch = path.match(/^admin\/staff\/([0-9a-f-]+)$/i);
+        if (staffMatch && ["PATCH", "DELETE"].includes(method)) {
+          const schema = updateUserInput.pick({
+            requestId: true,
+            expectedVersion: true,
+            firstName: true,
+            firstSurname: true,
+            secondSurname: true,
+            email: true,
+            active: true,
+          });
+          const input = await readJson(request, schema),
+            { requestId: requestKey, expectedVersion, ...patch } = input;
+          return json(
+            await service.store.rpc("camino_update_staff", {
+              p_id: id.parse(staffMatch[1]),
+              p_expected: expectedVersion,
+              p_patch: method === "DELETE" ? { active: false } : patch,
+              p_actor: actor.id,
+              p_request: requestKey,
+              p_hash: requestHash(method, path, input),
+            }),
+          );
+        }
         if (path === "admin/staff" && method === "POST") {
           if (!deps.createAdmin)
             throw new BackendError(

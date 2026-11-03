@@ -245,3 +245,5 @@
 @media(max-width:360px) {
   .admin-local .local-header .admin-school-brand { width: 120px; }
 }
+
+.admin-local-note.is-connected{background:#edf8f0;border-color:#c4e3cd;color:#24543b}

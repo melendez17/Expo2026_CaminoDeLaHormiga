@@ -2,7 +2,7 @@
 
 Los participantes **y administradores** ingresan con su token. No se requieren contraseña, QR, verificación por correo ni doble factor. Los permisos se obtienen del rol activo en la base, no de lo que envíe el navegador.
 
-La interfaz actual todavía es la demo JSON. Estos pasos preparan la base/API; conectar las pantallas será una etapa posterior. No introducir personas reales en la demo pública.
+La interfaz actual usa la API. Estos pasos preparan la base y el servidor para que las pantallas consulten y guarden datos reales. No publicar personas o respuestas reales en los JSON públicos de ejemplo.
 
 ## 1. Crear el proyecto
 
@@ -17,10 +17,11 @@ En un proyecto nuevo, ejecutar completas y en orden desde SQL Editor:
 1. `supabase/migrations/202611030001_production.sql`
 2. `supabase/migrations/202611030002_token_login.sql`
 3. `supabase/migrations/202611030003_admin_token_login.sql`
+4. `supabase/migrations/202611030004_frontend_api.sql`
 
 Si ya aplicaste alguna, ejecutar únicamente las pendientes. La tercera habilita el token para admins y elimina la necesidad de un vínculo Auth para sus perfiles; conserva datos y permisos SQL privados.
 
-Con CLI: `supabase link --project-ref TU_REFERENCIA`, revisar `supabase db push --dry-run` y después `supabase db push`. La CLI también incluye las dos migraciones históricas anteriores: cinco archivos en total. No ejecutar `db reset` en una base con datos reales. Las tablas viejas de `public` se conservan; la API vigente usa `camino`. `seed.example.sql` es histórico, no una semilla de producción.
+Con CLI: `supabase link --project-ref TU_REFERENCIA`, revisar `supabase db push --dry-run` y después `supabase db push`. La CLI también incluye las dos migraciones históricas anteriores: seis archivos en total. No ejecutar `db reset` en una base con datos reales. Las tablas viejas de `public` se conservan; la API vigente usa `camino`. `seed.example.sql` es histórico, no una semilla de producción.
 
 ## 3. Variables privadas del servidor
 
@@ -85,7 +86,7 @@ Esta prueba inicia sesión con el token del archivo, consulta `/admin/me` y cier
 
 Un 503 backend_disabled/not_configured significa que faltan variables. Un 401 indica token inválido/inactivo/sesión vencida; 403 en el panel indica rol sin permiso; 429 pide esperar por límite de intentos.
 
-Las pantallas se conectarán mediante `createApiClient().login(token)` y cookies HttpOnly. El admin consultará `/admin/me`; los participantes `/me`. No enviar un rol escogido por el usuario para autorizar. La pantalla `/admin` actual continúa siendo la demo local hasta esa integración. Las herramientas antiguas admin:session y admin-auth.ts quedan como compatibilidad Auth opcional; no se necesitan para ingresar por token.
+Las pantallas se conectan mediante `createApiClient().login(token)` y cookies HttpOnly. El admin consultará `/admin/me`; los participantes `/me`. No enviar un rol escogido por el usuario para autorizar. La pantalla `/admin` actual usa esta API; crear usuarios o emitir tiquetes allí escribe en Supabase. Las herramientas antiguas admin:session y admin-auth.ts quedan como compatibilidad Auth opcional; no se necesitan para ingresar por token.
 
 No guardar sesiones/usuarios privados en el service worker de la demo ni reimportar progreso de participantes como premios reales. Confirmar respuestas/votos reales requiere conexión.
 

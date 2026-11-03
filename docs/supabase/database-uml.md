@@ -1,6 +1,6 @@
 # UML de la base de datos
 
-Modelo físico de las migraciones `202611030001_production.sql`, `202611030002_token_login.sql` y `202611030003_admin_token_login.sql` en la rama `implementacionbackend`: **23 tablas en `camino`, una entidad externa `auth.users` y 30 claves foráneas**. Representa la migración implementada; no indica que ya esté desplegada en Supabase. Excluye las tablas públicas históricas del backend anterior.
+Modelo físico de las migraciones `202611030001_production.sql`, `202611030002_token_login.sql` `202611030003_admin_token_login.sql` y `202611030004_frontend_api.sql` en la rama `implementacionbackend`: **23 tablas en `camino`, una entidad externa `auth.users` y 30 claves foráneas**. Representa la migración implementada; no indica que ya esté desplegada en Supabase. Excluye las tablas públicas históricas del backend anterior.
 
 - [Abrir diagrama completo SVG](database.svg): se puede ampliar sin perder nitidez y abrir en el navegador.
 - [Fuente UML editable en PlantUML](database.puml): todas las columnas, tipos, claves y cardinalidades.

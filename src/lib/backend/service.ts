@@ -80,6 +80,7 @@ export class BackendService {
       record.user,
       parseProgress(data, record.user.id, record.progress),
       record.version,
+      catalog.version,
     );
   }
   async createAdmin(
@@ -314,6 +315,7 @@ export class BackendService {
             record.user,
             next.progress,
             Number(committed.version),
+            catalog.version,
           ),
         };
       } catch (error) {

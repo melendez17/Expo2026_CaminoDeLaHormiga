@@ -148,6 +148,7 @@ export class SupabaseBackendStore implements BackendStore {
         [
           "camino_catalog_commit",
           "camino_add_admin",
+          "camino_update_staff",
           "camino_bootstrap_admin",
           "camino_seed_catalog",
           "camino_initialize",

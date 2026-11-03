@@ -1,2 +1,4 @@
-import { Journey } from '@/components/journey';
-export default function Admin() { return <Journey adminOnly />; }
+import { ApiJourney } from "@/components/api-journey";
+export default function Admin() {
+  return <ApiJourney adminOnly />;
+}

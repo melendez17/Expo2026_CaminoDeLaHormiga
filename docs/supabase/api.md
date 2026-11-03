@@ -8,9 +8,9 @@ Participante: cookie HttpOnly de sesión; no se envían IDs de otra persona para
 
 Toda mutación normal requiere `Origin: APP_ORIGIN` y `Content-Type: application/json`. Los comandos de juego/admin incluyen `requestId` UUID v4 generado **una vez por intención**; un reintento de la misma operación reutiliza exactamente cuerpo, ruta y UUID. El servidor guarda la huella y resultado siete días. El mismo UUID con otro contenido da `409`. Tras ese plazo no reutilizar solicitudes antiguas. No reintentar un alta, voto, tiquete o sorteo creando un UUID nuevo por un error de red. `api-client.ts` conserva el identificador cuando se pierde la respuesta.
 
-Editar perfil requiere `expectedVersion` del perfil. Editar catálogo/reglas/configuración requiere `expectedVersion` del catálogo. Un conflicto exige volver a leer, revisar y confirmar la edición; no sobrescribir a ciegas. Las respuestas de comandos contienen `state` actualizado y `result`. El avance y las asignaciones se calculan en servidor, no se aceptan contadores/completados enviados por participantes.
+Editar perfil requiere `expectedVersion` del perfil. Editar catálogo/reglas/configuración requiere `expectedVersion` del catálogo. Un conflicto exige volver a leer, revisar y confirmar la edición; no sobrescribir a ciegas. Las respuestas de comandos contienen `state` actualizado y `result`. El cliente envía `X-Camino-User` con la identidad de su vista para rechazar (`409 session_changed`) acciones si otra pestaña cambió la sesión; esa cabecera no concede permisos. El avance y las asignaciones se calculan en servidor, no se aceptan contadores/completados enviados por participantes.
 
-Paginación: `?offset=0&limit=50&search=texto`; máximo 100 por petición pública/administrativa. Las listas devuelven `total` e `items` donde procede. El ranking usa `rank: null` si no hay votos y comparte puestos en empates.
+Paginación: `?offset=0&limit=50&search=texto`; usuarios admite `status=Completado|En proceso|Sin activar` y `sort=name|tickets|progress`; máximo 100 por petición pública/administrativa. Las listas devuelven `total` e `items` donde procede. El ranking usa `rank: null` si no hay votos y comparte puestos en empates.
 
 ## Acceso y consulta pública
 
@@ -19,6 +19,7 @@ Paginación: `?offset=0&limit=50&search=texto`; máximo 100 por petición públi
 | GET | `/health` | Configuración habilitada; no verifica por sí sola toda la base |
 | GET | `/catalog` | Proyectos, agenda, configuración pública y reglas. Sin usuarios, respuestas ni códigos |
 | GET | `/leaderboard` | Proyectos, puestos y conteos agregados; sin votantes |
+| GET | `/auth/session` | Usuario y rol de la sesión propia, para restaurar el acceso |
 | POST | `/auth/login` | `{ "token": "A12F" }`; inicia una sesión con cookie, sin QR ni correo |
 | POST | `/auth/activate` | `{ "credential": "SECRETO_PRIVADO_DE_43_CARACTERES" }`; consume el acceso y fija cookie |
 | POST | `/auth/request-email` | `{ "email":"persona@ejemplo.cr", "token":"A12F" }`; devuelve challengeId aun si no coincide, para evitar enumeración |
@@ -60,7 +61,7 @@ Una respuesta válida pero incorrecta devuelve HTTP 200 con `result.outcome: "in
 | POST | `/admin/users/:uuid/credentials` | requestId, reason; reemite acceso y revoca sesiones anteriores |
 | GET | `/admin/users/:uuid/replacements` | `?category=school&fromId=ID&level=10`; candidatos sin claves |
 | POST | `/admin/users/:uuid/assignments` | mode prepare/replace/remove/add, fromId, category, level opcional, scope y reason |
-| GET | `/admin/catalog` | Catálogo completo privado con claves y versión |
+| GET | `/admin/catalog` | Catálogo completo privado con claves, versión y perfiles administrativos |
 | POST | `/admin/projects`, `/admin/challenges`, `/admin/agenda` | requestId, expectedVersion, value registro completo; ID opcional nuevo |
 | PUT | `/admin/projects/:id`, `/admin/challenges/:id`, `/admin/agenda/:id` | requestId, expectedVersion, value registro completo |
 | DELETE | Las mismas rutas con ID | requestId, expectedVersion |
@@ -68,6 +69,8 @@ Una respuesta válida pero incorrecta devuelve HTTP 200 con `result.outcome: "in
 | PATCH | `/admin/settings` | requestId, expectedVersion, votingOpen y/o raffleOpen |
 | GET / POST | `/admin/tickets` | Listar / crear uno manual por token |
 | GET / POST | `/admin/raffles` | Historial / sortear con requestId y prize obligatorio |
+| PATCH / DELETE | `/admin/staff/:uuid` | Editar nombres/correo/activo o desactivar admin, con expectedVersion; no permite desactivar el propio acceso |
+| GET | `/admin/raffle-status` | Cantidad de tiquetes elegibles actuales |
 | GET | `/admin/metrics`, `/admin/audit` | Métricas e historial paginado |
 | GET | `/admin/export?format=csv\|json\|xlsx` | Datos privados; CSV neutraliza fórmulas, Excel es archivo real |
 | GET | `/admin/backup` | Exportación Excel con catálogo y avance; sin secretos ni sesiones |
@@ -89,7 +92,9 @@ Registro de participante:
 }
 ```
 
-Entrega: `card` devuelve código/enlace para información; `email` o `both` además encolan el enlace si el correo está habilitado. La API no dibuja el QR: el siguiente frontend puede generarlo localmente a partir de `access.url`. El alta también devuelve `login: {method: "token", token: "A12F"}`; la pantalla debe entregar ese token, sin pedir QR ni activar correo. `access` es información de compatibilidad con el enlace anterior y no se necesita para iniciar sesión. La respuesta de alta contiene secretos: no registrarla en logs/analítica ni ponerla en localStorage. No se admite `role: admin`, token elegido o avance en este endpoint. El correo no se utiliza para verificar este inicio de sesión. El correo normalizado es único en toda la aplicación, incluso entre admins y participantes; los miembros de una familia necesitan correos distintos según la regla solicitada.
+La interfaz usa `delivery: "card"` y entrega `login: {method: "token", token: "A12F"}`. `email` o `both` permiten encolar el token si se habilitó el correo, sin hacerlo obligatorio para ingresar. El campo `access` se conserva por compatibilidad con el enlace anterior y no se utiliza en el frontend actual.
+
+La respuesta de alta contiene datos privados: no registrarla en analítica ni guardarla en localStorage. No se admite role admin, token elegido ni avance en `/admin/users`; los administradores se crean por `/admin/staff`. El correo es único en todos los perfiles, aunque no se utiliza para verificar el ingreso.
 
 Áreas exactas: `pasitos`, `school`, `third_cycle`, `Desarrollo Web`, `Ciberseguridad`, `Dibujo y Modelado de Edificaciones`, `Diseño Gráfico Multimedia`, `Electromecánica`, `Mecánica de Precisión`.
 

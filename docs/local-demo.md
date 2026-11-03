@@ -1,3 +1,5 @@
+> Referencia histórica de la demo JSON. Las páginas actuales usan la API; ver [frontend conectado](supabase/frontend.md).
+
 # Demo local con JSON
 
 Esta es la experiencia activa. La integración Supabase queda para otra etapa. No se requieren variables de entorno ni se hacen llamadas a `/api` desde el recorrido.

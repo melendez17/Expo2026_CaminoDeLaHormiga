@@ -206,7 +206,7 @@ test("API v1 real sobre PostgreSQL: permisos, cookies, privacidad y flujos compl
           assert.equal(q.correctIndex, undefined);
       }
       const original = body.state.challenges.find(
-          (c: { questions?: unknown[] }) => c.questions?.length,
+          (c: { kind: string }) => c.kind === "quiz",
         ),
         real = (await f.service.catalog()).catalog.challenges.find(
           (c) => c.id === original.id,

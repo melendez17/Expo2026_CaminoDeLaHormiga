@@ -13,6 +13,7 @@ test("migración de producción convive con las dos migraciones históricas sin 
     "202611030001_production.sql",
     "202611030002_token_login.sql",
     "202611030003_admin_token_login.sql",
+    "202611030004_frontend_api.sql",
   ]) {
     await db.exec(
       readFileSync(

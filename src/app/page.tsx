@@ -1,2 +1,4 @@
-import { Journey } from '@/components/journey';
-export default function Home(){return <Journey/>;}
+import { ApiJourney } from "@/components/api-journey";
+export default function Home() {
+  return <ApiJourney />;
+}

@@ -17,6 +17,12 @@ export function mapDatabaseError(error: {
   message?: string;
 }): BackendError {
   const message = error.message ?? "";
+  if (error.code === "PGRST202" || error.code === "42883")
+    return new BackendError(
+      503,
+      "schema_update_required",
+      "Faltan funciones de la API en Supabase. Aplica las migraciones pendientes y actualiza la caché de esquema.",
+    );
   if (error.code === "23505")
     return new BackendError(
       409,
@@ -30,7 +36,10 @@ export function mapDatabaseError(error: {
         : "El registro ya existe.",
     );
   const known: Record<string, [number, string]> = {
-    revision_conflict: [409, "Los datos cambiaron. Reintenta la operación."],
+    revision_conflict: [
+      409,
+      "Los datos cambiaron. Vuelve a abrir el formulario antes de guardar.",
+    ],
     idempotency_conflict: [
       409,
       "El identificador de solicitud ya se utilizó con otros datos.",
