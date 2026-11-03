@@ -248,6 +248,21 @@ async function main() {
     });
     await adminNav(admin, "Usuarios").click();
     await admin.getByRole("button", { name: "Nuevo usuario" }).click();
+    const userDialog = admin.getByRole("dialog", {
+      name: "Crear usuario",
+      exact: true,
+    });
+    await userDialog.waitFor();
+    assert.equal(await userDialog.evaluate((el) => el.matches(":modal")), true);
+    await admin.keyboard.press("Escape");
+    await userDialog.waitFor({ state: "hidden" });
+    assert.equal(
+      await admin
+        .getByRole("button", { name: "Nuevo usuario" })
+        .evaluate((el) => el === document.activeElement),
+      true,
+    );
+    await admin.getByRole("button", { name: "Nuevo usuario" }).click();
     const form = admin.locator(".admin-editor form");
     await form.getByLabel("Nombre", { exact: true }).fill("Nueva");
     await form.getByLabel("Apellido 1").fill("Persona");
@@ -380,6 +395,26 @@ async function main() {
     await admin
       .getByRole("button", { name: "Nuevo reto", exact: true })
       .click();
+    const challengeDialog = admin.getByRole("dialog", {
+      name: "Crear reto",
+      exact: true,
+    });
+    await challengeDialog.waitFor();
+    await admin.screenshot({ path: "/tmp/admin-modal-desktop.png" });
+    await admin.setViewportSize({ width: 390, height: 844 });
+    const bounds = await challengeDialog.boundingBox();
+    assert.ok(
+      bounds && bounds.x >= 0 && bounds.width <= 390 && bounds.height <= 844,
+    );
+    await admin.screenshot({ path: "/tmp/admin-modal-mobile.png" });
+    await admin.keyboard.press("Tab");
+    assert.equal(
+      await challengeDialog.evaluate((el) =>
+        el.contains(document.activeElement),
+      ),
+      true,
+    );
+    await admin.setViewportSize({ width: 1440, height: 1000 });
     const challengeForm = admin.locator(".admin-editor form");
     await challengeForm.getByLabel("Título del reto").fill("Reto API UI");
     await challengeForm
@@ -415,6 +450,23 @@ async function main() {
       )!.level,
       11,
     );
+    await admin
+      .getByRole("button", { name: "Editar: Reto API UI", exact: true })
+      .click();
+    const editChallengeDialog = admin.getByRole("dialog", {
+      name: "Editar reto",
+      exact: true,
+    });
+    await editChallengeDialog.waitFor();
+    assert.equal(
+      await editChallengeDialog.getByLabel("Título del reto").inputValue(),
+      "Reto API UI",
+    );
+    const editBounds = await editChallengeDialog.boundingBox();
+    assert.ok(editBounds && editBounds.y >= 0 && editBounds.y < 1000);
+    await editChallengeDialog
+      .getByRole("button", { name: "Cerrar formulario" })
+      .click();
     await admin
       .getByRole("button", { name: "Eliminar: Reto API UI", exact: true })
       .click();

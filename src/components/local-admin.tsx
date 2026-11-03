@@ -5,6 +5,7 @@ import {
   RemoteTickets,
   RemoteBackup,
 } from "./remote-admin-sections";
+import { AdminEditorDialog } from "./admin-editor-dialog";
 import { AdminPagination } from "./admin-pagination";
 import { notifyAction } from "@/lib/action-feedback";
 import { useEffect, useState, useRef } from "react";
@@ -133,12 +134,6 @@ export function LocalAdmin({
       back?.scrollIntoView({ block: "start" });
     }
   }, [userView, selectedParticipant]);
-  useEffect(() => {
-    if (editor?.resource === "agenda")
-      document
-        .querySelector(".admin-editor")
-        ?.scrollIntoView({ block: "start" });
-  }, [editor]);
   const rows = remote ? remote.rows : adminRows(data, localStorage);
   const item = editor?.id
     ? (editor.record ??
@@ -609,7 +604,7 @@ export function LocalAdmin({
               navegador.
             </p>
           )}
-          {error && (
+          {error && !editor && (
             <p className="form-error" role="alert">
               {error}
             </p>
@@ -703,11 +698,16 @@ export function LocalAdmin({
                 </section>
               )}
               {editor && (
-                <section
-                  className="admin-editor"
+                <AdminEditorDialog
                   key={`${editor.resource}-${editor.id ?? "new"}`}
+                  title={`${editor.id ? "Editar" : "Crear"} ${{ users: "usuario", challenges: "reto", projects: "proyecto", agenda: "actividad" }[editor.resource]}`}
+                  busy={remote?.busy}
+                  error={error}
+                  onClose={() => {
+                    setEditor(null);
+                    setError("");
+                  }}
                 >
-                  <h3>{editor.id ? "Editar registro" : "Crear registro"}</h3>
                   <form onSubmit={save}>
                     {editor.resource === "users" && (
                       <>
@@ -1265,7 +1265,7 @@ export function LocalAdmin({
                       </button>
                     </div>
                   </form>
-                </section>
+                </AdminEditorDialog>
               )}
               {remove && (
                 <section className="reset-confirm">

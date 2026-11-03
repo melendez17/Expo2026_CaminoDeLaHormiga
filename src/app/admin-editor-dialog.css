@@ -1,0 +1,79 @@
+/* Native top-layer dialog keeps the editor visible regardless of list scroll. */
+.local-app .admin-editor.admin-editor-dialog {
+  width: min(720px, calc(100vw - 40px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #8aac99 #edf4ef;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  color: #123b2b;
+  box-shadow: 0 24px 80px #001c2250;
+}
+.admin-editor-dialog::backdrop {
+  background: #031c14a6;
+}
+.admin-editor-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 28px;
+  background: #fff;
+  border-bottom: 1px solid #e1ebe5;
+}
+.local-app .admin-editor-dialog-header h3 {
+  margin: 0;
+  font-size: 24px;
+}
+.admin-editor-dialog-header button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  flex-shrink: 0;
+}
+.admin-editor-dialog-header svg {
+  width: 20px;
+  height: 20px;
+}
+.admin-editor-dialog-body {
+  padding: 24px 28px 28px;
+}
+.local-app .admin-editor-dialog .admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+.local-app .admin-editor-dialog .admin-form-actions button {
+  min-height: 44px;
+}
+.local-app .admin-editor-dialog .admin-editor-saving {
+  padding: 0 28px 24px;
+  margin: 0;
+  color: #185734;
+}
+@media (max-width: 600px) {
+  .local-app .admin-editor.admin-editor-dialog {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 24px);
+  }
+  .admin-editor-dialog-header {
+    padding: 14px 18px;
+  }
+  .admin-editor-dialog-body {
+    padding: 20px 18px;
+  }
+  .local-app .admin-editor-dialog .admin-form-actions button {
+    flex: 1 1 160px;
+  }
+}
